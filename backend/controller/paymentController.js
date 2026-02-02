@@ -227,7 +227,12 @@ export const hitpayWebhook = async (req, res) => {
   try {
     if (!ensureEnv(res)) return
     const payload = req.body || {}
-    const rawBody = req.rawBody || ''
+    const rawBody = typeof req.rawBody === 'string' ? req.rawBody : ''
+    const payloadString = JSON.stringify(payload || {})
+    const bodyCandidates = rawBody && rawBody.length ? [rawBody] : ['']
+    if (payloadString && !bodyCandidates.includes(payloadString)) {
+      bodyCandidates.push(payloadString)
+    }
     const signatureHeaderRaw =
       req.headers['hitpay-signature'] ||
       req.headers['x-hitpay-signature'] ||
@@ -236,21 +241,47 @@ export const hitpayWebhook = async (req, res) => {
       ? signatureHeaderRaw[0]
       : signatureHeaderRaw
     const legacyHmac = payload.hmac || req.query?.hmac
+    const signatureDebug = {
+      hasSignatureHeader: Boolean(signatureHeader),
+      signatureHeaderLength: signatureHeader ? String(signatureHeader).length : 0,
+      signatureHeaderPrefix: signatureHeader ? String(signatureHeader).slice(0, 12) : null,
+      signatureHeaderSuffix: signatureHeader ? String(signatureHeader).slice(-12) : null,
+      hasSha256Prefix: /^sha256=/i.test(String(signatureHeader || '')),
+      rawBodyLength: rawBody.length,
+      payloadKeys: Object.keys(payload || {}),
+      bodyCandidateLengths: bodyCandidates.map((body) => body.length),
+      hasLegacyHmac: Boolean(legacyHmac)
+    }
 
     if (signatureHeader) {
-      // Normalize: strip 'sha256=' prefix, lower-case for comparison
-      const normalizeSig = sig => String(sig || '').replace(/^sha256=/i, '').toLowerCase();
-      const calculated = normalizeSig(computeRawSignature(rawBody));
-      const received = normalizeSig(signatureHeader);
-      if (calculated !== received) {
+      const received = String(signatureHeader || '').trim().replace(/^sha256=/i, '')
+      const matchesHex = bodyCandidates.some((body) =>
+        computeRawSignature(body).toLowerCase() === received.toLowerCase()
+      )
+      const matchesBase64 = bodyCandidates.some((body) =>
+        crypto.createHmac('sha256', HITPAY_SALT).update(body).digest('base64') === received
+      )
+      if (!matchesHex && !matchesBase64) {
+        console.error('[Webhook] Signature mismatch', {
+          ...signatureDebug,
+          matchesHex,
+          matchesBase64
+        })
         return res.status(401).json({ error: 'Invalid signature' })
       }
+      console.log('[Webhook] Signature verified', {
+        ...signatureDebug,
+        matchesHex,
+        matchesBase64
+      })
     } else if (legacyHmac) {
       const calculated = computeLegacyHmac(payload)
       if (calculated !== legacyHmac) {
+        console.error('[Webhook] Legacy signature mismatch', signatureDebug)
         return res.status(401).json({ error: 'Invalid signature' })
       }
     } else {
+      console.error('[Webhook] Missing signature', signatureDebug)
       return res.status(400).json({ error: 'Missing webhook signature' })
     }
 
