@@ -431,7 +431,7 @@ export const hitpayWebhook = async (req, res) => {
     const { data: webhookEvent, error: webhookErr } = await supabase
       .from('webhookEvents')
       .insert({
-        gateway: { name: 'HITPAY' },
+        gateway: 'HITPAY',
         eventType: eventType || null,
         externalId,
         payload,
