@@ -21,6 +21,17 @@ initializeData();
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 export const apiService = {
+  // PATCH /api/user/name
+  updateUserName: async (name: string) => {
+    const res = await fetch(`${API_BASE}/api/user/name`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name })
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'Failed to update name');
+    return await res.json();
+  },
   
   // --- Public APIs ---
 

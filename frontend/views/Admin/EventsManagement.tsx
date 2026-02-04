@@ -37,7 +37,7 @@ export const EventsManagement: React.FC = () => {
   
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { role } = useUser();
+  const { role, canEditEvents } = useUser();
   const isStaff = role === UserRole.STAFF;
 
   const initialFormData = {
@@ -397,6 +397,8 @@ export const EventsManagement: React.FC = () => {
                         onClick={() => handleOpenTickets(event)}
                         className="text-[#003E86] hover:text-[#38BDF2] transition-colors p-1"
                         title="Manage Tickets"
+                        disabled={isStaff && !canEditEvents}
+                        style={isStaff && !canEditEvents ? { opacity: 0.5, pointerEvents: 'none' } : {}}
                       >
                         <ICONS.CreditCard className="w-[1.2rem] h-[1.2rem]" strokeWidth={2.2} />
                       </button>
@@ -411,6 +413,8 @@ export const EventsManagement: React.FC = () => {
                         onClick={() => handleOpenEdit(event)}
                         className="text-[#003E86] hover:text-[#38BDF2] transition-colors p-1"
                         title="Edit Session"
+                        disabled={isStaff && !canEditEvents}
+                        style={isStaff && !canEditEvents ? { opacity: 0.5, pointerEvents: 'none' } : {}}
                       >
                         <svg className="w-[1.2rem] h-[1.2rem]" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                       </button>
@@ -621,48 +625,50 @@ export const EventsManagement: React.FC = () => {
         onClose={() => setIsAttendeeModalOpen(false)}
         title={`Guest List: ${selectedEvent?.eventName || ''}`}
       >
-        <div className="space-y-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.4em]">Confirmed Registrations</span>
-            <Badge type="info" className="px-3 py-1 font-black text-[9px] tracking-widest">{attendees.filter(r => r.eventId === selectedEvent?.eventId).length} GUESTS</Badge>
-          </div>
-          
-          <div className="max-h-[500px] overflow-y-auto pr-2 space-y-4">
-            {attendees.filter(r => r.eventId === selectedEvent?.eventId).map((reg) => (
-              <div key={reg.id} className="flex items-center justify-between p-5 bg-[#F2F2F2] border border-[#3768A2]/20 rounded-[1.75rem] hover:border-[#38BDF2]/30 transition-colors group">
-                <div className="flex items-center gap-5">
-                  <div className="w-11 h-11 rounded-2xl bg-[#F2F2F2] flex items-center justify-center text-[#003E86] font-black text-sm border border-[#3768A2]/20 group-hover:bg-[#003E86] group-hover:text-[#F2F2F2] transition-colors">
-                    {reg.attendeeName.charAt(0)}
+        <div>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.4em]">Confirmed Registrations</span>
+              <Badge type="info" className="px-3 py-1 font-black text-[9px] tracking-widest">{attendees.filter(r => r.eventId === selectedEvent?.eventId).length} GUESTS</Badge>
+            </div>
+            
+            <div className="max-h-[500px] overflow-y-auto pr-2 space-y-4">
+              {attendees.filter(r => r.eventId === selectedEvent?.eventId).map((reg) => (
+                <div key={reg.id} className="flex items-center justify-between p-5 bg-[#F2F2F2] border border-[#3768A2]/20 rounded-[1.75rem] hover:border-[#38BDF2]/30 transition-colors group">
+                  <div className="flex items-center gap-5">
+                    <div className="w-11 h-11 rounded-2xl bg-[#F2F2F2] flex items-center justify-center text-[#003E86] font-black text-sm border border-[#3768A2]/20 group-hover:bg-[#003E86] group-hover:text-[#F2F2F2] transition-colors">
+                      {reg.attendeeName.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-black text-[#003E86] text-[15px] tracking-tight">{reg.attendeeName}</p>
+                      <p className="text-[11px] text-[#2E2E2F]/60 font-bold uppercase tracking-tight mt-0.5">{reg.attendeeEmail}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-black text-[#003E86] text-[15px] tracking-tight">{reg.attendeeName}</p>
-                    <p className="text-[11px] text-[#2E2E2F]/60 font-bold uppercase tracking-tight mt-0.5">{reg.attendeeEmail}</p>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-[#003E86] uppercase tracking-widest mb-1.5">{reg.ticketName}</p>
+                    <span className={`inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                      reg.status === 'USED' ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
+                    }`}>
+                      {reg.status}
+                    </span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-[#003E86] uppercase tracking-widest mb-1.5">{reg.ticketName}</p>
-                  <span className={`inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                    reg.status === 'USED' ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
-                  }`}>
-                    {reg.status}
-                  </span>
+              ))}
+              {attendees.filter(r => r.eventId === selectedEvent?.eventId).length === 0 && (
+                <div className="py-24 text-center text-[#2E2E2F]/50">
+                  <ICONS.Users className="w-14 h-14 mx-auto mb-5 opacity-20" />
+                  <p className="font-black uppercase tracking-[0.25em] text-[10px]">No confirmed guests detected</p>
                 </div>
-              </div>
-            ))}
-            {attendees.filter(r => r.eventId === selectedEvent?.eventId).length === 0 && (
-              <div className="py-24 text-center text-[#2E2E2F]/50">
-                <ICONS.Users className="w-14 h-14 mx-auto mb-5 opacity-20" />
-                <p className="font-black uppercase tracking-[0.25em] text-[10px]">No confirmed guests detected</p>
-              </div>
-            )}
+              )}
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full py-4.5 rounded-[1.25rem] text-[10px] font-black uppercase tracking-[0.2em] border-2 border-[#3768A2]/30 text-[#003E86] hover:bg-[#38BDF2]/10"
+              onClick={() => navigate('/attendees')}
+            >
+              Open Full Directory
+            </Button>
           </div>
-          <Button 
-            variant="outline" 
-            className="w-full py-4.5 rounded-[1.25rem] text-[10px] font-black uppercase tracking-[0.2em] border-2 border-[#3768A2]/30 text-[#003E86] hover:bg-[#38BDF2]/10"
-            onClick={() => navigate('/attendees')}
-          >
-            Open Full Directory
-          </Button>
         </div>
       </Modal>
     </div>

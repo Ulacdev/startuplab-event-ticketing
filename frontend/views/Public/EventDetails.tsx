@@ -139,7 +139,7 @@ export const EventDetails: React.FC = () => {
                   STATUS: {event.status}
                 </div>
                 <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#3768A2]/20 text-[11px] font-black">
-                  CAPACITY: {event.capacityTotal}
+                  CAPACITY: {(event.ticketTypes || []).reduce((sum, t) => sum + (t.quantityTotal || 0), 0)}
                 </div>
                 {event.timezone && (
                   <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#3768A2]/20 text-[11px] font-black">

@@ -1,5 +1,5 @@
 import express from 'express';
-import {getUser, getAllUsers, getRole, getRoleByEmail, whoAmI, updatePermissions} from "../controller/userController.js"
+import {getUser, getAllUsers, getRole, getRoleByEmail, whoAmI, updatePermissions, updateUserName} from "../controller/userController.js"
 import { authMiddleware } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -12,5 +12,6 @@ router.get('/role-by-email', getRoleByEmail);
 // Alias to match frontend path /api/user/role-by-email
 router.get('/user/role-by-email', getRoleByEmail);
 router.put('/users/:id/permissions', authMiddleware, updatePermissions);
+router.patch('/user/name', authMiddleware, updateUserName);
 
 export default router;

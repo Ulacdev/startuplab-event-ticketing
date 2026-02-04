@@ -15,6 +15,7 @@ import { LoginPerspective } from './views/Auth/Login';
 import { SignUpView } from './views/Auth/SignUp';
 import { AcceptInvite } from './views/Auth/AcceptInvite';
 import { ICONS } from './constants';
+import { Button, Input, Modal } from './components/Shared';
 import { UserRole } from './types';
 import { supabase } from "./supabase/supabaseClient.js";
 import { useUser } from './context/UserContext';
@@ -30,9 +31,52 @@ const Branding: React.FC<{ className?: string, light?: boolean }> = ({ className
 const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, isAuthenticated, clearUser, setUser, canViewEvents, canEditEvents, canManualCheckIn } = useUser();
+  const { role, isAuthenticated, clearUser, setUser, canViewEvents, canManualCheckIn } = useUser();
   const isStaff = role === UserRole.STAFF;
-  // Unified URLs for both roles
+  const [userMenuOpen, setUserMenuOpen] = React.useState(false);
+  const [editNameModal, setEditNameModal] = React.useState(false);
+  const [nameInput, setNameInput] = React.useState('');
+  const [nameLoading, setNameLoading] = React.useState(false);
+  const [nameError, setNameError] = React.useState('');
+  const [nameSuccess, setNameSuccess] = React.useState('');
+
+  const fetchName = async () => {
+    try {
+      setNameError('');
+      setNameSuccess('');
+      const res = await fetch(`${API}/api/whoAmI`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setNameInput(data.name || '');
+      }
+    } catch {}
+  };
+
+  React.useEffect(() => {
+    if (editNameModal) fetchName();
+  }, [editNameModal]);
+
+  const handleSaveName = async () => {
+    setNameError(''); setNameSuccess(''); setNameLoading(true);
+    try {
+      const res = await fetch(`${API}/api/user/name`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: nameInput })
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || 'Failed to update name.');
+      }
+      setNameSuccess('Name updated successfully.');
+      setTimeout(() => setEditNameModal(false), 800);
+    } catch (err: any) {
+      setNameError(err?.message || 'Failed to update name.');
+    } finally {
+      setNameLoading(false);
+    }
+  };
 
   useEffect(() => {
     const syncSession = async () => {
@@ -88,12 +132,22 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   }, [isAuthenticated, isStaff, location.pathname, navigate, role, canViewEvents, canManualCheckIn]);
 
-  const menuItems = (
-    role === UserRole.STAFF
+  const staffPermsLoaded = role !== UserRole.STAFF || (
+  typeof canViewEvents === 'boolean' && typeof canManualCheckIn === 'boolean'
+);
+const noStaffPerms = role === UserRole.STAFF && canViewEvents === false && canManualCheckIn === false;
+const menuItems = (
+  !isAuthenticated || !role || !staffPermsLoaded
+    ? []
+    : role === UserRole.STAFF && canViewEvents === false && canManualCheckIn === false
       ? [
-          { label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-5 h-5" /> },
           { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
-          { label: 'Check-In', path: '/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> },
+        ]
+      : role === UserRole.STAFF
+      ? [
+          ...(canViewEvents !== false ? [{ label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-5 h-5" /> }] : []),
+          { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
+          ...(canManualCheckIn !== false ? [{ label: 'Check-In', path: '/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> }] : []),
         ]
       : [
           { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-5 h-5" /> },
@@ -102,7 +156,8 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           { label: 'Check-In', path: '/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> },
           { label: 'Settings', path: '/settings', icon: <ICONS.Settings className="w-5 h-5" /> },
         ]
-  );
+);
+
 
   const handleLogout = async () => {
     try {
@@ -169,16 +224,44 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           ))}
         </nav>
         <div className="p-6 mt-auto">
-          <div className="bg-[#F2F2F2] rounded-2xl p-4 flex items-center gap-3 border border-[#3768A2]/20">
-            <div className={`w-10 h-10 rounded-xl ${isStaff ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#003E86]/15 text-[#003E86]'} flex items-center justify-center font-black text-xs`}>
-              {isStaff ? 'ST' : 'AD'}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-xs font-black text-[#2E2E2F] truncate">{isStaff ? 'Staff Operative' : 'System Admin'}</p>
-              <p className="text-[9px] text-[#2E2E2F]/60 font-bold uppercase tracking-widest truncate">StartupLab Global</p>
-            </div>
-          </div>
-        </div>
+  <div className="bg-[#F2F2F2] rounded-2xl p-4 flex items-center gap-3 border border-[#3768A2]/20 cursor-pointer relative group" onClick={() => setUserMenuOpen((v) => !v)}>
+    <div className={`w-10 h-10 rounded-xl ${isStaff ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#003E86]/15 text-[#003E86]'} flex items-center justify-center font-black text-xs`}>
+      {isStaff ? 'ST' : 'AD'}
+    </div>
+    <div className="flex-1 overflow-hidden">
+      <p className="text-xs font-black text-[#2E2E2F] truncate">{isStaff ? 'Staff Operative' : 'System Admin'}</p>
+      <p className="text-[9px] text-[#2E2E2F]/60 font-bold uppercase tracking-widest truncate">StartupLab Global</p>
+    </div>
+    <svg className="w-4 h-4 text-[#003E86]/50 ml-2" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+    {userMenuOpen && (
+      <div
+        className="absolute left-0 bottom-16 w-56 bg-[#F2F2F2] border border-[#3768A2]/20 rounded-xl shadow-none z-50 p-2 flex flex-col gap-1"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#38BDF2]/10 font-bold text-[#003E86]"
+          onClick={(event) => {
+            event.stopPropagation();
+            setEditNameModal(true);
+            setUserMenuOpen(false);
+          }}
+        >
+          Edit Name
+        </button>
+        <button
+          className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#2E2E2F]/10 font-bold text-[#2E2E2F]"
+          onClick={(event) => {
+            event.stopPropagation();
+            setUserMenuOpen(false);
+            handleLogout();
+          }}
+        >
+          Logout
+        </button>
+      </div>
+    )}
+  </div>
+</div>
       </aside>
 
       <main
@@ -186,48 +269,33 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           desktopSidebarOpen ? 'lg:pl-72' : 'lg:pl-0'
         }`}
       >
-        <header className="h-22 bg-[#F2F2F2] border-b border-[#3768A2]/20 px-4 sm:px-8 flex items-center justify-between lg:justify-between sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-            {/* Desktop sidebar hamburger (now left) */}
-            <button
-              className="hidden lg:inline-flex p-2 rounded-lg bg-[#F2F2F2] text-[#003E86] focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/40"
-              onClick={() => setDesktopSidebarOpen((prev) => !prev)}
-              aria-label={desktopSidebarOpen ? 'Collapse navigation' : 'Expand navigation'}
-              aria-pressed={desktopSidebarOpen}
-            >
-              <img
-  src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/01_Logos-20260203T092531Z-3-001/01_Logos/image%20(1).svg"
-  alt="Open sidebar"
-  className="h-20 w-auto max-h-32 object-contain"
-/>
-            </button>
-            {/* Mobile hamburger */}
-            <button
-              className="p-2 rounded-lg bg-[#F2F2F2] text-[#003E86] focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/40 lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open navigation"
-            >
-              <img
-  src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/01_Logos-20260203T092531Z-3-001/01_Logos/StartupLab_16_9_WithIcon_Dark.svg"
-  alt="Open sidebar"
-  className="h-23 w-auto max-h-32 object-contain"
-/>
-            </button>
-
-          </div>
-          <div className="flex items-center gap-6">
-             <div className="hidden md:flex flex-col items-end">
-               <span className="text-[8px] font-black text-[#2E2E2F]/60 uppercase tracking-widest">System Status</span>
-               <span className="text-[9px] font-bold text-[#003E86] flex items-center gap-1.5">
-                 <span className="w-1 h-1 bg-[#003E86] rounded-full"></span>
-                 Encrypted & Live
-               </span>
-             </div>
-             <button onClick={handleLogout} className="text-[9px] font-black uppercase tracking-widest text-[#003E86]/70 hover:text-[#003E86] transition-colors border border-[#3768A2]/30 px-3 py-1.5 rounded-lg">
-               Logout
-             </button>
-          </div>
-        </header>
+        <header className="h-20 bg-[#F2F2F2] border-b border-[#3768A2]/20 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 w-full">
+  <button
+    className="focus:outline-none bg-transparent border-none p-0 flex items-center"
+    onClick={() => {
+      setDesktopSidebarOpen((prev) => !prev);
+      setSidebarOpen((prev) => !prev);
+    }}
+    aria-label={desktopSidebarOpen || sidebarOpen ? 'Collapse navigation' : 'Expand navigation'}
+    aria-pressed={desktopSidebarOpen || sidebarOpen}
+    style={{ background: 'none' }}
+  >
+    <img
+      src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/01_Logos-20260203T092531Z-3-001/01_Logos/StartupLab_16_9_WithIcon_Dark.svg"
+      alt="StartupLab Business Center Logo"
+      className="h-16 sm:h-24 w-auto max-w-[160px]"
+    />
+  </button>
+  <div className="flex items-center gap-6 min-w-0">
+    <div className="hidden md:flex flex-col items-end">
+      <span className="text-[8px] font-black text-[#2E2E2F]/60 uppercase tracking-widest">System Status</span>
+      <span className="text-[9px] font-bold text-[#003E86] flex items-center gap-1.5">
+        <span className="w-1 h-1 bg-[#003E86] rounded-full"></span>
+        Encrypted & Live
+      </span>
+    </div>
+  </div>
+</header>
         {/* Sidebar overlay for mobile */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 flex lg:hidden">
@@ -261,7 +329,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                 ))}
               </nav>
               <div className="p-6 mt-auto">
-                <div className="bg-[#F2F2F2] rounded-2xl p-4 flex items-center gap-3 border border-[#3768A2]/20">
+                <div className="bg-[#F2F2F2] rounded-2xl p-4 flex items-center gap-3 border border-[#3768A2]/20 cursor-pointer relative group" onClick={() => setUserMenuOpen((v) => !v)}>
                   <div className={`w-10 h-10 rounded-xl ${isStaff ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#003E86]/15 text-[#003E86]'} flex items-center justify-center font-black text-xs`}>
                     {isStaff ? 'ST' : 'AD'}
                   </div>
@@ -269,6 +337,13 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                     <p className="text-xs font-black text-[#2E2E2F] truncate">{isStaff ? 'Staff Operative' : 'System Admin'}</p>
                     <p className="text-[9px] text-[#2E2E2F]/60 font-bold uppercase tracking-widest truncate">StartupLab Global</p>
                   </div>
+                  <svg className="w-4 h-4 text-[#003E86]/50 ml-2" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                  {userMenuOpen && (
+                    <div className="absolute left-0 bottom-16 w-56 bg-[#F2F2F2] border border-[#3768A2]/20 rounded-xl shadow-none z-50 p-2 flex flex-col gap-1">
+                      <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#38BDF2]/10 font-bold text-[#003E86]" onClick={() => { setEditNameModal(true); setUserMenuOpen(false); }}>Edit Name</button>
+                      <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#2E2E2F]/10 font-bold text-[#2E2E2F]" onClick={() => { setUserMenuOpen(false); handleLogout(); }}>Logout</button>
+                    </div>
+                  )}
                 </div>
               </div>
             </aside>
@@ -277,9 +352,39 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
         <div className="flex-1 p-6 lg:p-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
-            {children}
+            {(noStaffPerms && location.pathname !== '/attendees') ? (
+              <div className="flex flex-col items-center justify-center min-h-[40vh]">
+                <div className="text-2xl font-black text-[#003E86] mb-4">No Access</div>
+                <div className="text-[#2E2E2F]/70 text-lg font-medium text-center">You do not have access to any features. Please contact your administrator.</div>
+              </div>
+            ) : (
+              children
+            )}
           </div>
         </div>
+        <Modal
+          isOpen={editNameModal}
+          onClose={() => setEditNameModal(false)}
+          title="Edit Name"
+          subtitle="Update your profile"
+          size="sm"
+        >
+          <div className="space-y-4">
+            <Input
+              label="Your Name"
+              value={nameInput}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNameInput(e.target.value)}
+            />
+            {nameError && <p className="text-xs text-[#003E86] font-bold">{nameError}</p>}
+            {nameSuccess && <p className="text-xs text-[#003E86] font-bold">{nameSuccess}</p>}
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditNameModal(false)}>Cancel</Button>
+              <Button className="flex-1" onClick={handleSaveName} disabled={nameLoading || !nameInput.trim()}>
+                {nameLoading ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </main>
     </div>
   );
@@ -295,9 +400,6 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         <nav className="flex items-center gap-10">
           <Link to="/" className="text-[11px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/70 hover:text-[#003E86] transition-colors hidden sm:block">
             EVENTS
-          </Link>
-          <Link to="/login" className="bg-[#003E86] text-[#F2F2F2] px-9 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] hover:bg-[#3768A2] transition-colors">
-            PORTAL LOGIN
           </Link>
         </nav>
       </div>

@@ -22,6 +22,29 @@ interface TeamMember {
 }
 
 export const SettingsView: React.FC = () => {
+  const [userName, setUserName] = useState('');
+  React.useEffect(() => {
+    // Assume user info is available from context or fetch whoAmI
+    const fetchName = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/whoAmI`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setUserName(data.name || '');
+        }
+      } catch {}
+    };
+    fetchName();
+  }, []);
+  const handleSaveName = async () => {
+    try {
+      await apiService.updateUserName(userName);
+      setNotification({ message: 'Name updated successfully.', type: 'success' });
+    } catch (err: any) {
+      setNotification({ message: err.message || 'Failed to update name.', type: 'error' });
+    }
+  };
+
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [activeTab, setActiveTab] = useState<'team' | 'permission' | 'payment' | 'workflow'>('team');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);

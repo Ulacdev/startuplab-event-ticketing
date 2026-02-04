@@ -18,7 +18,7 @@ export const RegistrationsList: React.FC = () => {
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [selectedReg, setSelectedReg] = useState<RegistrationView | null>(null);
   const [searchParams] = useSearchParams();
-  const { role } = useUser();
+  const { role, canManualCheckIn } = useUser();
   const isStaff = role === UserRole.STAFF;
   const eventId = searchParams.get('eventId');
   const itemsPerPage = 10;
@@ -145,7 +145,7 @@ export const RegistrationsList: React.FC = () => {
         <div>
           <h1 className="text-3xl font-black text-[#003E86] tracking-tighter">Attendee Directory</h1>
           <p className="text-[#2E2E2F]/70 font-medium text-sm mt-1">
-            {isStaff ? 'Operations: Verifying registrations and managing check-ins.' : 'Full visibility of confirmed registrations and financial transactions.'}
+            Full visibility of confirmed registrations and financial transactions.
           </p>
         </div>
         <div className="w-full md:w-80">
@@ -219,14 +219,16 @@ export const RegistrationsList: React.FC = () => {
                     <td className="px-8 py-6 text-right">
                       {!isCheckedIn ? (
                           <button 
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleCheckIn(reg);
-                            }}
-                            className="text-[11px] font-black text-[#003E86] uppercase tracking-[0.15em] hover:text-[#2E2E2F] transition-colors"
-                          >
-                            MANUAL CHECK-IN
-                          </button>
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleCheckIn(reg);
+                              }}
+                              className="text-[11px] font-black text-[#003E86] uppercase tracking-[0.15em] hover:text-[#2E2E2F] transition-colors"
+                              disabled={isStaff && !canManualCheckIn}
+                              style={isStaff && !canManualCheckIn ? { opacity: 0.5, pointerEvents: 'none' } : {}}
+                            >
+                              MANUAL CHECK-IN
+                            </button>
                       ) : (
                         <span className="text-[12px] font-bold text-[#2E2E2F]/40 italic tracking-tight">Arrived</span>
                       )}

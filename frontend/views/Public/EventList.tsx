@@ -72,7 +72,7 @@ const EventCard: React.FC<{ event: Event }> = ({ event }) => {
         {event.summaryLine || 'Explore our latest projects, network with StartupLab founders and learn about future initiatives.'}
       </div>
       <div className="flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-widest mb-3">
-        <span className="text-[#003E86]">{event.registrationCount ?? 0} registered / {event.capacityTotal} slots</span>
+        <span className="text-[#003E86]">{event.registrationCount ?? 0} registered / {(event.ticketTypes || []).reduce((sum, t) => sum + (t.quantityTotal || 0), 0)} slots</span>
         <span className="text-[#2E2E2F]/60">•</span>
         <span>{event.location}</span>
         <span className="text-[#2E2E2F]/60">•</span>

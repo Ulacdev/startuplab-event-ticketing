@@ -8,6 +8,39 @@ export const getUser = async (req, res) => {
     }
 }
 
+export const updateUserName = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const { name } = req.body;
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+            return res.status(400).json({ error: 'Name is required' });
+        }
+        // Try userId column first
+        let { data, error } = await db
+            .from('users')
+            .update({ name })
+            .eq('userId', userId)
+            .select('userId, name, email, role, imageUrl')
+            .maybeSingle();
+        // Fallback to id
+        if ((!data && !error) || (error && error.message?.includes('column "userId"'))) {
+            const resp = await db
+                .from('users')
+                .update({ name })
+                .eq('id', userId)
+                .select('id, name, email, role, imageUrl')
+                .maybeSingle();
+            data = resp.data; error = resp.error;
+        }
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data) return res.status(404).json({ error: 'User not found' });
+        return res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
 export const getRole = async (req, res) => {
     try {
         // TEMP: fetch the first user's role
