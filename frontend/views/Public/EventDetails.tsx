@@ -38,6 +38,7 @@ const formatRange = (startAt?: string, endAt?: string, timezone?: string) => {
 };
 
 export const EventDetails: React.FC = () => {
+  const [showFullDesc, setShowFullDesc] = useState(false);
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
@@ -48,6 +49,7 @@ export const EventDetails: React.FC = () => {
   useEffect(() => {
     if (slug) {
       apiService.getEventBySlug(slug).then(data => {
+        console.log('Fetched event data:', data);
         setEvent(data);
         if (data && data.ticketTypes.length > 0) {
           const initialQuantities: Record<string, number> = {};
@@ -101,7 +103,7 @@ export const EventDetails: React.FC = () => {
       <div className="mb-8">
         <button 
           onClick={() => navigate('/')} 
-          className="text-[#003E86] hover:text-[#2E2E2F] text-[11px] font-black tracking-widest uppercase flex items-center mb-10 gap-2 transition-colors"
+          className="text-[#2E2E2F] hover:text-[#38BDF2] text-[11px] font-black tracking-widest uppercase flex items-center mb-10 gap-2 transition-colors"
         >
           <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"/></svg>
           BACK TO EXPLORATIONS
@@ -110,7 +112,7 @@ export const EventDetails: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-16 items-start">
           <div className="flex-1 space-y-10">
             {/* Visual Header */}
-            <div className="overflow-hidden rounded-[2.5rem] border border-[#3768A2]/20">
+            <div className="overflow-hidden rounded-[2.5rem] border border-[#2E2E2F]/10">
               <img 
                 src={getImageUrl(event.imageUrl)}
                 alt={event.eventName} 
@@ -120,43 +122,43 @@ export const EventDetails: React.FC = () => {
 
             {/* Event Profile */}
             <div>
-              <h1 className="text-4xl lg:text-5xl font-black text-[#003E86] tracking-tighter mb-5 leading-tight">
+              <h1 className="text-4xl lg:text-5xl font-black text-[#2E2E2F] tracking-tighter mb-5 leading-tight">
                 {event.eventName}
               </h1>
               <div className="flex flex-wrap gap-4 mb-12">
-                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-4 py-2 rounded-2xl border border-[#3768A2]/20 text-[12px] font-black">
-                  <ICONS.Calendar className="w-4 h-4 mr-3 text-[#003E86]" />
-                  {formatRange(event.startAt, event.endAt, event.timezone)}
+                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-4 py-2 rounded-2xl border border-[#2E2E2F]/10 text-[12px]">
+                  <ICONS.Calendar className="w-4 h-4 mr-3 text-[#38BDF2]" />
+                  {formatRange(event.startAt, event.endAt, event.timezone)}{event.timezone ? ` TZ: ${event.timezone}` : ''}
                 </div>
-                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-4 py-2 rounded-2xl border border-[#3768A2]/20 text-[12px] font-black">
+                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-4 py-2 rounded-2xl border border-[#2E2E2F]/10 text-[12px]">
                   <ICONS.MapPin className="w-4 h-4 mr-3 text-[#38BDF2]" />
                   {event.locationText}
                 </div>
-                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#3768A2]/20 text-[11px] font-black">
+                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#2E2E2F]/10 text-[11px]">
                   {event.locationType}
                 </div>
-                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#3768A2]/20 text-[11px] font-black">
-                  STATUS: {event.status}
-                </div>
-                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#3768A2]/20 text-[11px] font-black">
+                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#2E2E2F]/10 text-[11px]">
                   CAPACITY: {(event.ticketTypes || []).reduce((sum, t) => sum + (t.quantityTotal || 0), 0)}
                 </div>
-                {event.timezone && (
-                  <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#3768A2]/20 text-[11px] font-black">
-                    TZ: {event.timezone}
-                  </div>
-                )}
-                {regState && (
-                  <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#3768A2]/20 text-[11px] font-black">
+                                {regState && (
+                  <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#2E2E2F]/10 text-[11px] font-black">
                     {regState}
                   </div>
                 )}
               </div>
 
-              <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#3768A2]/20">
-                <h3 className="text-[10px] font-black text-[#3768A2] uppercase tracking-[0.4em] mb-6">EVENT OVERVIEW</h3>
+              <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#2E2E2F]/10">
+                <h3 className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.4em] mb-6">EVENT OVERVIEW</h3>
                 <p className="text-[#2E2E2F]/70 leading-relaxed text-base font-medium whitespace-pre-wrap">
-                  {event.description}
+                  {showFullDesc ? event.description : (event.description.length > 120 ? `${event.description.slice(0, 120)}...` : event.description)}
+                  {event.description.length > 120 && (
+                    <button
+                      className="ml-2 text-[#2E2E2F] underline text-sm font-bold hover:text-[#38BDF2]"
+                      onClick={(e) => { e.preventDefault(); setShowFullDesc(v => !v); }}
+                    >
+                      {showFullDesc ? 'Show less' : 'Read more'}
+                    </button>
+                  )}
                 </p>
               </div>
             </div>
@@ -164,8 +166,8 @@ export const EventDetails: React.FC = () => {
 
           {/* Secure Access Sidebar */}
           <div className="w-full lg:w-[380px] shrink-0">
-            <Card className="p-8 sticky top-10 rounded-[2.5rem] bg-[#F2F2F2] border border-[#3768A2]/20">
-              <h2 className="text-xl font-black text-[#003E86] mb-8 tracking-tight">
+            <Card className="p-8 sticky top-10 rounded-[2.5rem] bg-[#F2F2F2] border border-[#2E2E2F]/10">
+              <h2 className="text-xl font-black text-[#2E2E2F] mb-8 tracking-tight">
                 Secure Access
               </h2>
               
@@ -179,37 +181,37 @@ export const EventDetails: React.FC = () => {
                     <div 
                       key={ticket.ticketTypeId}
                       className={`p-6 rounded-[1.75rem] border-2 transition-colors ${
-                        qty > 0 ? 'border-[#003E86] bg-[#F2F2F2]' : 'border-[#3768A2]/20 bg-[#F2F2F2] hover:border-[#003E86]/40'
+                        qty > 0 ? 'border-[#38BDF2] bg-[#F2F2F2]' : 'border-[#2E2E2F]/10 bg-[#F2F2F2] hover:border-[#38BDF2]/40'
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className="font-black text-[#003E86] text-[13px] uppercase tracking-wider">{ticket.name}</span>
-                        <span className={`text-[#F2F2F2] text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${isSoldOut ? 'bg-[#2E2E2F]' : 'bg-[#003E86]'}`}>
+                        <span className="text-[#2E2E2F] text-[13px] uppercase tracking-wider">{ticket.name}</span>
+                        <span className={`text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${isSoldOut ? 'bg-[#2E2E2F] text-[#F2F2F2]' : 'bg-[#38BDF2] text-[#2E2E2F]'}`}>
                           {isSoldOut ? 'SOLD OUT' : 'AVAILABLE'}
                         </span>
                       </div>
-                      <div className="text-xl font-black text-[#003E86] mb-6 tracking-tighter">
-                        {ticket.priceAmount === 0 ? 'FREE' : `PHP ${ticket.priceAmount.toLocaleString()}.00`}
+                      <div className="text-xl font-black text-[#2E2E2F] mb-6 tracking-tighter">
+                        {ticket.priceAmount === 0 ? 'FREE' : <><span className="">PHP</span> <span className="font-black">{ticket.priceAmount.toLocaleString()}.00</span></>}
                       </div>
                       
-                      <div className="pt-6 border-t border-[#3768A2]/20 flex items-center justify-between">
+                      <div className="pt-6 border-t border-[#2E2E2F]/10 flex items-center justify-between">
                         <span className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em]">QUANTITY</span>
                         <div className="flex items-center gap-5">
                           <button 
                             onClick={() => updateQuantity(ticket.ticketTypeId, -1, available)}
                             disabled={qty === 0}
-                            className={`w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${
-                              qty > 0 ? 'hover:bg-[#38BDF2]/10 text-[#003E86] border border-[#3768A2]/30' : 'text-[#2E2E2F]/30 cursor-not-allowed'
+                            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors ${
+                              qty > 0 ? 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]' : 'bg-[#F2F2F2] text-[#2E2E2F]/40 cursor-not-allowed border border-[#2E2E2F]/10'
                             }`}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M20 12H4"/></svg>
                           </button>
-                          <span className="font-black text-lg text-[#003E86] w-4 text-center">{qty}</span>
+                          <span className="font-black text-lg text-[#2E2E2F] w-4 text-center">{qty}</span>
                           <button 
                             onClick={() => updateQuantity(ticket.ticketTypeId, 1, available)}
                             disabled={isSoldOut || qty >= available}
-                            className={`w-9 h-9 flex items-center justify-center rounded-xl text-[#F2F2F2] transition-colors ${
-                              isSoldOut || qty >= available ? 'bg-[#F2F2F2] text-[#2E2E2F]/40 cursor-not-allowed border border-[#3768A2]/20' : 'bg-[#003E86] hover:bg-[#3768A2]'
+                            className={`w-8 h-8 flex items-center justify-center rounded-xl text-[#F2F2F2] transition-colors ${
+                              isSoldOut || qty >= available ? 'bg-[#F2F2F2] text-[#2E2E2F]/40 cursor-not-allowed border border-[#2E2E2F]/10' : 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]'
                             }`}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M12 4v16m8-8H4"/></svg>
@@ -223,8 +225,7 @@ export const EventDetails: React.FC = () => {
 
               <div className="space-y-6">
                 <Button 
-                  size="lg"
-                  className="w-full py-4 rounded-[1.25rem]" 
+                  className="w-full" 
                   disabled={totalQuantity === 0}
                   onClick={handleRegister}
                 >

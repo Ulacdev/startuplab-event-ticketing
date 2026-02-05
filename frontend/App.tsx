@@ -192,7 +192,7 @@ const menuItems = (
     <div className="min-h-screen flex bg-[#F2F2F2]">
       {/* Sidebar for desktop */}
       <aside
-        className={`w-72 bg-[#F2F2F2] border-r border-[#3768A2]/20 hidden lg:flex flex-col fixed inset-y-0 left-0 z-30 overflow-y-auto transform transition-transform duration-300 ease-in-out ${
+        className={`w-72 bg-[#F2F2F2] border-r border-[#2E2E2F]/10 hidden lg:flex flex-col fixed inset-y-0 left-0 z-30 overflow-y-auto transform transition-transform duration-300 ease-in-out ${
           desktopSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -201,7 +201,7 @@ const menuItems = (
       </div>
       <div className="px-8">
         <div className="mt-2 flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${isStaff ? 'bg-[#38BDF2]' : 'bg-[#003E86]'}`}></span>
+          <span className={`w-2 h-2 rounded-full ${isStaff ? 'bg-[#38BDF2]' : 'bg-[#2E2E2F]'}`}></span>
           <p className="text-[9px] uppercase font-black text-[#2E2E2F]/60 tracking-[0.2em]">
             {isStaff ? 'Operations Hub' : 'Enterprise Admin'}
           </p>
@@ -214,8 +214,8 @@ const menuItems = (
               to={item.path}
               className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-colors group ${
                 location.pathname === item.path
-                  ? (isStaff ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#003E86] text-[#F2F2F2]')
-                  : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#003E86]'
+                  ? 'bg-[#38BDF2] text-[#F2F2F2]'
+                  : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
               }`}
             >
               {item.icon}
@@ -224,22 +224,22 @@ const menuItems = (
           ))}
         </nav>
         <div className="p-6 mt-auto">
-  <div className="bg-[#F2F2F2] rounded-2xl p-4 flex items-center gap-3 border border-[#3768A2]/20 cursor-pointer relative group" onClick={() => setUserMenuOpen((v) => !v)}>
-    <div className={`w-10 h-10 rounded-xl ${isStaff ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#003E86]/15 text-[#003E86]'} flex items-center justify-center font-black text-xs`}>
+  <div className="bg-[#F2F2F2] rounded-2xl p-4 flex items-center gap-3 border border-[#2E2E2F]/10 cursor-pointer relative group" onClick={() => setUserMenuOpen((v) => !v)}>
+    <div className={`w-10 h-10 rounded-xl bg-[#38BDF2]/20 text-[#2E2E2F] flex items-center justify-center font-black text-xs`}>
       {isStaff ? 'ST' : 'AD'}
     </div>
     <div className="flex-1 overflow-hidden">
       <p className="text-xs font-black text-[#2E2E2F] truncate">{isStaff ? 'Staff Operative' : 'System Admin'}</p>
       <p className="text-[9px] text-[#2E2E2F]/60 font-bold uppercase tracking-widest truncate">StartupLab Global</p>
     </div>
-    <svg className="w-4 h-4 text-[#003E86]/50 ml-2" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+    <svg className="w-4 h-4 text-[#2E2E2F]/50 ml-2" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
     {userMenuOpen && (
       <div
-        className="absolute left-0 bottom-16 w-56 bg-[#F2F2F2] border border-[#3768A2]/20 rounded-xl shadow-none z-50 p-2 flex flex-col gap-1"
+        className="absolute left-0 bottom-16 w-56 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-xl shadow-none z-50 p-2 flex flex-col gap-1"
         onClick={(event) => event.stopPropagation()}
       >
         <button
-          className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#38BDF2]/10 font-bold text-[#003E86]"
+          className="w-full min-h-[32px] px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]"
           onClick={(event) => {
             event.stopPropagation();
             setEditNameModal(true);
@@ -249,7 +249,7 @@ const menuItems = (
           Edit Name
         </button>
         <button
-          className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#2E2E2F]/10 font-bold text-[#2E2E2F]"
+          className="w-full min-h-[32px] px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]"
           onClick={(event) => {
             event.stopPropagation();
             setUserMenuOpen(false);
@@ -269,7 +269,7 @@ const menuItems = (
           desktopSidebarOpen ? 'lg:pl-72' : 'lg:pl-0'
         }`}
       >
-        <header className="h-20 bg-[#F2F2F2] border-b border-[#3768A2]/20 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 w-full">
+        <header className="h-20 bg-[#F2F2F2] border-b border-[#2E2E2F]/10 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 w-full">
   <button
     className="focus:outline-none bg-transparent border-none p-0 flex items-center"
     onClick={() => {
@@ -289,8 +289,8 @@ const menuItems = (
   <div className="flex items-center gap-6 min-w-0">
     <div className="hidden md:flex flex-col items-end">
       <span className="text-[8px] font-black text-[#2E2E2F]/60 uppercase tracking-widest">System Status</span>
-      <span className="text-[9px] font-bold text-[#003E86] flex items-center gap-1.5">
-        <span className="w-1 h-1 bg-[#003E86] rounded-full"></span>
+      <span className="text-[9px] font-bold text-[#2E2E2F] flex items-center gap-1.5">
+        <span className="w-1 h-1 bg-[#38BDF2] rounded-full"></span>
         Encrypted & Live
       </span>
     </div>
@@ -300,11 +300,11 @@ const menuItems = (
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 flex lg:hidden">
             <div className="fixed inset-0 bg-[#2E2E2F]/70" onClick={() => setSidebarOpen(false)} />
-            <aside className="relative w-64 bg-[#F2F2F2] border-r border-[#3768A2]/20 flex flex-col h-full z-50">
+            <aside className="relative w-64 bg-[#F2F2F2] border-r border-[#2E2E2F]/10 flex flex-col h-full z-50">
               <div className="p-8 flex items-center justify-between">
                 <Branding className="text-base" />
                 <button
-                  className="p-2 rounded-full text-[#003E86]/60 hover:text-[#003E86] hover:bg-[#38BDF2]/10 transition-colors"
+                  className="min-h-[32px] min-w-[32px] px-2 py-2 rounded-xl bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] transition-colors"
                   onClick={() => setSidebarOpen(false)}
                   aria-label="Close navigation"
                 >
@@ -318,8 +318,8 @@ const menuItems = (
                     to={item.path}
                     className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-colors group ${
                       location.pathname === item.path
-                        ? (isStaff ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#003E86] text-[#F2F2F2]')
-                        : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#003E86]'
+                        ? 'bg-[#38BDF2] text-[#F2F2F2]'
+                        : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
                     }`}
                     onClick={() => setSidebarOpen(false)}
                   >
@@ -329,19 +329,19 @@ const menuItems = (
                 ))}
               </nav>
               <div className="p-6 mt-auto">
-                <div className="bg-[#F2F2F2] rounded-2xl p-4 flex items-center gap-3 border border-[#3768A2]/20 cursor-pointer relative group" onClick={() => setUserMenuOpen((v) => !v)}>
-                  <div className={`w-10 h-10 rounded-xl ${isStaff ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#003E86]/15 text-[#003E86]'} flex items-center justify-center font-black text-xs`}>
+                <div className="bg-[#F2F2F2] rounded-2xl p-4 flex items-center gap-3 border border-[#2E2E2F]/10 cursor-pointer relative group" onClick={() => setUserMenuOpen((v) => !v)}>
+                  <div className={`w-10 h-10 rounded-xl bg-[#38BDF2]/20 text-[#2E2E2F] flex items-center justify-center font-black text-xs`}>
                     {isStaff ? 'ST' : 'AD'}
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <p className="text-xs font-black text-[#2E2E2F] truncate">{isStaff ? 'Staff Operative' : 'System Admin'}</p>
                     <p className="text-[9px] text-[#2E2E2F]/60 font-bold uppercase tracking-widest truncate">StartupLab Global</p>
                   </div>
-                  <svg className="w-4 h-4 text-[#003E86]/50 ml-2" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                  <svg className="w-4 h-4 text-[#2E2E2F]/50 ml-2" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                   {userMenuOpen && (
-                    <div className="absolute left-0 bottom-16 w-56 bg-[#F2F2F2] border border-[#3768A2]/20 rounded-xl shadow-none z-50 p-2 flex flex-col gap-1">
-                      <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#38BDF2]/10 font-bold text-[#003E86]" onClick={() => { setEditNameModal(true); setUserMenuOpen(false); }}>Edit Name</button>
-                      <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#2E2E2F]/10 font-bold text-[#2E2E2F]" onClick={() => { setUserMenuOpen(false); handleLogout(); }}>Logout</button>
+                    <div className="absolute left-0 bottom-16 w-56 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-xl shadow-none z-50 p-2 flex flex-col gap-1">
+                      <button className="w-full min-h-[32px] px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]" onClick={() => { setEditNameModal(true); setUserMenuOpen(false); }}>Edit Name</button>
+                      <button className="w-full min-h-[32px] px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]" onClick={() => { setUserMenuOpen(false); handleLogout(); }}>Logout</button>
                     </div>
                   )}
                 </div>
@@ -354,7 +354,7 @@ const menuItems = (
           <div className="max-w-7xl mx-auto">
             {(noStaffPerms && location.pathname !== '/attendees') ? (
               <div className="flex flex-col items-center justify-center min-h-[40vh]">
-                <div className="text-2xl font-black text-[#003E86] mb-4">No Access</div>
+                <div className="text-2xl font-black text-[#2E2E2F] mb-4">No Access</div>
                 <div className="text-[#2E2E2F]/70 text-lg font-medium text-center">You do not have access to any features. Please contact your administrator.</div>
               </div>
             ) : (
@@ -375,8 +375,8 @@ const menuItems = (
               value={nameInput}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNameInput(e.target.value)}
             />
-            {nameError && <p className="text-xs text-[#003E86] font-bold">{nameError}</p>}
-            {nameSuccess && <p className="text-xs text-[#003E86] font-bold">{nameSuccess}</p>}
+            {nameError && <p className="text-xs text-[#2E2E2F] font-bold">{nameError}</p>}
+            {nameSuccess && <p className="text-xs text-[#2E2E2F] font-bold">{nameSuccess}</p>}
             <div className="flex gap-3 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setEditNameModal(false)}>Cancel</Button>
               <Button className="flex-1" onClick={handleSaveName} disabled={nameLoading || !nameInput.trim()}>
@@ -392,20 +392,20 @@ const menuItems = (
 
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="min-h-screen flex flex-col bg-[#F2F2F2]">
-    <header className="h-20 bg-[#F2F2F2] border-b border-[#3768A2]/20 px-8 sticky top-0 z-50">
+    <header className="h-20 bg-[#F2F2F2] border-b border-[#2E2E2F]/10 px-8 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto h-full flex items-center justify-between">
         <Link to="/">
           <Branding className="text-xl lg:text-2xl" />
         </Link>
         <nav className="flex items-center gap-10">
-          <Link to="/" className="text-[11px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/70 hover:text-[#003E86] transition-colors hidden sm:block">
+          <Link to="/" className="text-[11px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/70 hover:text-[#38BDF2] transition-colors hidden sm:block">
             EVENTS
           </Link>
         </nav>
       </div>
     </header>
     <main className="flex-1">{children}</main>
-    <footer className="bg-[#F2F2F2] text-[#2E2E2F]/70 py-16 px-8 border-t border-[#3768A2]/20">
+    <footer className="bg-[#F2F2F2] text-[#2E2E2F]/70 py-16 px-8 border-t border-[#2E2E2F]/10">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
           <div>
@@ -418,17 +418,17 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           <div className="grid grid-cols-2 gap-8 lg:text-right uppercase tracking-[0.2em] font-black text-[9px]">
             <div className="space-y-4">
               <p className="text-[#2E2E2F]/50 mb-4">Platform</p>
-              <Link to="/" className="block text-[#2E2E2F]/70 hover:text-[#003E86]">Events List</Link>
-              <Link to="/login" className="block text-[#2E2E2F]/70 hover:text-[#003E86]">Admin Login</Link>
+              <Link to="/" className="block text-[#2E2E2F]/70 hover:text-[#38BDF2]">Events List</Link>
+              <Link to="/login" className="block text-[#2E2E2F]/70 hover:text-[#38BDF2]">Admin Login</Link>
             </div>
             <div className="space-y-4">
               <p className="text-[#2E2E2F]/50 mb-4">Legal</p>
-              <a href="#" className="block text-[#2E2E2F]/70 hover:text-[#003E86]">Privacy</a>
-              <a href="#" className="block text-[#2E2E2F]/70 hover:text-[#003E86]">Terms</a>
+              <a href="#" className="block text-[#2E2E2F]/70 hover:text-[#38BDF2]">Privacy</a>
+              <a href="#" className="block text-[#2E2E2F]/70 hover:text-[#38BDF2]">Terms</a>
             </div>
           </div>
         </div>
-        <div className="pt-8 border-t border-[#3768A2]/20 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="pt-8 border-t border-[#2E2E2F]/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-[9px] uppercase tracking-[0.3em] font-black text-[#2E2E2F]/60">
             © 2024 StartupLab Systems International
           </div>

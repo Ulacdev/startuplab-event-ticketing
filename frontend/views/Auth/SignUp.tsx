@@ -31,13 +31,13 @@ export const SignUpView: React.FC = () => {
     <div className="min-h-screen bg-[#F2F2F2] flex items-center justify-center px-4">
       <div className="max-w-xl w-full py-12">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-black text-[#003E86] tracking-tighter mb-3">
+          <h1 className="text-4xl font-black text-[#2E2E2F] tracking-tighter mb-3">
             Join <span className="text-[#38BDF2]">StartupLab</span>
           </h1>
           <p className="text-[#2E2E2F]/70 text-lg font-medium">Create your professional portal account</p>
         </div>
 
-        <Card className="p-10 bg-[#F2F2F2] border border-[#3768A2]/20 rounded-[3rem]">
+        <Card className="p-10 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-[3rem]">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Perspective Selection */}
             <div className="space-y-3">
@@ -46,25 +46,21 @@ export const SignUpView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setRole(UserRole.ADMIN)}
-                  className={`py-4 rounded-2xl border-2 font-bold text-sm transition-colors flex flex-col items-center gap-2 ${
-                    role === UserRole.ADMIN 
-                    ? 'border-[#003E86] bg-[#38BDF2]/10 text-[#003E86]' 
-                    : 'border-[#3768A2]/20 text-[#2E2E2F]/50 hover:border-[#003E86]/40 hover:text-[#003E86]'
+                  className={`min-h-[32px] px-4 py-2 rounded-xl font-black uppercase tracking-widest text-[9px] transition-colors flex flex-col items-center gap-2 bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] ${
+                    role === UserRole.ADMIN ? 'ring-2 ring-[#2E2E2F] ring-offset-2 ring-offset-[#F2F2F2]' : 'opacity-70'
                   }`}
                 >
-                  <ICONS.Layout className="w-5 h-5" />
+                  <ICONS.Layout className="w-4 h-4" />
                   Administrator
                 </button>
                 <button
                   type="button"
                   onClick={() => setRole(UserRole.STAFF)}
-                  className={`py-4 rounded-2xl border-2 font-bold text-sm transition-colors flex flex-col items-center gap-2 ${
-                    role === UserRole.STAFF 
-                    ? 'border-[#3768A2] bg-[#3768A2]/15 text-[#003E86]' 
-                    : 'border-[#3768A2]/20 text-[#2E2E2F]/50 hover:border-[#003E86]/40 hover:text-[#003E86]'
+                  className={`min-h-[32px] px-4 py-2 rounded-xl font-black uppercase tracking-widest text-[9px] transition-colors flex flex-col items-center gap-2 bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] ${
+                    role === UserRole.STAFF ? 'ring-2 ring-[#2E2E2F] ring-offset-2 ring-offset-[#F2F2F2]' : 'opacity-70'
                   }`}
                 >
-                  <ICONS.CheckCircle className="w-5 h-5" />
+                  <ICONS.CheckCircle className="w-4 h-4" />
                   Event Staff
                 </button>
               </div>
@@ -75,7 +71,7 @@ export const SignUpView: React.FC = () => {
                 label="Full Name" 
                 placeholder="e.g. Jordan Miller" 
                 required
-                className="py-4 px-6 rounded-2xl bg-[#F2F2F2] border-[#3768A2]/30 focus:border-[#003E86]"
+                className="py-4 px-6 rounded-2xl bg-[#F2F2F2] border-[#2E2E2F]/20 focus:border-[#38BDF2]"
                 value={formData.name}
                 onChange={(e: any) => setFormData({...formData, name: e.target.value})}
               />
@@ -84,7 +80,7 @@ export const SignUpView: React.FC = () => {
                 type="email"
                 placeholder="j.miller@organization.com" 
                 required
-                className="py-4 px-6 rounded-2xl bg-[#F2F2F2] border-[#3768A2]/30 focus:border-[#003E86]"
+                className="py-4 px-6 rounded-2xl bg-[#F2F2F2] border-[#2E2E2F]/20 focus:border-[#38BDF2]"
                 value={formData.email}
                 onChange={(e: any) => setFormData({...formData, email: e.target.value})}
               />
@@ -92,7 +88,7 @@ export const SignUpView: React.FC = () => {
                 label="Organization" 
                 placeholder="Company or Entity Name" 
                 required
-                className="py-4 px-6 rounded-2xl bg-[#F2F2F2] border-[#3768A2]/30 focus:border-[#003E86]"
+                className="py-4 px-6 rounded-2xl bg-[#F2F2F2] border-[#2E2E2F]/20 focus:border-[#38BDF2]"
                 value={formData.company}
                 onChange={(e: any) => setFormData({...formData, company: e.target.value})}
               />
@@ -101,7 +97,7 @@ export const SignUpView: React.FC = () => {
                 type="password"
                 placeholder="••••••••" 
                 required
-                className="py-4 px-6 rounded-2xl bg-[#F2F2F2] border-[#3768A2]/30 focus:border-[#003E86]"
+                className="py-4 px-6 rounded-2xl bg-[#F2F2F2] border-[#2E2E2F]/20 focus:border-[#38BDF2]"
                 value={formData.password}
                 onChange={(e: any) => setFormData({...formData, password: e.target.value})}
               />
@@ -109,26 +105,24 @@ export const SignUpView: React.FC = () => {
 
             <Button 
               type="submit"
-              className={`w-full py-5 text-base font-black uppercase tracking-widest rounded-2xl transition-colors ${
-                role === UserRole.ADMIN ? 'bg-[#003E86] text-[#F2F2F2] hover:bg-[#3768A2]' : 'bg-[#3768A2] text-[#F2F2F2] hover:bg-[#003E86]'
-              }`}
+              className="w-full"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Provisioning...' : 'Initialize Account'}
             </Button>
 
             <p className="text-center text-[#2E2E2F]/60 text-xs font-medium">
-              By initializing, you agree to our <a href="#" className="text-[#003E86] font-bold hover:underline">Executive Terms</a>
+              By initializing, you agree to our <a href="#" className="text-[#2E2E2F] font-bold hover:text-[#38BDF2] hover:underline">Executive Terms</a>
             </p>
           </form>
         </Card>
 
         <div className="mt-8 text-center">
           <button 
-            className="text-[#2E2E2F]/60 hover:text-[#003E86] transition-colors text-sm font-bold flex items-center justify-center gap-2 mx-auto"
+            className="text-[#2E2E2F]/60 hover:text-[#38BDF2] transition-colors text-sm font-bold flex items-center justify-center gap-2 mx-auto"
             onClick={() => navigate('/login')}
           >
-            Already have an account? <span className="text-[#003E86] hover:underline">Login to Portal</span>
+            Already have an account? <span className="text-[#2E2E2F] hover:text-[#38BDF2] hover:underline">Login to Portal</span>
           </button>
         </div>
       </div>

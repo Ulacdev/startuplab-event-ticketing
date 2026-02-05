@@ -7,10 +7,10 @@ export const Badge: React.FC<{
   className?: string 
 }> = ({ children, type = 'neutral', className = '' }) => {
   const styles = {
-    success: 'bg-[#38BDF2]/20 text-[#003E86]',
+    success: 'bg-[#38BDF2]/20 text-[#2E2E2F]',
     danger: 'bg-[#2E2E2F]/10 text-[#2E2E2F]',
-    warning: 'bg-[#3768A2]/20 text-[#003E86]',
-    info: 'bg-[#38BDF2]/20 text-[#003E86]',
+    warning: 'bg-[#38BDF2]/20 text-[#2E2E2F]',
+    info: 'bg-[#38BDF2]/20 text-[#2E2E2F]',
     neutral: 'bg-[#F2F2F2] text-[#2E2E2F]',
   };
   return (
@@ -27,7 +27,7 @@ export const Card: React.FC<{
 }> = ({ children, className = '', onClick }) => (
   <div 
     onClick={onClick}
-    className={`bg-[#F2F2F2] rounded-xl border border-[#3768A2]/20 overflow-hidden ${className} shadow-none`}
+    className={`bg-[#F2F2F2] rounded-xl border border-[#2E2E2F]/10 overflow-hidden ${className} shadow-none`}
   >
     {children}
   </div>
@@ -50,20 +50,20 @@ export const Button: React.FC<{
   type = 'button',
   onClick 
 }) => {
-  const base = 'inline-flex items-center justify-center font-black uppercase tracking-widest rounded-[1.5rem] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  const base = 'inline-flex items-center justify-center font-black uppercase tracking-widest rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[32px]';
   
   const variants = {
-    primary: 'bg-[#003E86] text-[#F2F2F2] hover:bg-[#3768A2] active:bg-[#3768A2] focus:ring-[#38BDF2]',
-    secondary: 'bg-[#3768A2] text-[#F2F2F2] hover:bg-[#003E86] active:bg-[#003E86] focus:ring-[#38BDF2]',
-    outline: 'border-2 border-[#003E86] text-[#003E86] bg-[#F2F2F2] hover:bg-[#38BDF2]/10 active:bg-[#38BDF2]/20 focus:ring-[#38BDF2]',
-    ghost: 'text-[#003E86] hover:bg-[#38BDF2]/10 active:bg-[#38BDF2]/20 focus:ring-[#38BDF2]',
-    danger: 'bg-[#2E2E2F] text-[#F2F2F2] hover:bg-[#003E86] active:bg-[#003E86] focus:ring-[#38BDF2]'
+    primary: 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] active:bg-[#2E2E2F] focus:ring-[#38BDF2]',
+    secondary: 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] active:bg-[#2E2E2F] focus:ring-[#38BDF2]',
+    outline: 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] active:bg-[#2E2E2F] focus:ring-[#38BDF2]',
+    ghost: 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] active:bg-[#2E2E2F] focus:ring-[#38BDF2]',
+    danger: 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] active:bg-[#2E2E2F] focus:ring-[#38BDF2]'
   };
 
   const sizes = {
-    sm: 'px-4 py-2 text-[11px]',
-    md: 'px-6 py-3 text-[13px]',
-    lg: 'px-8 py-4 text-base',
+    sm: 'px-4 py-2 text-[9px]',
+    md: 'px-4 py-2 text-[9px]',
+    lg: 'px-4 py-2 text-[9px]',
   };
 
   return (
@@ -86,10 +86,10 @@ export const Input: React.FC<{
   <div className="space-y-1.5 w-full">
     {label && <label className="block text-sm font-medium text-[#2E2E2F]">{label}</label>}
     <input
-      className={`block w-full px-3 py-2 bg-[#F2F2F2] border ${error ? 'border-[#003E86]' : 'border-[#3768A2]/30'} rounded-lg focus:outline-none focus:ring-2 ${error ? 'focus:ring-[#003E86]/40' : 'focus:ring-[#38BDF2]/40'} transition-colors`}
+      className={`block w-full px-3 py-2 bg-[#F2F2F2] border ${error ? 'border-[#2E2E2F]' : 'border-[#2E2E2F]/20'} rounded-lg focus:outline-none focus:ring-2 ${error ? 'focus:ring-[#2E2E2F]/40' : 'focus:ring-[#38BDF2]/40'} transition-colors`}
       {...props}
     />
-    {error && <p className="text-xs text-[#003E86] mt-1">{error}</p>}
+    {error && <p className="text-xs text-[#2E2E2F] mt-1">{error}</p>}
   </div>
 );
 
@@ -140,17 +140,17 @@ export const Modal: React.FC<{
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`relative z-[110] bg-[#F2F2F2] rounded-3xl border border-[#3768A2]/20 w-full ${
+        className={`relative z-[110] bg-[#F2F2F2] rounded-3xl border border-[#2E2E2F]/10 w-full ${
           sizes[size]
         } max-h-[90vh] overflow-hidden ${className}`}
       >
-        <div className="px-6 py-5 border-b border-[#3768A2]/20 flex items-start justify-between gap-4 sticky top-0 bg-[#F2F2F2] z-10">
+        <div className="px-6 py-5 border-b border-[#2E2E2F]/10 flex items-start justify-between gap-4 sticky top-0 bg-[#F2F2F2] z-10">
           <div>
-            <h2 id="modal-title" className="text-lg sm:text-xl font-black text-[#003E86]">
+            <h2 id="modal-title" className="text-lg sm:text-xl font-black text-[#2E2E2F]">
               {title}
             </h2>
             {subtitle && (
-              <p className="mt-1 text-[11px] uppercase tracking-[0.2em] font-bold text-[#3768A2]">
+              <p className="mt-1 text-[11px] uppercase tracking-[0.2em] font-bold text-[#2E2E2F]/60">
                 {subtitle}
               </p>
             )}
@@ -158,7 +158,7 @@ export const Modal: React.FC<{
           {showClose && (
             <button 
               onClick={onClose}
-              className="p-2 text-[#003E86]/60 hover:text-[#003E86] hover:bg-[#38BDF2]/10 rounded-full transition-colors"
+              className="min-h-[32px] min-w-[32px] px-2 py-2 rounded-xl bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] transition-colors"
               aria-label="Close modal"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -169,7 +169,7 @@ export const Modal: React.FC<{
           {children}
         </div>
         {footer && (
-          <div className="px-6 py-5 border-t border-[#3768A2]/20 bg-[#F2F2F2]">
+          <div className="px-6 py-5 border-t border-[#2E2E2F]/10 bg-[#F2F2F2]">
             {footer}
           </div>
         )}
@@ -204,7 +204,7 @@ export const PageLoader: React.FC<{
     <div className={`flex flex-col items-center justify-center text-center ${variants[variant]} ${className}`}>
       <div className={`relative ${sizes[size]}`}>
         <div className="absolute inset-0 rounded-full border border-[#38BDF2]/35" />
-        <div className="absolute inset-0 rounded-full border-2 border-[#003E86] border-t-transparent animate-spin" />
+        <div className="absolute inset-0 rounded-full border-2 border-[#2E2E2F] border-t-transparent animate-spin" />
         <div className="absolute inset-2 rounded-full bg-[#38BDF2]/10" />
       </div>
       {label && (

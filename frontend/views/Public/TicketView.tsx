@@ -32,26 +32,26 @@ export const TicketView: React.FC = () => {
   return (
     <div className="w-full max-w-md mx-auto px-2 sm:px-4 py-6 sm:py-10">
       <div className="mb-5 sm:mb-6 text-center">
-        <h1 className="text-xl font-black text-[#003E86] mb-1">Your Digital Ticket</h1>
+        <h1 className="text-xl font-black text-[#2E2E2F] mb-1">Your Digital Ticket</h1>
         <p className="text-[#2E2E2F]/60 text-xs">Present this QR code at the event entrance for check-in.</p>
       </div>
 
       <Card className="overflow-visible relative">
-        <div className="hidden sm:block absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F2F2F2] border border-[#3768A2]/20"></div>
-        <div className="hidden sm:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F2F2F2] border border-[#3768A2]/20"></div>
+        <div className="hidden sm:block absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F2F2F2] border border-[#2E2E2F]/10"></div>
+        <div className="hidden sm:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F2F2F2] border border-[#2E2E2F]/10"></div>
 
-        <div className="p-4 sm:p-5 text-center border-b border-dashed border-[#3768A2]/20 pb-5 sm:pb-8">
+        <div className="p-4 sm:p-5 text-center border-b border-dashed border-[#2E2E2F]/10 pb-5 sm:pb-8">
           <Badge
             type="neutral"
-            className={`mb-4 ${isCheckedIn ? 'bg-[#003E86]/10 text-[#003E86]' : 'bg-[#38BDF2]/20 text-[#003E86]'}`}
+            className={`mb-4 ${isCheckedIn ? 'bg-[#38BDF2]/20 text-[#2E2E2F]' : 'bg-[#38BDF2]/20 text-[#2E2E2F]'}`}
           >
             {isCheckedIn ? 'CHECKED IN' : 'VALID TICKET'}
           </Badge>
-          <h2 className="text-base sm:text-lg font-black text-[#003E86] line-clamp-2 mb-2">{ticket.eventName}</h2>
+          <h2 className="text-base sm:text-lg font-black text-[#2E2E2F] line-clamp-2 mb-2">{ticket.eventName}</h2>
           <p className="text-[#2E2E2F]/60 text-[10px] sm:text-xs mb-4 sm:mb-5 uppercase tracking-widest font-semibold">{ticket.ticketName}</p>
           
-          <div className="bg-[#F2F2F2] p-2 sm:p-3 inline-block rounded-xl border border-[#3768A2]/20 mx-auto mb-4">
-             <div className="w-36 h-36 sm:w-44 sm:h-44 bg-[#F2F2F2] flex items-center justify-center border border-[#3768A2]/20 rounded-lg">
+          <div className="bg-[#F2F2F2] p-2 sm:p-3 inline-block rounded-xl border border-[#2E2E2F]/10 mx-auto mb-4">
+             <div className="w-36 h-36 sm:w-44 sm:h-44 bg-[#F2F2F2] flex items-center justify-center border border-[#2E2E2F]/10 rounded-lg">
                 <QRCode value={ticket.qrPayload || ticket.ticketCode} size={window.innerWidth < 640 ? 110 : 140} fgColor="#2E2E2F" bgColor="#F2F2F2" />
              </div>
              <p className="text-[10px] sm:text-xs font-mono text-[#2E2E2F]/60 mt-2 break-all">{ticket.ticketCode}</p>
@@ -61,7 +61,7 @@ export const TicketView: React.FC = () => {
         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
           <div className="flex justify-between items-center text-sm">
              <span className="text-[#2E2E2F]/60 font-medium">Attendee</span>
-             <span className="text-[#003E86] font-bold">{ticket.attendeeName}</span>
+             <span className="text-[#2E2E2F] font-bold">{ticket.attendeeName}</span>
           </div>
           <div className="flex justify-between items-center text-sm">
              <span className="text-[#2E2E2F]/60 font-medium">Email</span>
@@ -85,7 +85,7 @@ export const TicketView: React.FC = () => {
           </div>
           <div className="flex justify-between items-center text-sm">
              <span className="text-[#2E2E2F]/60 font-medium">Payment Status</span>
-             <span className={`font-bold ${ticket.paymentStatus === 'PAID' ? 'text-[#003E86]' : 'text-[#2E2E2F]/60'}`}>{paymentLabel}</span>
+             <span className={`font-bold ${ticket.paymentStatus === 'PAID' ? 'text-[#38BDF2]' : 'text-[#2E2E2F]/60'}`}>{paymentLabel}</span>
           </div>
           <div className="flex justify-between items-center text-sm">
              <span className="text-[#2E2E2F]/60 font-medium">Amount</span>
@@ -93,7 +93,7 @@ export const TicketView: React.FC = () => {
           </div>
           <div className="flex justify-between items-center text-sm">
              <span className="text-[#2E2E2F]/60 font-medium">Check-in</span>
-             <span className={`font-semibold ${isCheckedIn ? 'text-[#003E86]' : 'text-[#2E2E2F]'}`}>{checkInLabel}</span>
+             <span className={`font-semibold ${isCheckedIn ? 'text-[#38BDF2]' : 'text-[#2E2E2F]'}`}>{checkInLabel}</span>
           </div>
         </div>
       </Card>

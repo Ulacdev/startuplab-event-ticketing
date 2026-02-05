@@ -1,0 +1,217 @@
+# Transparent pricing No surprises
+
+Only pay per transaction. No setup fees and monthly fees required.
+Pricing varies in different countries.
+Please select your country for detailed pricing.
+Standard
+Custom
+Standard Pricing
+Philippines
+[Online Payments](https://hitpayapp.com/ph/pricing)
+Online Payments
+[In-Person Payments](https://hitpayapp.com/ph/pricing)
+In-Person Payments
+[Cross Border Payments](https://hitpayapp.com/ph/pricing)
+Cross Border Payments
+[Business Software](https://hitpayapp.com/ph/pricing)
+Business Software
+[Plugin Integrations](https://hitpayapp.com/ph/pricing)
+Plugin Integrations
+Pricing calculator
+Online Payments
+Cards
+3% + ₱15
+Same rates apply for USD transactions = 3.4%+US$0.3
+International cards
+4% + ₱15
+2.3%
+View list of participating sender banks [here.](https://www.bsp.gov.ph/PaymentAndSettlement/QR%20Ph%20P2M%20Participants.pdf)
+1% or ₱20
+Whichever is higher FX rate of 1% applicable for converting PHP to SGD
+1% or ₱20
+Whichever is higher
+InstaPay
+1.5% or ₱35
+Whichever is higher
+PESONet
+1.5% or ₱35
+Whichever is higher
+Over the counter payments
+1.5% or ₱30
+Whichever is higher
+1.5%
+2.2%
+2.5%
+2.5%
+In-person Payments
+Domestic cards
+3%
+International cards
+4%
+1% or ₱20
+Whichever is higher
+2%
+Cross Border Payments — Online
+Singapore (SGD)
+0.9%
+(min fee S$0.20)
+for transaction values below S$100
+0.65% + S$0.30
+for transaction values of S$100 and above
+Singapore (SGD)
+2%
+Indonesia (IDR)
+2%
+China (SGD)
+1.5%
+Thailand (THB)
+2.5%
+Korea (KRW)
+3.5%
+Cross Border Payments — In-Person
+Start using [HitPay Borderless QR](https://hitpayapp.com/ph/hitpay-borderless-qr-payments) and enjoy 0.5% lower fees than cards!
+Singapore (SGD)
+1.5%
+for transaction values below S$100
+India (SGD)
+1.5%
+Indonesia (IDR)
+1.5%
+Thailand (THB)
+1.5%
+HitPay Business Software
+Point of Sale
+0.2%
+Online Store
+0.2%
+Payment Links
+0.2%
+Recurring Billing
+0.2%
+Invoicing
+0.2%
+Plugin Integrations
+Shopify Payments App
+0.5%
+Wix Payments App
+0.2%
+Xero
+0.2%
+Prestashop
+0.2%
+Magento
+0.2%
+Ecwid
+0.2%
+Opencart
+0.2%
+Woocommerce Plugin
+0.2%
+Google Forms
+0.2%
+WHCMS
+0.2%
+Odoo
+0.2%
+Give WP
+0.2%
+Cal.com
+0.2%
+Custom Pricing
+Our threshold for custom pricing by market is listed here. Merchants are required to complete the form to request a custom pricing
+[Submit for Custom Pricing→](https://forms.gle/e5y2U5Xqnf5TGMAb9)
+Submit for Custom Pricing
+→
+Singapore
+Average monthly volume last 6 months
+Greater than S$50k
+Philippines
+Average monthly volume last 6 months
+Greater than 500k PHP
+Malaysia
+Average monthly volume last 6 months
+Greater than 50k RM
+All other countries
+Average monthly volume last 6 months
+Greater than 35k USD
+Pay-Outs Schedule
+Balance Type
+Payout Frequency
+Payout Processed By
+HitPay Balance
+(Non-card payment method)
+T + 1 calendar day
+HitPay
+Card Balance
+(Card payment method)
+From T + 3 business days
+(Final payout schedule determined by Compliance on a case-by-case basis)
+XPay
+We offer custom pricing for businesses processing a high volume of payments. Get in touch to explore tailored solutions for your business.
+[Contact sales→](https://hitpayapp.com/ph/contact-us)
+Contact sales
+→
+Standard Pricing
+Philippines
+[Online Payments](https://hitpayapp.com/ph/pricing)
+Online Payments
+[In-Person Payments](https://hitpayapp.com/ph/pricing)
+In-Person Payments
+[Cross Border Payments](https://hitpayapp.com/ph/pricing)
+Cross Border Payments
+[Business Software](https://hitpayapp.com/ph/pricing)
+Business Software
+[Plugin Integrations](https://hitpayapp.com/ph/pricing)
+Plugin Integrations
+Pricing calculator
+Online Payments
+Cards
+3% + ₱15
+Same rates apply for USD transactions = 3.4%+US$0.3
+International cards
+4% + ₱15
+2.3%
+View list of participating sender banks [here.](https://www.bsp.gov.ph/PaymentAndSettlement/QR%20Ph%20P2M%20Participants.pdf)
+1% or ₱20
+Whichever is higher FX rate of 1% applicable for converting PHP to SGD
+1% or ₱20
+Whichever is higher
+InstaPay
+1.5% or ₱35
+Whichever is higher
+PESONet
+1.5% or ₱35
+Whichever is higher
+Over the counter payments
+1.5% or ₱30
+Whichever is higher
+1.5%
+2.2%
+2.5%
+2.5%
+In-person Payments
+Domestic cards
+3%
+International cards
+4%
+1% or ₱20
+Whichever is higher
+2%
+Cross Border Payments — Online
+Singapore (SGD)
+0.9%
+(min fee S$0.20)
+for transaction values below S$100
+0.65% + S$0.30
+for transaction values of S$100 and above
+Singapore (SGD)
+2%
+Indonesia (IDR)
+2%
+China (SGD)
+1.5%
+Thailand (THB)
+2.5%
+Korea (KRW)
+3.5%
+Cross Border Payments — In-Person

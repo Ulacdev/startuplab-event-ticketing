@@ -299,9 +299,9 @@ export const EventsManagement: React.FC = () => {
       {notification && (
         <div className="fixed top-24 right-8 z-[120]">
           <Card className={`flex items-center gap-4 px-6 py-4 rounded-2xl border ${
-            notification.type === 'success' ? 'bg-[#38BDF2]/20 border-[#38BDF2]/40 text-[#003E86]' : 'bg-[#2E2E2F]/10 border-[#2E2E2F]/30 text-[#2E2E2F]'
+            notification.type === 'success' ? 'bg-[#38BDF2]/20 border-[#38BDF2]/40 text-[#2E2E2F]' : 'bg-[#2E2E2F]/10 border-[#2E2E2F]/30 text-[#2E2E2F]'
           }`}>
-            <div className={`p-2 rounded-xl ${notification.type === 'success' ? 'bg-[#38BDF2]/10 text-[#003E86]' : 'bg-[#2E2E2F]/20 text-[#2E2E2F]'}`}>
+            <div className={`p-2 rounded-xl ${notification.type === 'success' ? 'bg-[#38BDF2]/10 text-[#2E2E2F]' : 'bg-[#2E2E2F]/20 text-[#2E2E2F]'}`}>
               {notification.type === 'success' ? <ICONS.CheckCircle className="w-5 h-5" /> : <ICONS.Layout className="w-5 h-5" />}
             </div>
             <p className="font-bold text-sm tracking-tight">{notification.message}</p>
@@ -311,12 +311,12 @@ export const EventsManagement: React.FC = () => {
 
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 px-2">
         <div>
-          <h1 className="text-3xl font-black text-[#003E86] tracking-tighter">Events Management</h1>
+          <h1 className="text-3xl font-black text-[#2E2E2F] tracking-tighter">Events Management</h1>
           <p className="text-[#2E2E2F]/70 font-medium text-sm mt-1">Configure and manage your organization's event lifecycle.</p>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full lg:w-auto">
           <div className="relative w-full sm:w-72">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#3768A2]/40">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#2E2E2F]/60">
               <ICONS.Search className="h-4 w-4" strokeWidth={3} />
             </div>
             <input
@@ -324,16 +324,16 @@ export const EventsManagement: React.FC = () => {
               placeholder="Search events..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-10 py-3 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#003E86] transition-colors"
+              className="block w-full pl-10 pr-10 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#38BDF2] transition-colors"
             />
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#003E86]/70">
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#2E2E2F]/70">
               {(isFetching || searchTerm.trim() !== debouncedSearch) && (
-                <div className="w-4 h-4 border-2 border-[#3768A2]/60 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[#2E2E2F]/30 border-t-transparent rounded-full animate-spin" />
               )}
             </div>
           </div>
           {!isStaff && (
-            <Button onClick={handleOpenCreate} className="rounded-xl px-6 py-3">
+            <Button onClick={handleOpenCreate} className="rounded-xl px-6 py-3 bg-[#38BDF2] text-[#F2F2F2] hover:text-[#F2F2F2] font-bold transition-colors">
               <span className="flex items-center gap-2 font-bold text-sm">
                 <ICONS.Calendar className="w-4 h-4" />
                 Launch Event
@@ -343,10 +343,10 @@ export const EventsManagement: React.FC = () => {
         </div>
       </div>
 
-      <Card className="overflow-hidden border-[#3768A2]/20 rounded-[2.5rem] bg-[#F2F2F2]">
+      <Card className="overflow-hidden border-[#2E2E2F]/10 rounded-[2.5rem] bg-[#F2F2F2]">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-[#F2F2F2] border-b border-[#3768A2]/20">
+            <thead className="bg-[#F2F2F2] border-b border-[#2E2E2F]/10">
               <tr>
                 <th className="px-8 py-5 text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.25em]">Event Identity</th>
                 <th className="px-8 py-5 text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.25em]">Date & Location</th>
@@ -354,12 +354,12 @@ export const EventsManagement: React.FC = () => {
                 <th className="px-8 py-5 text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.25em] text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#3768A2]/10">
+            <tbody className="divide-y divide-[#2E2E2F]/10">
               {currentItems.map(event => (
                 <tr key={event.eventId} className="hover:bg-[#38BDF2]/10 transition-colors group">
                   <td className="px-8 py-7">
                     <div className="flex items-center gap-5">
-                      <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-[#3768A2]/20">
+                      <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-[#2E2E2F]/20">
                         <img 
                           src={getImageUrl(event.imageUrl)} 
                           alt="" 
@@ -367,25 +367,25 @@ export const EventsManagement: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <div className="font-black text-[#003E86] text-[16px] tracking-tight group-hover:text-[#003E86] transition-colors">{event.eventName}</div>
+                        <div className="font-black text-[#2E2E2F] text-[16px] tracking-tight group-hover:text-[#2E2E2F] transition-colors">{event.eventName}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-8 py-7">
-                    <div className="text-[14px] font-bold text-[#003E86] tracking-tight">
+                    <div className="text-[14px] font-bold text-[#2E2E2F] tracking-tight">
                       {new Date(event.startAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </div>
                     <div className="text-[11px] text-[#2E2E2F]/60 font-bold mt-1.5 flex items-center gap-2">
-                       <ICONS.MapPin className="w-3 h-3 text-[#3768A2]/50" />
+                       <ICONS.MapPin className="w-3 h-3 text-[#2E2E2F]/50" />
                        <span className="truncate max-w-[200px]">{event.locationText}</span>
                     </div>
                   </td>
                   <td className="px-8 py-7">
                     <div className={`inline-flex px-3.5 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] ${
                       event.status === 'PUBLISHED' 
-                        ? 'bg-[#38BDF2]/20 text-[#003E86]' 
+                        ? 'bg-[#38BDF2]/20 text-[#2E2E2F]' 
                         : event.status === 'DRAFT' 
-                          ? 'bg-[#F2F2F2] text-[#2E2E2F]/60 border border-[#3768A2]/20' 
+                          ? 'bg-[#F2F2F2] text-[#2E2E2F]/60 border border-[#2E2E2F]/20' 
                           : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
                     }`}>
                       {event.status}
@@ -395,7 +395,7 @@ export const EventsManagement: React.FC = () => {
                     <div className="flex justify-center items-center gap-6 opacity-70 group-hover:opacity-100 transition-colors">
                       <button 
                         onClick={() => handleOpenTickets(event)}
-                        className="text-[#003E86] hover:text-[#38BDF2] transition-colors p-1"
+                        className="text-[#2E2E2F] hover:text-[#2E2E2F] transition-colors p-1"
                         title="Manage Tickets"
                         disabled={isStaff && !canEditEvents}
                         style={isStaff && !canEditEvents ? { opacity: 0.5, pointerEvents: 'none' } : {}}
@@ -404,14 +404,14 @@ export const EventsManagement: React.FC = () => {
                       </button>
                       <button 
                         onClick={() => handleOpenAttendeePop(event)} 
-                        className="text-[#003E86] hover:text-[#38BDF2] transition-colors p-1"
+                        className="text-[#2E2E2F] hover:text-[#2E2E2F] transition-colors p-1"
                         title="View Confirmed Guests"
                       >
                         <ICONS.Users className="w-[1.2rem] h-[1.2rem]" strokeWidth={2.2} />
                       </button>
                       <button 
                         onClick={() => handleOpenEdit(event)}
-                        className="text-[#003E86] hover:text-[#38BDF2] transition-colors p-1"
+                        className="text-[#2E2E2F] hover:text-[#2E2E2F] transition-colors p-1"
                         title="Edit Session"
                         disabled={isStaff && !canEditEvents}
                         style={isStaff && !canEditEvents ? { opacity: 0.5, pointerEvents: 'none' } : {}}
@@ -429,15 +429,15 @@ export const EventsManagement: React.FC = () => {
 
       {totalPages > 1 && (
         <div className="mt-8 flex items-center justify-center gap-2">
-          <div className="flex items-center gap-2 px-2 py-1 bg-[#F2F2F2] rounded-[1.5rem] border border-[#3768A2]/20">
+          <div className="flex items-center gap-2 px-3 py-2 bg-[#F2F2F2] rounded-full border border-[#2E2E2F]/10">
             {Array.from({ length: totalPages }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => handlePageChange(i + 1)}
-                className={`w-10 h-10 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors ${
+                className={`min-h-[32px] px-4 rounded-full text-[9px] font-black uppercase tracking-widest transition-colors focus:outline-none focus:ring-2 focus:ring-[#38BDF2] focus:ring-offset-2 ${
                   currentPage === i + 1
-                    ? 'bg-[#003E86] text-[#F2F2F2]'
-                    : 'text-[#2E2E2F]/60 hover:text-[#003E86] hover:bg-[#38BDF2]/10'
+                    ? 'bg-[#38BDF2] text-[#F2F2F2]'
+                    : 'bg-[#F2F2F2] text-[#2E2E2F] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]'
                 }`}
               >
                 {i + 1}
@@ -460,7 +460,7 @@ export const EventsManagement: React.FC = () => {
             <div className="space-y-8">
               {/* Event Identity Group */}
               <div className="space-y-4">
-                <h1 className="text-4xl md:text-5xl font-black text-[#003E86] tracking-tighter leading-tight">
+                <h1 className="text-4xl md:text-5xl font-black text-[#2E2E2F] tracking-tighter leading-tight">
                   {formData.eventName || 'Untitled Session'}
                 </h1>
                 
@@ -468,18 +468,18 @@ export const EventsManagement: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-3">
                    <div className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] border ${
                       formData.status === 'PUBLISHED' 
-                        ? 'bg-[#38BDF2]/20 border-[#38BDF2]/40 text-[#003E86]' 
-                        : 'bg-[#F2F2F2] border-[#3768A2]/20 text-[#2E2E2F]/60'
+                        ? 'bg-[#38BDF2]/20 border-[#38BDF2]/40 text-[#2E2E2F]' 
+                        : 'bg-[#F2F2F2] border-[#2E2E2F]/20 text-[#2E2E2F]/60'
                     }`}>
                       {formData.status}
                    </div>
                    {isEditMode && (
                      <>
-                       <div className="px-4 py-1.5 rounded-xl bg-[#38BDF2]/10 border border-[#38BDF2]/40 text-[#003E86] text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                       <div className="px-4 py-1.5 rounded-xl bg-[#38BDF2]/10 border border-[#38BDF2]/40 text-[#2E2E2F] text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
                           <ICONS.Users className="w-3 h-3" strokeWidth={3} />
                           {eventStats.registrations} REGISTRATIONS
                        </div>
-                       <div className="px-4 py-1.5 rounded-xl bg-[#003E86] text-[#F2F2F2] text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                       <div className="px-4 py-1.5 rounded-xl bg-[#38BDF2] text-[#F2F2F2] text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
                           <ICONS.CreditCard className="w-3 h-3" strokeWidth={3} />
                           PHP {eventStats.revenue.toLocaleString()} REVENUE
                        </div>
@@ -488,20 +488,20 @@ export const EventsManagement: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-4 pt-2">
-                  <div className="flex items-center gap-3 bg-[#F2F2F2] px-5 py-3 rounded-2xl border border-[#3768A2]/20">
-                    <div className="w-8 h-8 bg-[#38BDF2]/10 text-[#003E86] rounded-lg flex items-center justify-center">
+                  <div className="flex items-center gap-3 bg-[#F2F2F2] px-5 py-3 rounded-2xl border border-[#2E2E2F]/20">
+                    <div className="w-8 h-8 bg-[#38BDF2]/10 text-[#2E2E2F] rounded-lg flex items-center justify-center">
                        <ICONS.Calendar className="w-4 h-4" strokeWidth={2.5} />
                     </div>
-                    <span className="text-[13px] font-black text-[#003E86] uppercase tracking-tight">
+                    <span className="text-[13px] font-black text-[#2E2E2F] uppercase tracking-tight">
                       {formData.eventDate ? new Date(`${formData.eventDate}T${formData.eventTime}`).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Set Date & Time'}
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-3 bg-[#F2F2F2] px-5 py-3 rounded-2xl border border-[#3768A2]/20">
-                    <div className="w-8 h-8 bg-[#38BDF2]/10 text-[#003E86] rounded-lg flex items-center justify-center">
+                  <div className="flex items-center gap-3 bg-[#F2F2F2] px-5 py-3 rounded-2xl border border-[#2E2E2F]/20">
+                    <div className="w-8 h-8 bg-[#38BDF2]/10 text-[#2E2E2F] rounded-lg flex items-center justify-center">
                        <ICONS.MapPin className="w-4 h-4" strokeWidth={2.5} />
                     </div>
-                    <span className="text-[13px] font-black text-[#003E86] uppercase tracking-tight truncate max-w-[200px]">
+                    <span className="text-[13px] font-black text-[#2E2E2F] uppercase tracking-tight truncate max-w-[200px]">
                       {formData.location || 'Set Venue / Connection'}
                     </span>
                   </div>
@@ -509,8 +509,8 @@ export const EventsManagement: React.FC = () => {
               </div>
 
               {/* Description Block */}
-              <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#3768A2]/20">
-                <h4 className="text-[10px] font-black text-[#3768A2] uppercase tracking-[0.4em] mb-4">Event Overview</h4>
+              <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#2E2E2F]/20">
+                <h4 className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.4em] mb-4">Event Overview</h4>
                 <p className="text-[#2E2E2F]/70 text-[15px] font-medium leading-relaxed line-clamp-4">
                   {formData.description || 'Provide an executive summary of this event session...'}
                 </p>
@@ -528,7 +528,7 @@ export const EventsManagement: React.FC = () => {
                     <Input placeholder="Session Name" value={formData.eventName} onChange={(e: any) => setFormData({...formData, eventName: e.target.value})} />
                   </div>
                   <select 
-                    className="px-4 py-3 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#003E86]"
+                    className="px-4 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#38BDF2]"
                     value={formData.status}
                     onChange={(e) => setFormData({...formData, status: e.target.value as EventStatus})}
                   >
@@ -542,7 +542,7 @@ export const EventsManagement: React.FC = () => {
               <div className="md:col-span-2">
                 <label className="block text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em] mb-3 ml-1">Abstract / Description</label>
                 <textarea 
-                  className="w-full px-5 py-4 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-[1.5rem] text-sm min-h-[120px] focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#003E86] transition-colors outline-none"
+                  className="w-full px-5 py-4 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-[1.5rem] text-sm min-h-[120px] focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#38BDF2] transition-colors outline-none"
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
                 />
@@ -551,16 +551,16 @@ export const EventsManagement: React.FC = () => {
               <div className="md:col-span-2">
                 <div className="flex flex-col gap-2 mb-3 px-1">
   <label className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em]">Visual Media</label>
-  <div className="relative group w-full h-40 rounded-[1.5rem] border-2 border-dashed border-[#3768A2]/40 bg-[#F2F2F2] flex items-center justify-center overflow-hidden cursor-pointer hover:border-[#003E86] hover:bg-[#38BDF2]/10 transition-colors" onClick={() => fileInputRef.current?.click()}>
+  <div className="relative group w-full h-40 rounded-[1.5rem] border-2 border-dashed border-[#2E2E2F]/30 bg-[#F2F2F2] flex items-center justify-center overflow-hidden cursor-pointer hover:border-[#38BDF2] hover:bg-[#38BDF2]/10 transition-colors" onClick={() => fileInputRef.current?.click()}>
     {formData.imageUrl ? (
       <img src={getImageUrl(formData.imageUrl)} alt="Preview" className="w-full h-full object-cover rounded-[1.5rem]" />
     ) : (
       <div className="flex flex-col items-center justify-center w-full h-full">
-        <svg className="w-10 h-10 text-[#3768A2]/50 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="2.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <svg className="w-10 h-10 text-[#2E2E2F]/40 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="2.5"/><path d="M21 15l-5-5L5 21"/></svg>
         <span className="text-[11px] font-black text-[#2E2E2F]/60 uppercase tracking-widest">Upload Event Image</span>
       </div>
     )}
-    <div className="absolute bottom-3 right-3 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-lg px-3 py-1 text-[10px] font-black text-[#003E86] uppercase tracking-widest group-hover:bg-[#003E86] group-hover:text-[#F2F2F2] transition-colors pointer-events-none">Browse</div>
+    <div className="absolute bottom-3 right-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-lg px-3 py-1 text-[10px] font-black text-[#2E2E2F] uppercase tracking-widest group-hover:bg-[#38BDF2] group-hover:text-[#F2F2F2] transition-colors pointer-events-none">Browse</div>
   </div>
   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
 </div>
@@ -574,7 +574,7 @@ export const EventsManagement: React.FC = () => {
                 <div>
                   <label className="block text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em] mb-2 ml-1">Location Type</label>
                   <select
-                    className="w-full px-4 py-3 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#003E86]"
+                    className="w-full px-4 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#38BDF2]"
                     value={formData.locationType}
                     onChange={(e) => setFormData({ ...formData, locationType: e.target.value as Event['locationType'] })}
                   >
@@ -593,9 +593,9 @@ export const EventsManagement: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-4 pt-8 border-t border-[#3768A2]/20">
-              <Button variant="outline" className="flex-1 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-[#3768A2]/40 text-[#003E86] hover:bg-[#38BDF2]/10" onClick={() => setIsModalOpen(false)}>Discard</Button>
-              <Button type="submit" className="flex-[2] py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-[#003E86] text-[#F2F2F2] hover:bg-[#3768A2] transition-colors" disabled={submitting}>
+            <div className="flex gap-4 pt-8 border-t border-[#2E2E2F]/20">
+              <Button className="flex-1 py-2 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] transition-colors min-h-[32px]" onClick={() => setIsModalOpen(false)}>Discard</Button>
+              <Button type="submit" className="flex-[2] py-2 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] transition-colors min-h-[32px]" disabled={submitting}>
                 {submitting ? 'Synchronizing...' : (isEditMode ? 'Commit Configuration' : 'Deploy Session')}
               </Button>
             </div>
@@ -634,20 +634,20 @@ export const EventsManagement: React.FC = () => {
             
             <div className="max-h-[500px] overflow-y-auto pr-2 space-y-4">
               {attendees.filter(r => r.eventId === selectedEvent?.eventId).map((reg) => (
-                <div key={reg.id} className="flex items-center justify-between p-5 bg-[#F2F2F2] border border-[#3768A2]/20 rounded-[1.75rem] hover:border-[#38BDF2]/30 transition-colors group">
+                <div key={reg.id} className="flex items-center justify-between p-5 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-[1.75rem] hover:border-[#38BDF2]/30 transition-colors group">
                   <div className="flex items-center gap-5">
-                    <div className="w-11 h-11 rounded-2xl bg-[#F2F2F2] flex items-center justify-center text-[#003E86] font-black text-sm border border-[#3768A2]/20 group-hover:bg-[#003E86] group-hover:text-[#F2F2F2] transition-colors">
+                    <div className="w-11 h-11 rounded-2xl bg-[#F2F2F2] flex items-center justify-center text-[#2E2E2F] font-black text-sm border border-[#2E2E2F]/20 group-hover:bg-[#38BDF2] group-hover:text-[#F2F2F2] transition-colors">
                       {reg.attendeeName.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-black text-[#003E86] text-[15px] tracking-tight">{reg.attendeeName}</p>
+                      <p className="font-black text-[#2E2E2F] text-[15px] tracking-tight">{reg.attendeeName}</p>
                       <p className="text-[11px] text-[#2E2E2F]/60 font-bold uppercase tracking-tight mt-0.5">{reg.attendeeEmail}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-black text-[#003E86] uppercase tracking-widest mb-1.5">{reg.ticketName}</p>
+                    <p className="text-[10px] font-black text-[#2E2E2F] uppercase tracking-widest mb-1.5">{reg.ticketName}</p>
                     <span className={`inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                      reg.status === 'USED' ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
+                      reg.status === 'USED' ? 'bg-[#38BDF2]/20 text-[#2E2E2F]' : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
                     }`}>
                       {reg.status}
                     </span>
@@ -663,7 +663,7 @@ export const EventsManagement: React.FC = () => {
             </div>
             <Button 
               variant="outline" 
-              className="w-full py-4.5 rounded-[1.25rem] text-[10px] font-black uppercase tracking-[0.2em] border-2 border-[#3768A2]/30 text-[#003E86] hover:bg-[#38BDF2]/10"
+              className="w-full py-2 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] transition-colors min-h-[32px]"
               onClick={() => navigate('/attendees')}
             >
               Open Full Directory
@@ -763,7 +763,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
 
   return (
     <div className="space-y-8">
-      <div className="bg-[#F2F2F2] p-6 rounded-3xl border border-[#3768A2]/20">
+      <div className="bg-[#F2F2F2] p-6 rounded-3xl border border-[#2E2E2F]/20">
         <h4 className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.3em] mb-4">Add Ticket Tier</h4>
         <div className="space-y-4">
           <Input 
@@ -772,7 +772,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
             onChange={(e: any) => setNewTicket({...newTicket, name: e.target.value})} 
           />
           <textarea
-            className="w-full px-4 py-3 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm outline-none focus:border-[#003E86]"
+            className="w-full px-4 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm outline-none focus:border-[#38BDF2]"
             placeholder="Description (optional)"
             value={newTicket.description}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewTicket({ ...newTicket, description: e.target.value })}
@@ -781,7 +781,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-widest">Type</label>
               <select
-                className="w-full px-4 py-3 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm outline-none focus:border-[#003E86]"
+                className="w-full px-4 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm outline-none focus:border-[#38BDF2]"
                 value={newTicket.priceAmount === 0 ? 'FREE' : 'PAID'}
                 onChange={(e) => setNewTicket({
                   ...newTicket,
@@ -795,7 +795,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-widest">Status</label>
               <select
-                className="w-full px-4 py-3 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm outline-none focus:border-[#003E86]"
+                className="w-full px-4 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm outline-none focus:border-[#38BDF2]"
                 value={newTicket.status ? 'ACTIVE' : 'INACTIVE'}
                 onChange={(e) => setNewTicket({ ...newTicket, status: e.target.value === 'ACTIVE' })}
               >
@@ -844,7 +844,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
               // Keep new ticket in local state; creation happens on commit
               addTicket();
             }}
-            className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest"
+            className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:text-[#F2F2F2] transition-colors"
           >
             Add to Inventory
           </Button>
@@ -860,7 +860,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
           return (
             <div
               key={t.ticketTypeId}
-              className={`flex flex-col gap-4 p-4 bg-[#F2F2F2] border border-[#3768A2]/20 rounded-xl transition-colors ${
+              className={`flex flex-col gap-4 p-4 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl transition-colors ${
                 !isExpanded ? 'cursor-pointer hover:border-[#38BDF2]/30' : ''
               }`}
               onClick={() => {
@@ -869,9 +869,9 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <p className="font-bold text-[#003E86] text-sm">{t.name || 'Untitled Ticket'}</p>
+                  <p className="font-bold text-[#2E2E2F] text-sm">{t.name || 'Untitled Ticket'}</p>
                   <div className="flex flex-wrap items-center gap-3 text-[10px] font-black uppercase tracking-widest">
-                    <span className="text-[#003E86]">{priceLabel}</span>
+                    <span className="text-[#2E2E2F]">{priceLabel}</span>
                     <span className="text-[#2E2E2F]/60">{t.status ? 'Active' : 'Inactive'}</span>
                     <span className="text-[#2E2E2F]/60">Qty {t.quantityTotal}</span>
                   </div>
@@ -883,7 +883,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
                       e.stopPropagation();
                       setExpandedTicketId(isExpanded ? null : t.ticketTypeId);
                     }}
-                    className="text-[10px] font-black uppercase tracking-widest text-[#003E86] hover:text-[#2E2E2F] transition-colors"
+                    className="text-[10px] font-black uppercase tracking-widest text-[#2E2E2F] hover:text-[#2E2E2F] transition-colors"
                   >
                     {isExpanded ? 'Collapse' : 'Edit'}
                   </button>
@@ -901,19 +901,19 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
               </div>
 
               {isExpanded && (
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[#3768A2]/20">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[#2E2E2F]/20">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-widest">Tier Name</label>
                     <input
                       value={t.name}
                       onChange={(e) => updateTicket(t.ticketTypeId, { name: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm outline-none focus:border-[#003E86]"
+                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm outline-none focus:border-[#38BDF2]"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-widest">Status</label>
                     <select
-                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm outline-none focus:border-[#003E86]"
+                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm outline-none focus:border-[#38BDF2]"
                       value={t.status ? 'ACTIVE' : 'INACTIVE'}
                       onChange={(e) => updateTicket(t.ticketTypeId, { status: e.target.value === 'ACTIVE' })}
                     >
@@ -924,7 +924,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-widest">Type</label>
                     <select
-                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm outline-none focus:border-[#003E86]"
+                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm outline-none focus:border-[#38BDF2]"
                       value={t.priceAmount === 0 ? 'FREE' : 'PAID'}
                       onChange={(e) => {
                         const isFree = e.target.value === 'FREE';
@@ -945,7 +945,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
                       disabled={t.priceAmount === 0}
                       value={t.priceAmount}
                       onChange={(e) => updateTicket(t.ticketTypeId, { priceAmount: Math.max(0, parseFloat(e.target.value) || 0) })}
-                      className={`w-full px-3 py-2 border border-[#3768A2]/30 rounded-xl text-sm outline-none focus:border-[#003E86] ${t.priceAmount === 0 ? 'bg-[#F2F2F2] text-[#2E2E2F]/60' : 'bg-[#F2F2F2]'}`}
+                      className={`w-full px-3 py-2 border border-[#2E2E2F]/20 rounded-xl text-sm outline-none focus:border-[#38BDF2] ${t.priceAmount === 0 ? 'bg-[#F2F2F2] text-[#2E2E2F]/60' : 'bg-[#F2F2F2]'}`}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -960,7 +960,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
                           quantityTotal: Math.max(nextValue, t.quantitySold || 0)
                         });
                       }}
-                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm outline-none focus:border-[#003E86]"
+                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm outline-none focus:border-[#38BDF2]"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -968,7 +968,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
                     <input
                       value={t.currency}
                       onChange={(e) => updateTicket(t.ticketTypeId, { currency: e.target.value.toUpperCase() })}
-                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm outline-none focus:border-[#003E86]"
+                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm outline-none focus:border-[#38BDF2]"
                     />
                   </div>
                   <div className="md:col-span-2 space-y-1.5">
@@ -976,7 +976,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
                     <textarea
                       value={t.description || ''}
                       onChange={(e) => updateTicket(t.ticketTypeId, { description: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm outline-none focus:border-[#003E86]"
+                      className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm outline-none focus:border-[#38BDF2]"
                       rows={2}
                     />
                   </div>
@@ -995,7 +995,7 @@ const TicketManager: React.FC<TicketManagerProps> = ({ event, onSave, submitting
       <Button 
         onClick={() => onSave(tickets)} 
         disabled={submitting}
-        className="w-full py-5 rounded-2xl bg-[#003E86] text-[#F2F2F2] text-[11px] font-black uppercase tracking-[0.2em] hover:bg-[#3768A2] transition-colors"
+        className="w-full py-2 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] transition-colors min-h-[32px]"
       >
         {submitting ? 'Updating...' : 'Commit Inventory Changes'}
       </Button>

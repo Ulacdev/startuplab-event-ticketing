@@ -44,8 +44,8 @@ export const AcceptInvite: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F2F2F2] px-4">
-      <Card className="p-10 w-full max-w-md bg-[#F2F2F2] border border-[#3768A2]/20 rounded-[2.5rem]">
-        <h2 className="text-2xl font-black mb-6 text-[#003E86]">Complete Your Account</h2>
+      <Card className="p-10 w-full max-w-md bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-[2.5rem]">
+        <h2 className="text-2xl font-black mb-6 text-[#2E2E2F]">Complete Your Account</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
             label="Full Name"
@@ -69,8 +69,8 @@ export const AcceptInvite: React.FC = () => {
             required
           />
           {error && <div className="text-[#2E2E2F] text-sm font-bold">{error}</div>}
-          {success && <div className="text-[#003E86] text-sm font-bold">{success}</div>}
-          <Button type="submit" className="w-full py-3 rounded-xl font-bold">Set Password</Button>
+          {success && <div className="text-[#2E2E2F] text-sm font-bold">{success}</div>}
+          <Button type="submit" className="w-full">Set Password</Button>
         </form>
       </Card>
     </div>

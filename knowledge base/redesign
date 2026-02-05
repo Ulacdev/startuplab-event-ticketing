@@ -1,0 +1,59 @@
+AI UI / UX / Front-End Color System Instruction
+
+You must strictly follow the color system defined below for all UI, UX, visual design, and front-end code outputs.
+
+Color Palette Rules
+Primary Color
+
+#38BDF2
+Use for primary actions, main buttons, key highlights, active states, and core interface elements.
+
+Default Black / Text Color
+
+#2E2E2F
+Use for all headings, body text, labels, icons, and anywhere black would normally be applied.
+
+White / Background Color
+
+#F2F2F2
+Use as the default white for backgrounds, cards, containers, layout surfaces, and light UI areas.
+
+Accent / Hover / Back Button Color
+
+#003E86
+Use for hover states, accent highlights, link hover states, and backgrounds for back buttons or secondary navigation actions.
+
+Button Design Rules (Mandatory)
+
+Button Size:
+
+All buttons must be small-sized.
+
+Default Button State:
+
+Background color: Primary Color (#38BDF2)
+
+Text color: Default White (#F2F2F2)
+
+Button Hover State:
+
+Background color changes to Default Black (#2E2E2F)
+
+Text color changes to Default White (#F2F2F2)
+
+No other button colors or variations are allowed.
+
+Mandatory Rules
+
+Do not introduce any additional colors under any circumstances.
+
+Apply these colors consistently across all screens, components, and states.
+
+Maintain strong contrast, readability, and accessibility.
+
+Preserve brand consistency at all times.
+
+All design decisions, UI layouts, code styles, and content presentation must comply with this color system.
+
+
+Failure to follow these rules is considered incorrect output.

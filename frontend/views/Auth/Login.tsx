@@ -67,7 +67,7 @@ export const LoginPerspective: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F2F2F2] flex items-center justify-center px-4">
       <div className="max-w-md w-full py-12">
-        <Card className="p-10 border-[#3768A2]/20 flex flex-col h-full">
+        <Card className="p-10 border-[#2E2E2F]/20 flex flex-col h-full">
   <div className="text-center flex flex-col items-center mb-8">
     <img
       src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/01_Logos-20260203T092531Z-3-001/01_Logos/StartupLab_16_9_WithIcon_Dark.png"
@@ -94,7 +94,7 @@ export const LoginPerspective: React.FC = () => {
               required
             />
             <Button
-              className="w-full mt-2 py-4"
+              className="w-full mt-2"
               type="submit"
               disabled={loading}
             >
@@ -107,7 +107,7 @@ export const LoginPerspective: React.FC = () => {
         </Card>
         <div className="mt-16 flex flex-col items-center gap-6">
           <button
-            className="text-[#2E2E2F]/60 hover:text-[#003E86] transition-colors text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2"
+            className="text-[#2E2E2F]/60 hover:text-[#38BDF2] transition-colors text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2"
             onClick={() => navigate('/')}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>

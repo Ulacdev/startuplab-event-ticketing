@@ -80,13 +80,17 @@ export const apiService = {
 
   // POST /api/payments/hitpay/checkout-session
   createHitpayCheckoutSession: async (
-    orderId: string
+    orderId: string,
+    paymentMethod?: string
   ): Promise<{ checkoutUrl: string | null; status?: string; mock?: boolean }> => {
     const res = await fetch(`${API_BASE}/api/payments/hitpay/checkout-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ orderId })
+      body: JSON.stringify({
+        orderId,
+        ...(paymentMethod ? { paymentMethod } : {})
+      })
     });
     const payload = await res.json();
     if (!res.ok) throw new Error(payload?.error || `Failed to create checkout session: ${res.status}`);

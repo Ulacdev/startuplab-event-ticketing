@@ -75,16 +75,16 @@ const StatCard: React.FC<{ title: string, value: string | number, icon: React.Re
   <Card className="p-6">
     <div className="flex items-start justify-between">
       <div>
-        <p className="text-sm font-medium text-[#2E2E2F]/70 mb-1">{title}</p>
-        <h3 className="text-2xl font-bold text-[#003E86]">{value}</h3>
+        <p className="text-sm font-medium text-[#2E2E2F] mb-1">{title}</p>
+        <h3 className="text-2xl font-bold text-[#2E2E2F]">{value}</h3>
         {trend && (
-          <p className={`text-xs mt-2 flex items-center ${trend.startsWith('+') ? 'text-[#003E86]' : 'text-[#2E2E2F]'}`}>
+          <p className={`text-xs mt-2 flex items-center ${trend.startsWith('+') ? 'text-[#2E2E2F]' : 'text-[#2E2E2F]'}`}>
             <ICONS.TrendingUp className="w-3 h-3 mr-1" />
             {trend} from last month
           </p>
         )}
       </div>
-      <div className="p-3 bg-[#38BDF2]/20 text-[#003E86] rounded-xl">
+      <div className="p-3 bg-[#38BDF2]/10 text-[#2E2E2F] rounded-xl">
         {icon}
       </div>
     </div>
@@ -278,10 +278,10 @@ export const AdminDashboard: React.FC = () => {
 
   const renderDetailFields = (value: any, emptyMessage: string) => {
     if (!value) {
-      return <p className="text-xs text-[#2E2E2F]/60">{emptyMessage}</p>;
+      return <p className="text-xs text-[#2E2E2F]">{emptyMessage}</p>;
     }
     if (typeof value !== 'object') {
-      return <p className="text-xs text-[#2E2E2F]/70">{formatDetailValue(value)}</p>;
+      return <p className="text-xs text-[#2E2E2F]">{formatDetailValue(value)}</p>;
     }
 
     const entries = Array.isArray(value)
@@ -289,15 +289,15 @@ export const AdminDashboard: React.FC = () => {
       : Object.entries(value);
 
     if (!entries.length) {
-      return <p className="text-xs text-[#2E2E2F]/60">{emptyMessage}</p>;
+      return <p className="text-xs text-[#2E2E2F]">{emptyMessage}</p>;
     }
 
     return (
       <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
         {entries.map(([entryKey, entryValue]) => (
-          <div key={entryKey} className="border border-[#3768A2]/20 rounded-xl p-3 bg-[#F2F2F2]">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2E2E2F]/60">{humanizeKey(entryKey)}</p>
-            <p className="text-xs text-[#2E2E2F]/70 mt-2">{formatDetailValue(entryValue)}</p>
+          <div key={entryKey} className="border border-[#2E2E2F]/20 rounded-xl p-3 bg-[#F2F2F2]">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2E2E2F]">{humanizeKey(entryKey)}</p>
+            <p className="text-xs text-[#2E2E2F] mt-2">{formatDetailValue(entryValue)}</p>
           </div>
         ))}
       </div>
@@ -336,7 +336,7 @@ export const AdminDashboard: React.FC = () => {
 
   const renderOrderDetails = (details: OrderDetailResponse) => {
     if (!details?.order) {
-      return <div className="text-sm text-[#2E2E2F]/60">Order details unavailable.</div>;
+      return <div className="text-sm text-[#2E2E2F]">Order details unavailable.</div>;
     }
 
     const { order, event, orderItems = [], attendees = [], tickets = [], payments = [] } = details;
@@ -347,42 +347,42 @@ export const AdminDashboard: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
+          <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Order Summary</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Order Summary</p>
               {renderStatusBadge(order?.status)}
             </div>
             <div className="mt-3 space-y-2">
-              <p className="text-sm font-bold text-[#003E86]">#{order?.orderId}</p>
-              <p className="text-xs text-[#2E2E2F]/70">Created {formatDate(order?.created_at)}</p>
+              <p className="text-sm font-bold text-[#2E2E2F]">#{order?.orderId}</p>
+              <p className="text-xs text-[#2E2E2F]">Created {formatDate(order?.created_at)}</p>
               {order?.expiresAt && (
-                <p className="text-xs text-[#2E2E2F]/70">Expires {formatDate(order?.expiresAt)}</p>
+                <p className="text-xs text-[#2E2E2F]">Expires {formatDate(order?.expiresAt)}</p>
               )}
-              <p className="text-sm font-black text-[#003E86]">{order?.currency || 'PHP'} {Number(order?.totalAmount || 0).toLocaleString()}</p>
+              <p className="text-sm font-black text-[#2E2E2F]">{order?.currency || 'PHP'} {Number(order?.totalAmount || 0).toLocaleString()}</p>
             </div>
           </div>
-          <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Buyer</p>
+          <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Buyer</p>
             <div className="mt-3 space-y-2">
-              <p className="text-sm font-bold text-[#003E86]">{order?.buyerName || '—'}</p>
-              <p className="text-xs text-[#2E2E2F]/70">{order?.buyerEmail || '—'}</p>
-              <p className="text-xs text-[#2E2E2F]/70">Phone: {order?.buyerPhone || '—'}</p>
-              <p className="text-xs text-[#2E2E2F]/70">Company: {company || '—'}</p>
+              <p className="text-sm font-bold text-[#2E2E2F]">{order?.buyerName || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">{order?.buyerEmail || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">Phone: {order?.buyerPhone || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">Company: {company || '—'}</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Event</p>
+        <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Event</p>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <p className="text-sm font-bold text-[#003E86]">{eventLabel}</p>
+              <p className="text-sm font-bold text-[#2E2E2F]">{eventLabel}</p>
               {eventIdLabel && (
-                <p className="text-[11px] text-[#2E2E2F]/60">ID: {eventIdLabel}</p>
+                <p className="text-[11px] text-[#2E2E2F]">ID: {eventIdLabel}</p>
               )}
-              <p className="text-xs text-[#2E2E2F]/70">{event?.locationText || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">{event?.locationText || '—'}</p>
             </div>
-            <div className="text-xs text-[#2E2E2F]/70 space-y-1">
+            <div className="text-xs text-[#2E2E2F] space-y-1">
               <p>Start: {formatDate(event?.startAt)}</p>
               <p>End: {formatDate(event?.endAt)}</p>
               <p>Timezone: {event?.timezone || '—'}</p>
@@ -390,40 +390,40 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
+        <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Order Items</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Order Items</p>
             <Badge type="info" className="text-[9px] font-black uppercase tracking-[0.2em]">{orderItems.length} items</Badge>
           </div>
           {orderItems.length ? (
             <div className="mt-3 space-y-3">
               {orderItems.map((item: any) => (
-                <div key={item.orderItemId} className="flex items-center justify-between gap-4 border border-[#3768A2]/20 rounded-xl p-3 bg-[#F2F2F2]">
+                <div key={item.orderItemId} className="flex items-center justify-between gap-4 border border-[#2E2E2F]/20 rounded-xl p-3 bg-[#F2F2F2]">
                   <div>
-                    <p className="text-sm font-bold text-[#003E86]">{item.ticketType?.name || 'Ticket'}</p>
-                    <p className="text-xs text-[#2E2E2F]/70">Qty {item.quantity} • {item.ticketType?.currency || order?.currency || 'PHP'} {Number(item.price || 0).toLocaleString()}</p>
+                    <p className="text-sm font-bold text-[#2E2E2F]">{item.ticketType?.name || 'Ticket'}</p>
+                    <p className="text-xs text-[#2E2E2F]">Qty {item.quantity} • {item.ticketType?.currency || order?.currency || 'PHP'} {Number(item.price || 0).toLocaleString()}</p>
                   </div>
-                  <div className="text-sm font-bold text-[#003E86]">{order?.currency || 'PHP'} {Number(item.lineTotal || 0).toLocaleString()}</div>
+                  <div className="text-sm font-bold text-[#2E2E2F]">{order?.currency || 'PHP'} {Number(item.lineTotal || 0).toLocaleString()}</div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-xs text-[#2E2E2F]/60">No order items recorded.</p>
+            <p className="mt-3 text-xs text-[#2E2E2F]">No order items recorded.</p>
           )}
         </div>
 
-        <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
+        <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Attendees</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Attendees</p>
             <Badge type="neutral" className="text-[9px] font-black uppercase tracking-[0.2em]">{attendees.length} total</Badge>
           </div>
           {attendees.length ? (
             <div className="mt-3 space-y-3">
               {attendees.map((att: any) => (
-                <div key={att.attendeeId} className="border border-[#3768A2]/20 rounded-xl p-3 bg-[#F2F2F2]">
-                  <p className="text-sm font-bold text-[#003E86]">{att.name || 'Attendee'}</p>
-                  <p className="text-xs text-[#2E2E2F]/70">{att.email || '—'}</p>
-                  <div className="flex flex-wrap gap-3 text-[11px] text-[#2E2E2F]/70 mt-2">
+                <div key={att.attendeeId} className="border border-[#2E2E2F]/20 rounded-xl p-3 bg-[#F2F2F2]">
+                  <p className="text-sm font-bold text-[#2E2E2F]">{att.name || 'Attendee'}</p>
+                  <p className="text-xs text-[#2E2E2F]">{att.email || '—'}</p>
+                  <div className="flex flex-wrap gap-3 text-[11px] text-[#2E2E2F] mt-2">
                     <span>Phone: {att.phoneNumber || '—'}</span>
                     <span>Company: {att.company || '—'}</span>
                   </div>
@@ -431,56 +431,56 @@ export const AdminDashboard: React.FC = () => {
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-xs text-[#2E2E2F]/60">No attendee records.</p>
+            <p className="mt-3 text-xs text-[#2E2E2F]">No attendee records.</p>
           )}
         </div>
 
-        <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
+        <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Tickets</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Tickets</p>
             <Badge type="neutral" className="text-[9px] font-black uppercase tracking-[0.2em]">{tickets.length} total</Badge>
           </div>
           {tickets.length ? (
             <div className="mt-3 space-y-3">
               {tickets.map((ticket: any) => (
-                <div key={ticket.ticketId} className="border border-[#3768A2]/20 rounded-xl p-3 bg-[#F2F2F2]">
+                <div key={ticket.ticketId} className="border border-[#2E2E2F]/20 rounded-xl p-3 bg-[#F2F2F2]">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-[#003E86]">{ticket.ticketType?.name || 'Ticket'}</p>
+                    <p className="text-sm font-bold text-[#2E2E2F]">{ticket.ticketType?.name || 'Ticket'}</p>
                     {renderStatusBadge(ticket.status)}
                   </div>
-                  <p className="text-xs text-[#2E2E2F]/70">Code: {ticket.ticketCode || '—'}</p>
-                  <p className="text-xs text-[#2E2E2F]/70">Attendee: {ticket.attendee?.name || order?.buyerName || '—'}</p>
-                  <p className="text-[10px] text-[#2E2E2F]/60 mt-2">Check-in: {formatDate(ticket.usedAt)}</p>
+                  <p className="text-xs text-[#2E2E2F]">Code: {ticket.ticketCode || '—'}</p>
+                  <p className="text-xs text-[#2E2E2F]">Attendee: {ticket.attendee?.name || order?.buyerName || '—'}</p>
+                  <p className="text-[10px] text-[#2E2E2F] mt-2">Check-in: {formatDate(ticket.usedAt)}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-xs text-[#2E2E2F]/60">No tickets issued yet.</p>
+            <p className="mt-3 text-xs text-[#2E2E2F]">No tickets issued yet.</p>
           )}
         </div>
 
-        <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
+        <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Payments</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Payments</p>
             <Badge type="neutral" className="text-[9px] font-black uppercase tracking-[0.2em]">{payments.length} total</Badge>
           </div>
           {payments.length ? (
             <div className="mt-3 space-y-3">
               {payments.map((payment: any) => (
-                <div key={payment.paymentTransactionId} className="border border-[#3768A2]/20 rounded-xl p-3 bg-[#F2F2F2]">
+                <div key={payment.paymentTransactionId} className="border border-[#2E2E2F]/20 rounded-xl p-3 bg-[#F2F2F2]">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-[#003E86]">{payment.gateway?.name || payment.gateway || 'HITPAY'}</p>
+                    <p className="text-sm font-bold text-[#2E2E2F]">{payment.gateway?.name || payment.gateway || 'HITPAY'}</p>
                     {renderStatusBadge(payment.status)}
                   </div>
-                  <p className="text-xs text-[#2E2E2F]/70">Reference: {payment.hitpayReferenceId || '—'}</p>
-                  <p className="text-xs text-[#2E2E2F]/70">Amount: {payment.currency || order?.currency || 'PHP'} {Number(payment.amount || 0).toLocaleString()}</p>
-                  <p className="text-[10px] text-[#2E2E2F]/60 mt-2">Created: {formatDate(payment.created_at)}</p>
+                  <p className="text-xs text-[#2E2E2F]">Reference: {payment.hitpayReferenceId || '—'}</p>
+                  <p className="text-xs text-[#2E2E2F]">Amount: {payment.currency || order?.currency || 'PHP'} {Number(payment.amount || 0).toLocaleString()}</p>
+                  <p className="text-[10px] text-[#2E2E2F] mt-2">Created: {formatDate(payment.created_at)}</p>
                   {payment.rawPayload && renderDetailFields(payment.rawPayload, 'No payload recorded.')}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-xs text-[#2E2E2F]/60">No payment records.</p>
+            <p className="mt-3 text-xs text-[#2E2E2F]">No payment records.</p>
           )}
         </div>
       </div>
@@ -489,7 +489,7 @@ export const AdminDashboard: React.FC = () => {
 
   const renderTicketDetails = (details: TicketDetailResponse) => {
     if (!details?.ticket) {
-      return <div className="text-sm text-[#2E2E2F]/60">Ticket details unavailable.</div>;
+      return <div className="text-sm text-[#2E2E2F]">Ticket details unavailable.</div>;
     }
 
     const { ticket, attendee, event, order, ticketType } = details;
@@ -499,51 +499,51 @@ export const AdminDashboard: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Ticket Detail</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Ticket Detail</p>
           {renderStatusBadge(ticket?.status)}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4">
-          <div className="border border-[#3768A2]/20 rounded-2xl p-3 bg-[#F2F2F2] flex items-center justify-center">
+          <div className="border border-[#2E2E2F]/20 rounded-2xl p-3 bg-[#F2F2F2] flex items-center justify-center">
             {ticket?.qrPayload || ticket?.ticketCode ? (
               <QRCode value={ticket?.qrPayload || ticket?.ticketCode} size={120} fgColor="#2E2E2F" bgColor="#F2F2F2" />
             ) : (
-              <div className="text-xs text-[#2E2E2F]/60">No QR</div>
+              <div className="text-xs text-[#2E2E2F]">No QR</div>
             )}
           </div>
           <div className="space-y-2">
-            <p className="text-sm font-bold text-[#003E86]">{ticketType?.name || 'Ticket'}</p>
-            <p className="text-xs text-[#2E2E2F]/70">Code: {ticket?.ticketCode || '—'}</p>
-            <p className="text-xs text-[#2E2E2F]/70">Event: {event?.eventName || '—'}</p>
-            <p className="text-xs text-[#2E2E2F]/70">
+            <p className="text-sm font-bold text-[#2E2E2F]">{ticketType?.name || 'Ticket'}</p>
+            <p className="text-xs text-[#2E2E2F]">Code: {ticket?.ticketCode || '—'}</p>
+            <p className="text-xs text-[#2E2E2F]">Event: {event?.eventName || '—'}</p>
+            <p className="text-xs text-[#2E2E2F]">
               Order: {order?.orderId
                 ? `#${order.orderId}${order?.buyerName || order?.buyerEmail ? ` • ${order?.buyerName || order?.buyerEmail}` : ''}`
                 : '—'}
             </p>
-            <div className="text-xs text-[#2E2E2F]/70 flex items-center gap-2">
+            <div className="text-xs text-[#2E2E2F] flex items-center gap-2">
               <span>Payment: {order?.status || '—'}</span>
               {renderStatusBadge(order?.status)}
             </div>
-            <p className="text-xs text-[#2E2E2F]/70">Amount: {currency} {Number(amount || 0).toLocaleString()}</p>
-            <p className="text-xs text-[#2E2E2F]/70">Check-in: {formatDate(ticket?.usedAt)}</p>
+            <p className="text-xs text-[#2E2E2F]">Amount: {currency} {Number(amount || 0).toLocaleString()}</p>
+            <p className="text-xs text-[#2E2E2F]">Check-in: {formatDate(ticket?.usedAt)}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Attendee</p>
+          <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Attendee</p>
             <div className="mt-3 space-y-2">
-              <p className="text-sm font-bold text-[#003E86]">{attendee?.name || '—'}</p>
-              <p className="text-xs text-[#2E2E2F]/70">{attendee?.email || '—'}</p>
-              <p className="text-xs text-[#2E2E2F]/70">Phone: {attendee?.phoneNumber || '—'}</p>
-              <p className="text-xs text-[#2E2E2F]/70">Company: {attendee?.company || '—'}</p>
+              <p className="text-sm font-bold text-[#2E2E2F]">{attendee?.name || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">{attendee?.email || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">Phone: {attendee?.phoneNumber || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">Company: {attendee?.company || '—'}</p>
             </div>
           </div>
-          <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Event</p>
+          <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Event</p>
             <div className="mt-3 space-y-2">
-              <p className="text-sm font-bold text-[#003E86]">{event?.eventName || '—'}</p>
-              <p className="text-xs text-[#2E2E2F]/70">{event?.locationText || '—'}</p>
-              <p className="text-xs text-[#2E2E2F]/70">Start: {formatDate(event?.startAt)}</p>
-              <p className="text-xs text-[#2E2E2F]/70">End: {formatDate(event?.endAt)}</p>
+              <p className="text-sm font-bold text-[#2E2E2F]">{event?.eventName || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">{event?.locationText || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">Start: {formatDate(event?.startAt)}</p>
+              <p className="text-xs text-[#2E2E2F]">End: {formatDate(event?.endAt)}</p>
             </div>
           </div>
         </div>
@@ -553,7 +553,7 @@ export const AdminDashboard: React.FC = () => {
 
   const renderAuditDetails = (details: AuditLogDetailResponse) => {
     if (!details?.log) {
-      return <div className="text-sm text-[#2E2E2F]/60">Audit log details unavailable.</div>;
+      return <div className="text-sm text-[#2E2E2F]">Audit log details unavailable.</div>;
     }
 
     const { log, actor, orderDetails, ticketDetails, webhookEvent, paymentTransaction } = details;
@@ -582,15 +582,15 @@ export const AdminDashboard: React.FC = () => {
 
     return (
       <div className="space-y-8">
-        <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
+        <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Action Type</p>
-              <p className="text-lg font-black text-[#003E86]">{log.actionType}</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Action Type</p>
+              <p className="text-lg font-black text-[#2E2E2F]">{log.actionType}</p>
             </div>
             <Badge type="info" className="text-[10px] font-black uppercase tracking-[0.2em]">Audit Log</Badge>
           </div>
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-[#2E2E2F]/70">
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-[#2E2E2F]">
             <div>Audit ID: {log.auditLogId}</div>
             <div>Actor: {actorLabel}</div>
             <div>Order: {orderLabel}</div>
@@ -602,52 +602,52 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Log Details</p>
+        <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Log Details</p>
           {renderDetailFields(log.details, 'No additional details.')}
         </div>
 
         {paymentTransaction && (
-          <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Payment Transaction</p>
+          <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Payment Transaction</p>
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-[#003E86]">{paymentTransaction.gateway?.name || paymentTransaction.gateway || 'HITPAY'}</p>
+                <p className="text-sm font-bold text-[#2E2E2F]">{paymentTransaction.gateway?.name || paymentTransaction.gateway || 'HITPAY'}</p>
                 {renderStatusBadge(paymentTransaction.status)}
               </div>
-              <p className="text-xs text-[#2E2E2F]/70">Reference: {paymentTransaction.hitpayReferenceId || '—'}</p>
-              <p className="text-xs text-[#2E2E2F]/70">Amount: {paymentTransaction.currency || 'PHP'} {Number(paymentTransaction.amount || 0).toLocaleString()}</p>
-              <p className="text-[10px] text-[#2E2E2F]/60">Created: {formatDate(paymentTransaction.created_at)}</p>
+              <p className="text-xs text-[#2E2E2F]">Reference: {paymentTransaction.hitpayReferenceId || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">Amount: {paymentTransaction.currency || 'PHP'} {Number(paymentTransaction.amount || 0).toLocaleString()}</p>
+              <p className="text-[10px] text-[#2E2E2F]">Created: {formatDate(paymentTransaction.created_at)}</p>
               {paymentTransaction.rawPayload && renderDetailFields(paymentTransaction.rawPayload, 'No payload recorded.')}
             </div>
           </div>
         )}
 
         {webhookEvent && (
-          <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Webhook Event</p>
+          <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Webhook Event</p>
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-[#003E86]">{webhookEvent.eventType || 'HITPAY'}</p>
+                <p className="text-sm font-bold text-[#2E2E2F]">{webhookEvent.eventType || 'HITPAY'}</p>
                 {renderStatusBadge(webhookEvent.processingStatus)}
               </div>
-              <p className="text-xs text-[#2E2E2F]/70">External ID: {webhookEvent.externalId || '—'}</p>
-              <p className="text-xs text-[#2E2E2F]/70">Received: {formatDate(webhookEvent.receivedAt)}</p>
-              <p className="text-xs text-[#2E2E2F]/70">Processed: {formatDate(webhookEvent.processedAt)}</p>
+              <p className="text-xs text-[#2E2E2F]">External ID: {webhookEvent.externalId || '—'}</p>
+              <p className="text-xs text-[#2E2E2F]">Received: {formatDate(webhookEvent.receivedAt)}</p>
+              <p className="text-xs text-[#2E2E2F]">Processed: {formatDate(webhookEvent.processedAt)}</p>
               {webhookEvent.payload && renderDetailFields(webhookEvent.payload, 'No payload recorded.')}
             </div>
           </div>
         )}
 
         {ticketDetails && (
-          <div className="rounded-2xl border border-[#3768A2]/20 bg-[#F2F2F2] p-4">
+          <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
             {renderTicketDetails(ticketDetails)}
           </div>
         )}
 
         {orderDetails && (
           <div className="space-y-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]/60">Order Context</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Order Context</p>
             {renderOrderDetails(orderDetails)}
           </div>
         )}
@@ -657,13 +657,13 @@ export const AdminDashboard: React.FC = () => {
 
   const renderDetailBody = () => {
     if (detailLoading) {
-      return <div className="text-sm text-[#2E2E2F]/60">Loading details...</div>;
+      return <div className="text-sm text-[#2E2E2F]">Loading details...</div>;
     }
     if (detailError) {
-      return <div className="text-sm text-[#2E2E2F]/60">{detailError}</div>;
+      return <div className="text-sm text-[#2E2E2F]">{detailError}</div>;
     }
     if (!detailData) {
-      return <div className="text-sm text-[#2E2E2F]/60">No details available.</div>;
+      return <div className="text-sm text-[#2E2E2F]">No details available.</div>;
     }
     if (detailType === 'audit') {
       return renderAuditDetails(detailData as AuditLogDetailResponse);
@@ -694,12 +694,12 @@ export const AdminDashboard: React.FC = () => {
   if (isStaff) {
     return (
       <div className="p-20 text-center">
-        <ICONS.CheckCircle className="w-12 h-12 text-[#38BDF2] mx-auto mb-4 opacity-40" />
-        <h2 className="text-xl font-bold text-[#003E86]">Restricted Access</h2>
-        <p className="text-[#2E2E2F]/70 mt-2">Revenue reports are available for Administrators only.</p>
+        <ICONS.CheckCircle className="w-12 h-12 text-[#2E2E2F] mx-auto mb-4 opacity-40" />
+        <h2 className="text-xl font-bold text-[#2E2E2F]">Restricted Access</h2>
+        <p className="text-[#2E2E2F] mt-2">Revenue reports are available for Administrators only.</p>
         <button 
           onClick={() => navigate(`${basePath}/events?role=${role}`)}
-          className="mt-6 text-[#003E86] font-bold hover:underline"
+          className="mt-6 text-[#2E2E2F] font-bold hover:underline"
         >
           Go to Operations Hub
         </button>
@@ -713,8 +713,8 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-black text-[#003E86] tracking-tight">Financial Performance</h1>
-        <p className="text-[#2E2E2F]/70 font-medium">Organization-wide revenue and registration analytics.</p>
+        <h1 className="text-2xl font-black text-[#2E2E2F] tracking-tight">Financial Performance</h1>
+        <p className="text-[#2E2E2F] font-medium">Organization-wide revenue and registration analytics.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -756,39 +756,39 @@ export const AdminDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="p-6">
-          <h3 className="font-bold text-lg mb-6 flex items-center text-[#003E86]">
-            <ICONS.Calendar className="w-5 h-5 mr-2 text-[#003E86]" />
+          <h3 className="font-bold text-lg mb-6 flex items-center text-[#2E2E2F] hover:text-[#2E2E2F]">
+            <ICONS.Calendar className="w-5 h-5 mr-2 text-[#2E2E2F]" />
             All Transactions
           </h3>
           {txLoading ? (
-            <div className="text-[#2E2E2F]/60 text-sm">Loading transactions...</div>
+            <div className="text-[#2E2E2F] text-sm">Loading transactions...</div>
           ) : transactions.length === 0 ? (
-            <div className="text-[#2E2E2F]/60 text-sm">No transactions yet.</div>
+            <div className="text-[#2E2E2F] text-sm">No transactions yet.</div>
           ) : (
             <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1" onScroll={handleTxScroll}>
               {transactions.map((tx) => (
                 <div
                   key={tx.orderId}
-                  className="flex gap-3 items-start pb-4 border-b border-[#3768A2]/20 last:border-0 cursor-pointer rounded-xl p-2 -m-2 hover:bg-[#38BDF2]/10 transition-colors"
+                  className="flex gap-3 items-start pb-4 border-b border-[#2E2E2F]/20 last:border-0 cursor-pointer rounded-xl p-2 -m-2 hover:bg-[#2E2E2F]/10 transition-colors"
                   onClick={() => openDetail('transaction', tx.orderId)}
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#F2F2F2] border border-[#3768A2]/20 flex items-center justify-center text-[#2E2E2F]/60 flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-[#F2F2F2] border border-[#2E2E2F]/20 flex items-center justify-center text-[#2E2E2F] flex-shrink-0">
                     <ICONS.Users className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#003E86] truncate">{tx.buyerName || 'Paid Registration'}</p>
-                    <p className="text-xs text-[#2E2E2F]/70 truncate">{tx.eventName || 'Event'} • {tx.created_at ? new Date(tx.created_at).toLocaleString() : ''}</p>
-                    <span className={`inline-flex text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded mt-2 ${tx.status === 'PAID' ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#F2F2F2] text-[#2E2E2F]/60 border border-[#3768A2]/20'}`}>
+                    <p className="text-sm font-bold text-[#2E2E2F] hover:text-[#2E2E2F] truncate">{tx.buyerName || 'Paid Registration'}</p>
+                    <p className="text-xs text-[#2E2E2F] truncate">{tx.eventName || 'Event'} • {tx.created_at ? new Date(tx.created_at).toLocaleString() : ''}</p>
+                    <span className={`inline-flex text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded mt-2 ${tx.status === 'PAID' ? 'bg-[#38BDF2]/10 text-[#2E2E2F]' : 'bg-[#F2F2F2] text-[#2E2E2F] border border-[#2E2E2F]/20'}`}>
                       {tx.status || 'PENDING'}
                     </span>
                   </div>
-                  <div className="ml-auto text-sm font-bold text-[#003E86] whitespace-nowrap">
+                  <div className="ml-auto text-sm font-bold text-[#2E2E2F] whitespace-nowrap">
                     {tx.currency || 'PHP'} {Number(tx.totalAmount || 0).toLocaleString()}
                   </div>
                 </div>
               ))}
               {txFetching && !txLoading && (
-                <div className="text-xs text-[#2E2E2F]/60">Loading more...</div>
+                <div className="text-xs text-[#2E2E2F]">Loading more...</div>
               )}
               {!txHasMore && transactions.length > 0 && (
                 <div className="text-[10px] uppercase tracking-[0.2em] text-[#2E2E2F]/50">End of list</div>
@@ -798,39 +798,39 @@ export const AdminDashboard: React.FC = () => {
         </Card>
 
         <Card className="p-6">
-          <h3 className="font-bold text-lg mb-6 flex items-center text-[#003E86]">
-            <ICONS.Ticket className="w-5 h-5 mr-2 text-[#003E86]" />
+          <h3 className="font-bold text-lg mb-6 flex items-center text-[#2E2E2F] hover:text-[#2E2E2F]">
+            <ICONS.Ticket className="w-5 h-5 mr-2 text-[#2E2E2F]" />
             Recent Orders
           </h3>
           {ordersLoading ? (
-            <div className="text-[#2E2E2F]/60 text-sm">Loading orders...</div>
+            <div className="text-[#2E2E2F] text-sm">Loading orders...</div>
           ) : orders.length === 0 ? (
-            <div className="text-[#2E2E2F]/60 text-sm">No orders yet.</div>
+            <div className="text-[#2E2E2F] text-sm">No orders yet.</div>
           ) : (
             <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1" onScroll={handleOrdersScroll}>
               {orders.map((order) => (
                 <div
                   key={order.orderId}
-                  className="flex gap-3 items-start pb-4 border-b border-[#3768A2]/20 last:border-0 cursor-pointer rounded-xl p-2 -m-2 hover:bg-[#38BDF2]/10 transition-colors"
+                  className="flex gap-3 items-start pb-4 border-b border-[#2E2E2F]/20 last:border-0 cursor-pointer rounded-xl p-2 -m-2 hover:bg-[#2E2E2F]/10 transition-colors"
                   onClick={() => openDetail('order', order.orderId)}
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#F2F2F2] border border-[#3768A2]/20 flex items-center justify-center text-[#2E2E2F]/60 flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-[#F2F2F2] border border-[#2E2E2F]/20 flex items-center justify-center text-[#2E2E2F] flex-shrink-0">
                     <ICONS.CreditCard className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#003E86] truncate">{order.buyerName || order.buyerEmail || 'Order'}</p>
-                    <p className="text-xs text-[#2E2E2F]/70 truncate">{order.eventName || 'Event'} • Order #{order.orderId?.slice(0, 8)} • {order.created_at ? new Date(order.created_at).toLocaleString() : ''}</p>
-                    <span className={`inline-flex text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded mt-2 ${order.status === 'PAID' ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#F2F2F2] text-[#2E2E2F]/60 border border-[#3768A2]/20'}`}>
+                    <p className="text-sm font-bold text-[#2E2E2F] hover:text-[#2E2E2F] truncate">{order.buyerName || order.buyerEmail || 'Order'}</p>
+                    <p className="text-xs text-[#2E2E2F] truncate">{order.eventName || 'Event'} • Order #{order.orderId?.slice(0, 8)} • {order.created_at ? new Date(order.created_at).toLocaleString() : ''}</p>
+                    <span className={`inline-flex text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded mt-2 ${order.status === 'PAID' ? 'bg-[#38BDF2]/10 text-[#2E2E2F]' : 'bg-[#F2F2F2] text-[#2E2E2F] border border-[#2E2E2F]/20'}`}>
                       {order.status || 'PENDING'}
                     </span>
                   </div>
-                  <div className="ml-auto text-sm font-bold text-[#003E86] whitespace-nowrap">
+                  <div className="ml-auto text-sm font-bold text-[#2E2E2F] whitespace-nowrap">
                     {order.currency || 'PHP'} {Number(order.totalAmount || 0).toLocaleString()}
                   </div>
                 </div>
               ))}
               {ordersFetching && !ordersLoading && (
-                <div className="text-xs text-[#2E2E2F]/60">Loading more...</div>
+                <div className="text-xs text-[#2E2E2F]">Loading more...</div>
               )}
               {!ordersHasMore && orders.length > 0 && (
                 <div className="text-[10px] uppercase tracking-[0.2em] text-[#2E2E2F]/50">End of list</div>
@@ -842,14 +842,14 @@ export const AdminDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="p-6">
-          <h3 className="font-bold text-lg mb-6 flex items-center text-[#003E86]">
-            <ICONS.CheckCircle className="w-5 h-5 mr-2 text-[#003E86]" />
+          <h3 className="font-bold text-lg mb-6 flex items-center text-[#2E2E2F] hover:text-[#2E2E2F]">
+            <ICONS.CheckCircle className="w-5 h-5 mr-2 text-[#2E2E2F]" />
             Audit Logs
           </h3>
           {auditLoading ? (
-            <div className="text-[#2E2E2F]/60 text-sm">Loading audit logs...</div>
+            <div className="text-[#2E2E2F] text-sm">Loading audit logs...</div>
           ) : auditLogs.length === 0 ? (
-            <div className="text-[#2E2E2F]/60 text-sm">No audit logs yet.</div>
+            <div className="text-[#2E2E2F] text-sm">No audit logs yet.</div>
           ) : (
             <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1" onScroll={handleAuditScroll}>
               {auditLogs.map((log) => {
@@ -865,22 +865,22 @@ export const AdminDashboard: React.FC = () => {
                 return (
                   <div
                     key={log.auditLogId}
-                    className="flex gap-3 items-start pb-4 border-b border-[#3768A2]/20 last:border-0 cursor-pointer rounded-xl p-2 -m-2 hover:bg-[#38BDF2]/10 transition-colors"
+                    className="flex gap-3 items-start pb-4 border-b border-[#2E2E2F]/20 last:border-0 cursor-pointer rounded-xl p-2 -m-2 hover:bg-[#2E2E2F]/10 transition-colors"
                     onClick={() => openDetail('audit', log.auditLogId)}
                   >
-                    <div className="w-10 h-10 rounded-full bg-[#F2F2F2] border border-[#3768A2]/20 flex items-center justify-center text-[#2E2E2F]/60 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[#F2F2F2] border border-[#2E2E2F]/20 flex items-center justify-center text-[#2E2E2F] flex-shrink-0">
                       <ICONS.Layout className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-[#003E86] truncate">{log.actionType}</p>
-                      <p className="text-xs text-[#2E2E2F]/70 truncate">Target {targetLabel}</p>
-                      <p className="text-[10px] text-[#2E2E2F]/60 mt-2">{log.createdAt ? new Date(log.createdAt).toLocaleString() : ''}</p>
+                      <p className="text-sm font-bold text-[#2E2E2F] truncate">{log.actionType}</p>
+                      <p className="text-xs text-[#2E2E2F] truncate">Target {targetLabel}</p>
+                      <p className="text-[10px] text-[#2E2E2F] mt-2">{log.createdAt ? new Date(log.createdAt).toLocaleString() : ''}</p>
                     </div>
                   </div>
                 );
               })}
               {auditFetching && !auditLoading && (
-                <div className="text-xs text-[#2E2E2F]/60">Loading more...</div>
+                <div className="text-xs text-[#2E2E2F]">Loading more...</div>
               )}
               {!auditHasMore && auditLogs.length > 0 && (
                 <div className="text-[10px] uppercase tracking-[0.2em] text-[#2E2E2F]/50">End of list</div>
@@ -889,15 +889,15 @@ export const AdminDashboard: React.FC = () => {
           )}
         </Card>
 
-        <Card className="p-8 flex flex-col items-center justify-center text-center border-dashed border-2 bg-[#F2F2F2] border-[#3768A2]/30">
-          <div className="w-20 h-20 bg-[#F2F2F2] border border-[#3768A2]/20 text-[#003E86] rounded-3xl flex items-center justify-center mb-6">
+        <Card className="p-8 flex flex-col items-center justify-center text-center border-dashed border-2 bg-[#F2F2F2] border-[#2E2E2F]/30">
+          <div className="w-20 h-20 bg-[#F2F2F2] border border-[#2E2E2F]/20 text-[#2E2E2F] rounded-3xl flex items-center justify-center mb-6">
             <ICONS.Calendar className="w-10 h-10" />
           </div>
-          <h3 className="text-xl font-black text-[#003E86] mb-2">New Event Concept?</h3>
-          <p className="text-[#2E2E2F]/70 text-sm max-w-xs mb-8 font-medium">Launch a new workshop or conference to drive organization revenue.</p>
+          <h3 className="text-xl font-black text-[#2E2E2F] mb-2">New Event Concept?</h3>
+          <p className="text-[#2E2E2F] text-sm max-w-xs mb-8 font-medium">Launch a new workshop or conference to drive organization revenue.</p>
           <button 
             onClick={() => navigate(`/events?openModal=true`)}
-            className="bg-[#003E86] text-[#F2F2F2] px-8 py-3 rounded-2xl font-bold hover:bg-[#3768A2] transition-colors"
+            className="bg-[#38BDF2] text-[#F2F2F2] px-8 py-3 rounded-2xl font-bold hover:bg-[#38BDF2] transition-colors"
           >
             Configure Event
           </button>

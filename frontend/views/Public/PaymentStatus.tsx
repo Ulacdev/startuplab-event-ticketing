@@ -65,16 +65,16 @@ export const PaymentStatusView: React.FC = () => {
       case 'checking':
         return (
           <div className="flex flex-col items-center py-16">
-            <div className="w-10 h-10 border-4 border-[#3768A2]/30 border-t-[#003E86] rounded-full animate-spin mb-4"></div>
-            <h2 className="text-lg font-bold text-[#003E86]">Verifying Payment...</h2>
+            <div className="w-10 h-10 border-4 border-[#2E2E2F]/20 border-t-[#38BDF2] rounded-full animate-spin mb-4"></div>
+            <h2 className="text-lg font-bold text-[#2E2E2F]">Verifying Payment...</h2>
             <p className="text-[#2E2E2F]/70">Please do not refresh this page.</p>
           </div>
         );
       case 'pending':
         return (
           <div className="flex flex-col items-center py-16 text-center">
-            <div className="w-10 h-10 border-4 border-[#3768A2]/30 border-t-[#38BDF2] rounded-full animate-spin mb-4"></div>
-            <h2 className="text-lg font-bold text-[#003E86]">Payment Pending</h2>
+            <div className="w-10 h-10 border-4 border-[#2E2E2F]/20 border-t-[#38BDF2] rounded-full animate-spin mb-4"></div>
+            <h2 className="text-lg font-bold text-[#2E2E2F]">Payment Pending</h2>
             <p className="text-[#2E2E2F]/70 max-w-sm">
               We’re waiting for confirmation from the payment gateway. This can take a few minutes.
               Please keep this tab open.
@@ -84,10 +84,10 @@ export const PaymentStatusView: React.FC = () => {
       case 'success':
         return (
           <div className="flex flex-col items-center py-8 px-6 text-center">
-            <div className="w-14 h-14 bg-[#38BDF2]/20 text-[#003E86] rounded-full flex items-center justify-center mb-5">
+            <div className="w-14 h-14 bg-[#38BDF2]/20 text-[#2E2E2F] rounded-full flex items-center justify-center mb-5">
               <ICONS.CheckCircle className="w-7 h-7" />
             </div>
-            <h1 className="text-2xl font-black text-[#003E86] mb-2">Payment Successful!</h1>
+            <h1 className="text-2xl font-black text-[#2E2E2F] mb-2">Payment Successful!</h1>
             <p className="text-[#2E2E2F]/70 max-w-sm mb-6">
               Your registration order <strong>#{order?.orderId}</strong> is confirmed. A copy of your ticket has been sent to your email.
             </p>
@@ -95,14 +95,14 @@ export const PaymentStatusView: React.FC = () => {
               <Button className="w-full" size="md" onClick={() => navigate(`/tickets/${sessionId}`)}>
                 View Digital Ticket
               </Button>
-              <Button variant="outline" size="md" className="w-full" onClick={() => navigate('/events')}>
+              <Button variant="outline" size="md" className="w-full" onClick={() => navigate('/')}>
                 Back to Events
               </Button>
             </div>
 
             {tickets.length > 0 && (
               <div className="w-full mt-10 text-left">
-                <h3 className="text-sm font-black text-[#3768A2] uppercase tracking-[0.2em] mb-4">Tickets</h3>
+                <h3 className="text-sm font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em] mb-4">Tickets</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {tickets.map((t) => (
                     <a
@@ -110,14 +110,14 @@ export const PaymentStatusView: React.FC = () => {
                       href={`#/tickets/${t.ticketId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="border border-[#3768A2]/20 rounded-2xl p-4 bg-[#F2F2F2] flex flex-col items-center gap-3 focus:outline-none focus:ring-2 focus:ring-[#38BDF2]"
+                      className="border border-[#2E2E2F]/10 rounded-2xl p-4 bg-[#F2F2F2] flex flex-col items-center gap-3 focus:outline-none focus:ring-2 focus:ring-[#38BDF2]"
                       title="Open this ticket"
                     >
                       <QRCode value={t.qrPayload || t.ticketCode} size={140} />
                       <div className="text-xs text-[#2E2E2F]/60 break-all text-center">
                         {t.ticketCode}
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#003E86]">{t.status}</span>
+                      <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#38BDF2]">{t.status}</span>
                     </a>
                   ))}
                 </div>
@@ -135,7 +135,7 @@ export const PaymentStatusView: React.FC = () => {
             <p className="text-[#2E2E2F]/70 max-w-sm mb-8">
               We couldn't process your payment. Please try again or contact support if the issue persists.
             </p>
-            <Button className="w-full max-w-xs" variant="primary" size="md" onClick={() => navigate('/events')}>
+            <Button className="w-full max-w-xs" variant="primary" size="md" onClick={() => navigate('/')}>
               Try Again
             </Button>
           </div>
@@ -150,7 +150,7 @@ export const PaymentStatusView: React.FC = () => {
             <p className="text-[#2E2E2F]/70 max-w-sm mb-8">
               Your payment window expired before completion. Please select your tickets again to continue.
             </p>
-            <Button className="w-full max-w-xs" variant="primary" size="md" onClick={() => navigate('/events')}>
+            <Button className="w-full max-w-xs" variant="primary" size="md" onClick={() => navigate('/')}>
               Back to Events
             </Button>
           </div>

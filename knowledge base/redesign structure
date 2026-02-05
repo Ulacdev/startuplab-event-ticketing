@@ -1,0 +1,46 @@
+You are designing a user interface that follows a strict three-color system and consistent interaction behavior.
+
+Color Palette
+
+Primary Color: #38BDF2
+
+Default Black: #2E2E2F
+
+Default White: #F2F2F2
+
+Usage Rules
+
+Use Default Black (#2E2E2F) for primary text and general content.
+
+Use Default White (#F2F2F2) for backgrounds or light surfaces where appropriate.
+
+Use the Primary Color (#38BDF2) for emphasis, accents, and interactive elements.
+
+Interaction States
+
+Text Hover:
+
+When text is hovered, change its color to the Primary Color (#38BDF2).
+
+Buttons (Default State):
+
+Button background: Primary Color (#38BDF2)
+
+Button text: Default White (#F2F2F2)
+
+Buttons (Hover State):
+
+Button text changes to Default Black (#2E2E2F)
+
+Button background remains Primary Color (#38BDF2) unless otherwise specified.
+
+Consistency Requirement
+
+Do not introduce additional colors.
+
+Maintain high contrast and visual clarity.
+
+only use bold for important parts. dont bold unnecessary parts.
+
+Apply hover and interaction rules consistently across all components.
+

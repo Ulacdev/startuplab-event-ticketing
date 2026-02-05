@@ -125,7 +125,7 @@ export const RegistrationsList: React.FC = () => {
   const DetailItem = ({ label, value, mono = false }: { label: string; value?: React.ReactNode; mono?: boolean }) => (
     <div className="space-y-1">
       <p className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em]">{label}</p>
-      <p className={`text-sm font-semibold text-[#003E86] ${mono ? 'font-mono' : ''}`}>{value || '—'}</p>
+      <p className={`text-sm font-semibold text-[#2E2E2F] ${mono ? 'font-mono' : ''}`}>{value || '—'}</p>
     </div>
   );
 
@@ -143,14 +143,14 @@ export const RegistrationsList: React.FC = () => {
     <div className="space-y-8">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-black text-[#003E86] tracking-tighter">Attendee Directory</h1>
+          <h1 className="text-3xl font-black text-[#2E2E2F] tracking-tighter">Attendee Directory</h1>
           <p className="text-[#2E2E2F]/70 font-medium text-sm mt-1">
             Full visibility of confirmed registrations and financial transactions.
           </p>
         </div>
         <div className="w-full md:w-80">
           <div className="relative group">
-             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#3768A2]/40">
+             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#2E2E2F]/60">
                <ICONS.Search className="h-4 w-4" strokeWidth={3} />
              </div>
              <input 
@@ -158,19 +158,19 @@ export const RegistrationsList: React.FC = () => {
               placeholder="Search directory..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-10 py-3 bg-[#F2F2F2] border border-[#3768A2]/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#003E86] transition-colors"
+              className="block w-full pl-10 pr-10 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#2E2E2F] transition-colors"
              />
-             <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#003E86]/70">
-              {isFetching && <div className="w-4 h-4 border-2 border-[#3768A2]/60 border-t-transparent rounded-full animate-spin" />}
+             <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#2E2E2F]/70">
+              {isFetching && <div className="w-4 h-4 border-2 border-[#2E2E2F]/30 border-t-transparent rounded-full animate-spin" />}
             </div>
           </div>
         </div>
       </div>
 
-      <Card className="overflow-hidden border-[#3768A2]/20 rounded-2xl bg-[#F2F2F2]">
+      <Card className="overflow-hidden border-[#2E2E2F]/10 rounded-2xl bg-[#F2F2F2]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-[#F2F2F2] border-b border-[#3768A2]/20">
+            <thead className="bg-[#F2F2F2] border-b border-[#2E2E2F]/10">
               <tr>
                 <th className="px-8 py-5 text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em]">Attendee</th>
                 <th className="px-8 py-5 text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em]">Ticket Information</th>
@@ -179,7 +179,7 @@ export const RegistrationsList: React.FC = () => {
                 <th className="px-8 py-5 text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em] text-right">Operations</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#3768A2]/10">
+            <tbody className="divide-y divide-[#2E2E2F]/10">
               {pagedRegs.map((reg, index) => {
                 const isCheckedIn = reg.status === 'USED';
                 const rowKey = reg.id ?? reg.ticketCode ?? `${reg.eventId}-${reg.orderId}-${index}`;
@@ -192,27 +192,27 @@ export const RegistrationsList: React.FC = () => {
                   >
                     <td className="px-8 py-6">
                       <div className="flex flex-col">
-                        <span className="font-bold text-[15px] text-[#003E86] tracking-tight">{reg.attendeeName}</span>
+                        <span className="font-bold text-[15px] text-[#2E2E2F] tracking-tight">{reg.attendeeName}</span>
                         <span className="text-[12px] text-[#2E2E2F]/60 font-medium mt-0.5">{reg.attendeeEmail}</span>
                       </div>
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex flex-col">
-                        <span className="text-[14px] font-bold text-[#003E86]">{reg.eventName}</span>
+                        <span className="text-[14px] font-bold text-[#2E2E2F]">{reg.eventName}</span>
                         <span className="text-[12px] text-[#2E2E2F]/60 font-medium mt-0.5">{reg.ticketName}</span>
                       </div>
                     </td>
                     <td className="px-8 py-6">
                       <span className={`inline-flex px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
                         isCheckedIn 
-                          ? 'bg-[#38BDF2]/20 text-[#003E86]' 
-                          : 'bg-[#003E86]/10 text-[#003E86]'
+                          ? 'bg-[#38BDF2]/20 text-[#2E2E2F]' 
+                          : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
                       }`}>
                         {isCheckedIn ? 'CHECKED_IN' : 'ISSUED'}
                       </span>
                     </td>
                     <td className="px-8 py-6">
-                      <span className="text-[15px] font-black text-[#003E86] tracking-tighter">
+                      <span className="text-[15px] font-black text-[#2E2E2F] tracking-tighter">
                         {reg.currency} {(reg.amountPaid ?? 0).toFixed(2)}
                       </span>
                     </td>
@@ -223,7 +223,7 @@ export const RegistrationsList: React.FC = () => {
                                 event.stopPropagation();
                                 handleCheckIn(reg);
                               }}
-                              className="text-[11px] font-black text-[#003E86] uppercase tracking-[0.15em] hover:text-[#2E2E2F] transition-colors"
+                              className="py-2 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] min-h-[32px] transition-colors"
                               disabled={isStaff && !canManualCheckIn}
                               style={isStaff && !canManualCheckIn ? { opacity: 0.5, pointerEvents: 'none' } : {}}
                             >
@@ -241,7 +241,7 @@ export const RegistrationsList: React.FC = () => {
         </div>
         {filteredRegs.length === 0 && !loading && (
           <div className="py-24 text-center">
-            <ICONS.Users className="w-12 h-12 text-[#3768A2]/30 mx-auto mb-4" />
+            <ICONS.Users className="w-12 h-12 text-[#2E2E2F]/30 mx-auto mb-4" />
             <p className="text-[#2E2E2F]/60 font-bold uppercase tracking-widest text-[10px]">No active attendees found.</p>
           </div>
         )}
@@ -258,10 +258,10 @@ export const RegistrationsList: React.FC = () => {
               <div className="flex-1 space-y-6">
                 <div className="space-y-2">
                   <h3 className="text-[11px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.3em] mb-2">Identity</h3>
-                  <div className="bg-[#F2F2F2] border border-[#3768A2]/20 rounded-xl p-5 grid grid-cols-1 gap-4">
+                  <div className="bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl p-5 grid grid-cols-1 gap-4">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-10 h-10 rounded-xl bg-[#003E86] text-[#F2F2F2] text-lg font-black flex items-center justify-center shrink-0">{selectedReg.attendeeName?.charAt(0)}</span>
-                      <span className="font-black text-[#003E86] text-lg truncate min-w-0">{selectedReg.attendeeName}</span>
+                      <span className="w-10 h-10 rounded-xl bg-[#38BDF2] text-[#F2F2F2] text-lg font-black flex items-center justify-center shrink-0">{selectedReg.attendeeName?.charAt(0)}</span>
+                      <span className="font-black text-[#2E2E2F] text-lg truncate min-w-0">{selectedReg.attendeeName}</span>
                     </div>
                     <div className="text-[13px] text-[#2E2E2F]/70 font-bold break-words truncate min-w-0" title={selectedReg.attendeeEmail}>{selectedReg.attendeeEmail}</div>
                     {selectedReg.attendeePhone && <div className="text-[13px] text-[#2E2E2F]/70 font-bold break-words truncate min-w-0">{selectedReg.attendeePhone}</div>}
@@ -270,9 +270,9 @@ export const RegistrationsList: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-[11px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.3em] mb-2">Ticket & Order</h3>
-                  <div className="bg-[#F2F2F2] border border-[#3768A2]/20 rounded-xl p-5 grid grid-cols-1 gap-2">
+                  <div className="bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl p-5 grid grid-cols-1 gap-2">
                     <div className="flex flex-wrap gap-4 text-[13px]">
-                      <span className="font-black text-[#003E86]">{selectedReg.ticketName}</span>
+                      <span className="font-black text-[#2E2E2F]">{selectedReg.ticketName}</span>
                       <span className="font-mono text-[#2E2E2F]/60">{selectedReg.ticketCode}</span>
                     </div>
                     <div className="text-[13px] text-[#2E2E2F]/70 font-bold">Order ID: <span className="font-mono">{selectedReg.orderId}</span></div>
@@ -281,20 +281,20 @@ export const RegistrationsList: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-[11px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.3em] mb-2">Payment & Status</h3>
-                  <div className="bg-[#F2F2F2] border border-[#3768A2]/20 rounded-xl p-5 grid grid-cols-1 gap-2">
+                  <div className="bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl p-5 grid grid-cols-1 gap-2">
                     <div className="flex items-center gap-4">
-                      <span className={`px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-widest ${selectedReg.paymentStatus === 'PAID' ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#003E86]/10 text-[#003E86]'}`}>{selectedReg.paymentStatus || '—'}</span>
-                      <span className="text-[13px] font-black text-[#003E86]">{selectedReg.currency} {Number(selectedReg.amountPaid ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className={`px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-widest ${selectedReg.paymentStatus === 'PAID' ? 'bg-[#38BDF2]/20 text-[#2E2E2F]' : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'}`}>{selectedReg.paymentStatus || '—'}</span>
+                      <span className="text-[13px] font-black text-[#2E2E2F]">{selectedReg.currency} {Number(selectedReg.amountPaid ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className={`px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-widest ${selectedReg.status === 'USED' ? 'bg-[#38BDF2]/20 text-[#003E86]' : 'bg-[#003E86]/10 text-[#003E86]'}`}>{selectedReg.status}</span>
+                      <span className={`px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-widest ${selectedReg.status === 'USED' ? 'bg-[#38BDF2]/20 text-[#2E2E2F]' : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'}`}>{selectedReg.status}</span>
                       <span className="text-[13px] text-[#2E2E2F]/70 font-bold">Check-in: {formatTimestamp(selectedReg.checkInTimestamp)}</span>
                     </div>
                   </div>
                 </div>
               </div>
               {selectedReg.qrPayload && (
-                <div className="flex flex-col items-center gap-4 justify-center bg-[#F2F2F2] rounded-2xl border border-[#3768A2]/20 px-6 py-8 min-w-[220px]">
+                <div className="flex flex-col items-center gap-4 justify-center bg-[#F2F2F2] rounded-2xl border border-[#2E2E2F]/20 px-6 py-8 min-w-[220px]">
                   <p className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em]">QR Code</p>
                   <QRCode value={selectedReg.qrPayload} size={160} fgColor="#2E2E2F" bgColor="#F2F2F2" />
                   <span className="text-[11px] text-[#2E2E2F]/60 font-mono break-all">{selectedReg.ticketCode}</span>
@@ -306,15 +306,15 @@ export const RegistrationsList: React.FC = () => {
       </Modal>
       {totalPages > 1 && (
         <div className="mt-8 flex items-center justify-center gap-2">
-          <div className="flex items-center gap-2 px-2 py-1 bg-[#F2F2F2] rounded-[1.5rem] border border-[#3768A2]/20">
+          <div className="flex items-center gap-2 px-3 py-2 bg-[#F2F2F2] rounded-full border border-[#2E2E2F]/10">
             {Array.from({ length: totalPages }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => handlePageChange(i + 1)}
-                className={`w-10 h-10 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors ${
+                className={`min-h-[32px] px-4 rounded-full text-[9px] font-black uppercase tracking-widest transition-colors focus:outline-none focus:ring-2 focus:ring-[#38BDF2] focus:ring-offset-2 ${
                   currentPage === i + 1
-                    ? 'bg-[#003E86] text-[#F2F2F2]'
-                    : 'text-[#2E2E2F]/60 hover:text-[#003E86] hover:bg-[#38BDF2]/10'
+                    ? 'bg-[#38BDF2] text-[#F2F2F2]'
+                    : 'bg-[#F2F2F2] text-[#2E2E2F] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]'
                 }`}
               >
                 {i + 1}
