@@ -68,17 +68,17 @@ export const LoginPerspective: React.FC = () => {
     <div className="min-h-screen bg-[#F2F2F2] flex items-center justify-center px-4">
       <div className="max-w-md w-full py-12">
         <Card className="p-10 border-[#2E2E2F]/20 flex flex-col h-full">
-  <div className="text-center flex flex-col items-center mb-8">
-    <img
-      src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/01_Logos-20260203T092531Z-3-001/01_Logos/StartupLab_16_9_WithIcon_Dark.png"
-      alt="StartupLab Business Center Logo"
-      className="mx-auto mb-6 w-[240px] max-w-full h-auto"
-      style={{ objectFit: 'contain' }}
-    />
-    <p className="text-[#2E2E2F]/70 text-lg font-medium">Sign in to your account</p>
-    <div className="w-20 h-1 bg-[#38BDF2] mx-auto mt-4 rounded-full"></div>
-  </div>
-  <form onSubmit={handleLogin} className="flex flex-col gap-6">
+          <div className="text-center flex flex-col items-center mb-8">
+            <img
+              src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
+              alt="StartupLab Business Center Logo"
+              className="mx-auto mb-6 w-[240px] max-w-full h-auto"
+              style={{ objectFit: 'contain' }}
+            />
+            <p className="text-[#2E2E2F]/70 text-lg font-medium">Sign in to your account</p>
+            <div className="w-20 h-1 bg-[#38BDF2] mx-auto mt-4 rounded-full"></div>
+          </div>
+          <form onSubmit={handleLogin} className="flex flex-col gap-6">
             <Input
               placeholder="Email"
               value={email}
@@ -110,7 +110,7 @@ export const LoginPerspective: React.FC = () => {
             className="text-[#2E2E2F]/60 hover:text-[#38BDF2] transition-colors text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2"
             onClick={() => navigate('/')}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             Back to Event Home
           </button>
         </div>

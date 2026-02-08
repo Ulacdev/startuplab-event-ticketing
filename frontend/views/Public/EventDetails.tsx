@@ -42,13 +42,12 @@ export const EventDetails: React.FC = () => {
   const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (slug) {
       apiService.getEventBySlug(slug).then(data => {
-        console.log('Fetched event data:', data);
         setEvent(data);
         if (data && data.ticketTypes.length > 0) {
           const initialQuantities: Record<string, number> = {};
@@ -100,22 +99,22 @@ export const EventDetails: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 lg:py-16">
       <div className="mb-8">
-        <button 
-          onClick={() => navigate('/')} 
+        <button
+          onClick={() => navigate('/')}
           className="text-[#2E2E2F] hover:text-[#38BDF2] text-[11px] font-black tracking-widest uppercase flex items-center mb-10 gap-2 transition-colors"
         >
-          <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"/></svg>
-          BACK TO EXPLORATIONS
+          <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+          BACK TO EVENTS
         </button>
 
         <div className="flex flex-col lg:flex-row gap-16 items-start">
           <div className="flex-1 space-y-10">
             {/* Visual Header */}
             <div className="overflow-hidden rounded-[2.5rem] border border-[#2E2E2F]/10">
-              <img 
+              <img
                 src={getImageUrl(event.imageUrl)}
-                alt={event.eventName} 
-                className="w-full aspect-video object-cover" 
+                alt={event.eventName}
+                className="w-full aspect-video object-cover"
               />
             </div>
 
@@ -129,21 +128,27 @@ export const EventDetails: React.FC = () => {
                   <ICONS.Calendar className="w-4 h-4 mr-3 text-[#38BDF2]" />
                   {formatRange(event.startAt, event.endAt, event.timezone)}{event.timezone ? ` TZ: ${event.timezone}` : ''}
                 </div>
-                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#2E2E2F]/10 text-[11px]">
-                  {event.locationType}
+                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-4 py-2 rounded-2xl border border-[#2E2E2F]/10 text-[11px] font-bold">
+                  <ICONS.Monitor className="w-3.5 h-3.5 mr-2 text-[#38BDF2]" />
+                  {event.locationType === 'ONLINE' ? 'DIGITAL SESSION' : event.locationType === 'HYBRID' ? 'HYBRID ACCESS' : 'IN-PERSON EVENT'}
                 </div>
-                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#2E2E2F]/10 text-[11px]">
+                {event.streamingPlatform && (event.locationType === 'ONLINE' || event.locationType === 'HYBRID') && (
+                  <div className="flex items-center text-[#38BDF2] bg-[#38BDF2]/5 px-4 py-2 rounded-2xl border border-[#38BDF2]/20 text-[11px] font-black tracking-wide">
+                    VIA {event.streamingPlatform.toUpperCase()}
+                  </div>
+                )}
+                <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-4 py-2 rounded-2xl border border-[#2E2E2F]/10 text-[11px] font-bold">
                   CAPACITY: {(event.ticketTypes || []).reduce((sum, t) => sum + (t.quantityTotal || 0), 0)}
                 </div>
-                                {regState && (
-                  <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-3 py-1.5 rounded-2xl border border-[#2E2E2F]/10 text-[11px] font-black">
+                {regState && (
+                  <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-4 py-2 rounded-2xl border border-[#2E2E2F]/10 text-[11px] font-black uppercase">
                     {regState}
                   </div>
                 )}
               </div>
 
               <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#2E2E2F]/10">
-                <h3 className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.4em] mb-6">EVENT OVERVIEW</h3>
+                <h3 className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.4em] mb-6">EVENT DETAILS</h3>
                 <p className="text-[#2E2E2F]/70 leading-relaxed text-base font-medium whitespace-pre-wrap">
                   {event.description}
                 </p>
@@ -155,9 +160,9 @@ export const EventDetails: React.FC = () => {
           <div className="w-full lg:w-[380px] shrink-0">
             <Card className="p-8 sticky top-10 rounded-[2.5rem] bg-[#F2F2F2] border border-[#2E2E2F]/10">
               <h2 className="text-xl font-black text-[#2E2E2F] mb-8 tracking-tight">
-                Secure Access
+                Get Tickets
               </h2>
-              
+
               <div className="space-y-5 mb-10">
                 {event.ticketTypes.map(ticket => {
                   const qty = quantities[ticket.ticketTypeId] || 0;
@@ -165,43 +170,40 @@ export const EventDetails: React.FC = () => {
                   const isSoldOut = available <= 0;
 
                   return (
-                    <div 
+                    <div
                       key={ticket.ticketTypeId}
-                      className={`p-6 rounded-[1.75rem] border-2 transition-colors ${
-                        qty > 0 ? 'border-[#38BDF2] bg-[#F2F2F2]' : 'border-[#2E2E2F]/10 bg-[#F2F2F2] hover:border-[#38BDF2]/40'
-                      }`}
+                      className={`p-6 rounded-[1.75rem] border-2 transition-colors ${qty > 0 ? 'border-[#38BDF2] bg-[#F2F2F2]' : 'border-[#2E2E2F]/10 bg-[#F2F2F2] hover:border-[#38BDF2]/40'
+                        }`}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-[#2E2E2F] text-[13px] uppercase tracking-wider">{ticket.name}</span>
-                        <span className={`text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${isSoldOut ? 'bg-[#2E2E2F] text-[#F2F2F2]' : 'bg-[#38BDF2] text-[#2E2E2F]'}`}>
+                        <span className={`text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${isSoldOut ? 'bg-[#2E2E2F] text-[#F2F2F2]' : 'bg-[#38BDF2] text-[#F2F2F2]'}`}>
                           {isSoldOut ? 'SOLD OUT' : 'AVAILABLE'}
                         </span>
                       </div>
                       <div className="text-xl font-black text-[#2E2E2F] mb-6 tracking-tighter">
                         {ticket.priceAmount === 0 ? 'FREE' : <><span className="">PHP</span> <span className="font-black">{ticket.priceAmount.toLocaleString()}.00</span></>}
                       </div>
-                      
+
                       <div className="pt-6 border-t border-[#2E2E2F]/10 flex items-center justify-between">
                         <span className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em]">QUANTITY</span>
                         <div className="flex items-center gap-5">
-                          <button 
+                          <button
                             onClick={() => updateQuantity(ticket.ticketTypeId, -1, available)}
                             disabled={qty === 0}
-                            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors ${
-                              qty > 0 ? 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]' : 'bg-[#F2F2F2] text-[#2E2E2F]/40 cursor-not-allowed border border-[#2E2E2F]/10'
-                            }`}
+                            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors ${qty > 0 ? 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]' : 'bg-[#F2F2F2] text-[#2E2E2F]/40 cursor-not-allowed border border-[#2E2E2F]/10'
+                              }`}
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M20 12H4"/></svg>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M20 12H4" /></svg>
                           </button>
                           <span className="font-black text-lg text-[#2E2E2F] w-4 text-center">{qty}</span>
-                          <button 
+                          <button
                             onClick={() => updateQuantity(ticket.ticketTypeId, 1, available)}
                             disabled={isSoldOut || qty >= available}
-                            className={`w-8 h-8 flex items-center justify-center rounded-xl text-[#F2F2F2] transition-colors ${
-                              isSoldOut || qty >= available ? 'bg-[#F2F2F2] text-[#2E2E2F]/40 cursor-not-allowed border border-[#2E2E2F]/10' : 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]'
-                            }`}
+                            className={`w-8 h-8 flex items-center justify-center rounded-xl text-[#F2F2F2] transition-colors ${isSoldOut || qty >= available ? 'bg-[#F2F2F2] text-[#2E2E2F]/40 cursor-not-allowed border border-[#2E2E2F]/10' : 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]'
+                              }`}
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M12 4v16m8-8H4"/></svg>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M12 4v16m8-8H4" /></svg>
                           </button>
                         </div>
                       </div>
@@ -211,16 +213,16 @@ export const EventDetails: React.FC = () => {
               </div>
 
               <div className="space-y-6">
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   disabled={totalQuantity === 0}
                   onClick={handleRegister}
                 >
                   {totalQuantity === 0 ? 'Select Tickets' : `Reserve Access`}
                 </Button>
                 <div className="flex items-center justify-center gap-3 opacity-30">
-                   <ICONS.CreditCard className="w-4 h-4" />
-                   <p className="text-[10px] text-center font-black uppercase tracking-[0.4em] text-[#2E2E2F]">
+                  <ICONS.CreditCard className="w-4 h-4" />
+                  <p className="text-[10px] text-center font-black uppercase tracking-[0.4em] text-[#2E2E2F]">
                     SECURE HITPAY CHECKOUT
                   </p>
                 </div>

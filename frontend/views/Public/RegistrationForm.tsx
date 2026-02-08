@@ -29,12 +29,12 @@ export const RegistrationForm: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   const [event, setEvent] = useState<Event | null>(null);
   const [selectedItems, setSelectedItems] = useState<{ ticket: TicketType, qty: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -42,7 +42,7 @@ export const RegistrationForm: React.FC = () => {
     company: '',
     termsAccepted: false
   });
-  
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [paymentMethodId, setPaymentMethodId] = useState(PAYMENT_METHODS[0].id);
 
@@ -62,7 +62,6 @@ export const RegistrationForm: React.FC = () => {
               setSelectedItems(items);
             }
           } catch (e) {
-            console.error("Failed to parse selections", e);
           }
         }
         setLoading(false);
@@ -74,9 +73,9 @@ export const RegistrationForm: React.FC = () => {
   const totalQuantity = selectedItems.reduce((acc, item) => acc + item.qty, 0);
   const selectedPayment = PAYMENT_METHODS.find((method) => method.id === paymentMethodId) ?? PAYMENT_METHODS[0];
   let paymentFee = 0;
-if (subtotal > 0) {
-  paymentFee = roundCurrency(subtotal * selectedPayment.feeRate);
-}
+  if (subtotal > 0) {
+    paymentFee = roundCurrency(subtotal * selectedPayment.feeRate);
+  }
   const totalPayable = roundCurrency(subtotal + paymentFee);
   const hasPaid = totalPayable > 0;
 
@@ -106,8 +105,6 @@ if (subtotal > 0) {
         totalAmount: totalPayable,
         currency: selectedItems[0]?.ticket.currency || 'PHP'
       });
-      console.log('Order created:', orderId);
-
       if (!hasPaid) {
         navigate(`/payment/status?sessionId=${orderId}`); // Free order also goes to status page for confirmation
       } else {
@@ -121,8 +118,7 @@ if (subtotal > 0) {
         }
       }
     } catch (err) {
-      console.error(err);
-        alert('Registration failed. Please try again.');
+      alert('Registration failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -145,37 +141,37 @@ if (subtotal > 0) {
   return (
     <div className="min-h-screen bg-[#F2F2F2] px-4 py-6 sm:px-6 sm:py-8 lg:py-12">
       <div className="max-w-6xl mx-auto">
-        
+
         <div className="mb-8 sm:mb-10">
-          <button 
-            onClick={() => navigate(-1)} 
-            className="flex items-center gap-2 text-[#2E2E2F]/60 hover:text-[#2E2E2F] font-black text-[9px] uppercase tracking-[0.2em] transition-colors mb-4"
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-[#2E2E2F]/60 hover:text-[#2E2E2F] font-semibold text-[10px] uppercase tracking-wide transition-colors mb-4"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             Change Selection
           </button>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#2E2E2F] tracking-tighter mb-1 leading-tight sm:leading-none">
             Complete Registration
           </h1>
           <div className="flex items-center gap-3">
-            <span className="bg-[#38BDF2] text-white text-[8px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest">
+            <span className="bg-[#38BDF2] text-[#F2F2F2] text-[9px] font-semibold px-2.5 py-1 rounded-lg uppercase tracking-wide">
               {totalQuantity} {totalQuantity === 1 ? 'Ticket' : 'Tickets'}
             </span>
             <p className="text-[#2E2E2F]/70 font-medium text-sm">
-              for <span className="text-[#2E2E2F] font-bold">{event.eventName}</span>
+              for <span className="text-[#2E2E2F] font-semibold">{event.eventName}</span>
             </p>
           </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 items-start">
-          
+
           <div className="flex-1 w-full">
             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               <Card className="p-5 sm:p-6 lg:p-8 border border-[#2E2E2F]/10 rounded-[1.75rem] sm:rounded-[2.5rem] bg-[#F2F2F2] relative overflow-hidden">
                 <div className="relative z-10">
                   <div className="flex items-center justify-center gap-5 mb-6 sm:mb-8">
                     <div className="w-12 h-px bg-[#2E2E2F]/10"></div>
-                    <h3 className="text-[11px] font-black text-[#2E2E2F] uppercase tracking-[0.4em] whitespace-nowrap text-center">
+                    <h3 className="text-[12px] font-semibold text-[#2E2E2F] uppercase tracking-wide whitespace-nowrap text-center">
                       Primary Registrant
                     </h3>
                     <div className="w-12 h-px bg-[#2E2E2F]/10"></div>
@@ -183,98 +179,98 @@ if (subtotal > 0) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 sm:gap-x-6 gap-y-5 sm:gap-y-6">
                     <div className="space-y-2">
-                      <label className="text-[12px] sm:text-[13px] font-bold text-[#2E2E2F]/70 ml-1">Full Name *</label>
-                      <Input 
-                        placeholder="Full name as per identification" 
-                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-bold bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] focus:border-[#38BDF2]/40 text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[13px] sm:text-[14px]"
+                      <label className="text-[13px] font-medium text-[#2E2E2F]/70 ml-1">Full Name *</label>
+                      <Input
+                        placeholder="Full name as per identification"
+                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-normal bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] focus:border-[#38BDF2]/40 text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[14px]"
                         value={formData.name}
-                        onChange={(e: any) => setFormData({...formData, name: e.target.value})}
+                        onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
                         error={errors.name}
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[12px] sm:text-[13px] font-bold text-[#2E2E2F]/70 ml-1">Email Address *</label>
-                      <Input 
-                        type="email" 
-                        placeholder="name@organization.com" 
-                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-bold bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] focus:border-[#38BDF2]/40 text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[13px] sm:text-[14px]"
+                      <label className="text-[13px] font-medium text-[#2E2E2F]/70 ml-1">Email Address *</label>
+                      <Input
+                        type="email"
+                        placeholder="name@organization.com"
+                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-normal bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] focus:border-[#38BDF2]/40 text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[14px]"
                         value={formData.email}
-                        onChange={(e: any) => setFormData({...formData, email: e.target.value})}
+                        onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
                         error={errors.email}
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[12px] sm:text-[13px] font-bold text-[#2E2E2F]/70 ml-1">Contact Number</label>
-                      <Input 
-                        placeholder="+63 ...." 
-                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-bold bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] focus:border-[#38BDF2]/40 text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[13px] sm:text-[14px]"
+                      <label className="text-[13px] font-medium text-[#2E2E2F]/70 ml-1">Contact Number</label>
+                      <Input
+                        placeholder="+63 ...."
+                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-normal bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] focus:border-[#38BDF2]/40 text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[14px]"
                         value={formData.phone}
-                        onChange={(e: any) => setFormData({...formData, phone: e.target.value})}
+                        onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[12px] sm:text-[13px] font-bold text-[#2E2E2F]/70 ml-1">Company</label>
-                      <Input 
-                        placeholder="Organization / Entity" 
-                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-bold bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] focus:border-[#38BDF2]/40 text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[13px] sm:text-[14px]"
+                      <label className="text-[13px] font-medium text-[#2E2E2F]/70 ml-1">Company</label>
+                      <Input
+                        placeholder="Organization / Entity"
+                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-normal bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] focus:border-[#38BDF2]/40 text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[14px]"
                         value={formData.company}
-                        onChange={(e: any) => setFormData({...formData, company: e.target.value})}
+                        onChange={(e: any) => setFormData({ ...formData, company: e.target.value })}
                       />
                     </div>
 
                     <div className="md:col-span-2 pt-4 border-t border-[#2E2E2F]/10 space-y-4">
                       <div className="flex items-center justify-between">
-  <p className="text-[11px] font-black text-[#2E2E2F] uppercase tracking-[0.3em]">Payment Method</p>
-</div>
-<div className="space-y-3">
-  <select
-    className="w-full p-3 rounded-lg border border-[#2E2E2F]/20 bg-[#F2F2F2] text-[13px] font-bold text-[#2E2E2F] focus:border-[#38BDF2]/40 outline-none disabled:opacity-60"
-    value={paymentMethodId}
-    onChange={e => setPaymentMethodId(e.target.value)}
-    aria-label="Select payment method"
-    disabled={subtotal === 0}
-  >
-    {PAYMENT_METHODS.map((method) => (
-      <option key={method.id} value={method.id}>
-        {method.label} — {method.description}
-      </option>
-    ))}
-  </select>
-  <div className={`mt-2 text-xs font-bold ${subtotal === 0 ? 'text-[#2E2E2F]/30' : 'text-[#2E2E2F]/80'}`}>
-    Fee: <span className="text-[#38BDF2]">{selectedPayment.feeLabel}</span>
-    {subtotal === 0 && <span className="ml-2">(No payment required for free ticket)</span>}
-  </div>
-</div>
+                        <p className="text-[12px] font-semibold text-[#2E2E2F] uppercase tracking-wide">Payment Method</p>
+                      </div>
+                      <div className="space-y-3">
+                        <select
+                          className="w-full p-3 rounded-lg border border-[#2E2E2F]/20 bg-[#F2F2F2] text-[13px] font-normal text-[#2E2E2F] focus:border-[#38BDF2]/40 outline-none disabled:opacity-60"
+                          value={paymentMethodId}
+                          onChange={e => setPaymentMethodId(e.target.value)}
+                          aria-label="Select payment method"
+                          disabled={subtotal === 0}
+                        >
+                          {PAYMENT_METHODS.map((method) => (
+                            <option key={method.id} value={method.id}>
+                              {method.label} — {method.description}
+                            </option>
+                          ))}
+                        </select>
+                        <div className={`mt-2 text-xs font-medium ${subtotal === 0 ? 'text-[#2E2E2F]/30' : 'text-[#2E2E2F]/70'}`}>
+                          Fee: <span className="text-[#38BDF2]">{selectedPayment.feeLabel}</span>
+                          {subtotal === 0 && <span className="ml-2">(No payment required for free ticket)</span>}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="md:col-span-2 pt-4 border-t border-[#2E2E2F]/10 space-y-4">
-                       <label className="flex items-start gap-4 cursor-pointer group select-none">
-                          <div className="relative mt-1">
-                            <input 
-                              type="checkbox" 
-                              className="peer sr-only"
-                              checked={formData.termsAccepted}
-                              onChange={(e) => setFormData({...formData, termsAccepted: e.target.checked})}
-                            />
-                            <div className="w-6 h-6 border-2 border-[#2E2E2F]/20 rounded-lg bg-[#F2F2F2] peer-checked:bg-[#38BDF2] peer-checked:border-[#38BDF2] transition-colors flex items-center justify-center">
-                              <ICONS.CheckCircle className={`w-4 h-4 text-[#2E2E2F] transition-opacity ${formData.termsAccepted ? 'opacity-100' : 'opacity-0'}`} strokeWidth={4} />
-                            </div>
+                      <label className="flex items-start gap-4 cursor-pointer group select-none">
+                        <div className="relative mt-1">
+                          <input
+                            type="checkbox"
+                            className="peer sr-only"
+                            checked={formData.termsAccepted}
+                            onChange={(e) => setFormData({ ...formData, termsAccepted: e.target.checked })}
+                          />
+                          <div className="w-6 h-6 border-2 border-[#2E2E2F]/20 rounded-lg bg-[#F2F2F2] peer-checked:bg-[#38BDF2] peer-checked:border-[#38BDF2] transition-colors flex items-center justify-center">
+                            <ICONS.CheckCircle className={`w-4 h-4 text-[#F2F2F2] transition-opacity ${formData.termsAccepted ? 'opacity-100' : 'opacity-0'}`} strokeWidth={4} />
                           </div>
-                          <span className="text-sm font-medium text-[#2E2E2F]/70 leading-relaxed group-hover:text-[#2E2E2F] transition-colors">
-                            I acknowledge that I have read and agree to the <a href="#" className="text-[#2E2E2F] font-bold hover:text-[#38BDF2] hover:underline">Terms and Conditions</a> and <a href="#" className="text-[#2E2E2F] font-bold hover:text-[#38BDF2] hover:underline">Privacy Policy</a> governing this event session.
-                          </span>
-                       </label>
-                       {errors.terms && <p className="text-[11px] font-black text-[#2E2E2F] uppercase tracking-widest pl-10">{errors.terms}</p>}
+                        </div>
+                        <span className="text-sm font-medium text-[#2E2E2F]/70 leading-relaxed group-hover:text-[#2E2E2F] transition-colors">
+                          I acknowledge that I have read and agree to the <a href="#" className="text-[#2E2E2F] font-bold hover:text-[#38BDF2] hover:underline">Terms and Conditions</a> and <a href="#" className="text-[#2E2E2F] font-bold hover:text-[#38BDF2] hover:underline">Privacy Policy</a> governing this event session.
+                        </span>
+                      </label>
+                      {errors.terms && <p className="text-[11px] font-semibold text-[#2E2E2F] uppercase tracking-wide pl-10">{errors.terms}</p>}
                     </div>
                   </div>
                 </div>
               </Card>
 
               <div className="flex flex-col sm:flex-row items-stretch gap-4">
-                <Button 
-                  type="submit" 
-                  size="md" 
-                  className="flex-[2]" 
+                <Button
+                  type="submit"
+                  size="md"
+                  className="flex-[2]"
                   disabled={submitting}
                 >
                   {submitting ? (
@@ -284,11 +280,11 @@ if (subtotal > 0) {
                     </span>
                   ) : totalPayable === 0 ? 'Confirm Registration' : `Checkout PHP ${formatCurrency(totalPayable)}`}
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="md" 
-                  className="flex-1" 
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="flex-1"
                   onClick={() => navigate(-1)}
                 >
                   Cancel
@@ -296,10 +292,10 @@ if (subtotal > 0) {
               </div>
 
               <div className="flex flex-col items-center gap-4 pt-6">
-                 <div className="flex items-center gap-6 opacity-60">
-                    <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/images/hitpay.png" alt="HitPay" className="h-4" />
-                 </div>
-                 <p className="text-[9px] font-black uppercase tracking-[0.4em] text-[#2E2E2F]/50">
+                <div className="flex items-center gap-6 opacity-60">
+                  <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/images/hitpay.png" alt="HitPay" className="h-4" />
+                </div>
+                <p className="text-[9px] font-medium uppercase tracking-[0.4em] text-[#2E2E2F]/50">
                   Global Transaction Security by HitPay
                 </p>
               </div>
@@ -311,58 +307,58 @@ if (subtotal > 0) {
             <Card className="bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden p-0">
               <div className="p-5 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
                 <div className="flex items-center justify-between border-b border-[#2E2E2F]/10 pb-6">
-                  <h3 className="font-black text-[10px] sm:text-[11px] text-[#2E2E2F] uppercase tracking-[0.4em] flex items-center gap-3">
+                  <h3 className="font-semibold text-[11px] sm:text-[12px] text-[#2E2E2F] uppercase tracking-wide flex items-center gap-3">
                     <ICONS.Calendar className="w-4 h-4" />
                     Reservation Summary
                   </h3>
                 </div>
-                
+
                 <div className="space-y-10">
                   {/* Line Items */}
                   <div className="space-y-6 sm:space-y-8">
                     {selectedItems.map((item, idx) => (
                       <div key={idx} className="flex justify-between items-start group">
                         <div className="flex-1 pr-6">
-                          <p className="font-black text-[#2E2E2F] text-[12px] sm:text-[13px] uppercase tracking-tight leading-tight mb-2 group-hover:text-[#38BDF2] transition-colors">
+                          <p className="font-semibold text-[#2E2E2F] text-[13px] sm:text-[14px] uppercase tracking-tight leading-tight mb-2 group-hover:text-[#38BDF2] transition-colors">
                             {item.ticket.name}
                           </p>
                           <div className="flex items-center gap-2.5">
                             <span className="w-1.5 h-1.5 bg-[#38BDF2] rounded-full"></span>
-                            <p className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.15em]">
+                            <p className="text-[11px] font-medium text-[#2E2E2F]/60 uppercase tracking-wide">
                               {item.qty} {item.qty === 1 ? 'Guest' : 'Guests'}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="text-sm sm:text-base font-black text-[#38BDF2] tracking-tighter block">
+                          <span className="text-sm sm:text-base font-bold text-[#38BDF2] tracking-tight block">
                             PHP {(item.ticket.priceAmount * item.qty).toLocaleString()}
                           </span>
-                          <span className="text-[9px] text-[#2E2E2F]/50 font-black uppercase tracking-widest block mt-0.5">
+                          <span className="text-[10px] text-[#2E2E2F]/50 font-medium uppercase tracking-wide block mt-0.5">
                             {item.ticket.priceAmount > 0 ? `PHP ${item.ticket.priceAmount.toLocaleString()} ea` : 'Complimentary'}
                           </span>
                         </div>
                       </div>
                     ))}
                   </div>
-                  
+
                   {/* Fee Breakdown */}
                   <div className="pt-5 sm:pt-6 border-t border-[#2E2E2F]/10 space-y-4">
                     <div className="flex justify-between items-center text-[#2E2E2F]/60">
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em]">Platform Subtotal</span>
-                      <span className="text-[10px] sm:text-[11px] font-black tracking-widest">PHP {formatCurrency(subtotal)}</span>
+                      <span className="text-[10px] font-medium uppercase tracking-wide">Platform Subtotal</span>
+                      <span className="text-[11px] sm:text-[12px] font-semibold tracking-wide">PHP {formatCurrency(subtotal)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[9px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em]">HitPay Service Fee</span>
+                      <span className="text-[10px] font-medium text-[#2E2E2F]/60 uppercase tracking-wide">HitPay Service Fee</span>
                       {subtotal === 0 ? (
-                        <span className="text-[9px] font-black text-[#2E2E2F] border border-[#38BDF2]/40 px-2.5 py-0.5 rounded-lg tracking-[0.15em] bg-[#38BDF2]/10">
+                        <span className="text-[10px] font-semibold text-[#2E2E2F] border border-[#38BDF2]/40 px-2.5 py-0.5 rounded-lg tracking-wide bg-[#38BDF2]/10">
                           WAIVED
                         </span>
                       ) : (
                         <div className="text-right">
-                          <span className="text-[10px] sm:text-[11px] font-black tracking-widest text-[#2E2E2F] block">
+                          <span className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-[#2E2E2F] block">
                             PHP {formatCurrency(paymentFee)}
                           </span>
-                          <span className="text-[8px] font-black text-[#2E2E2F]/50 uppercase tracking-[0.2em] block mt-1">
+                          <span className="text-[9px] font-medium text-[#2E2E2F]/50 uppercase tracking-wide block mt-1">
                             {selectedPayment.feeLabel}
                           </span>
                         </div>
@@ -374,14 +370,14 @@ if (subtotal > 0) {
                   <div className="pt-5 sm:pt-6 border-t-2 border-[#2E2E2F]/10">
                     <div className="flex justify-between items-end">
                       <div className="space-y-1.5">
-                        <span className="text-[10px] font-black text-[#2E2E2F] uppercase tracking-[0.4em] block">Grand Total</span>
+                        <span className="text-[11px] font-semibold text-[#2E2E2F] uppercase tracking-wide block">Grand Total</span>
                         <span className="text-2xl sm:text-3xl font-black text-[#38BDF2] tracking-tighter block leading-none">
                           {totalPayable === 0 ? 'FREE' : `PHP ${formatCurrency(totalPayable)}`}
                         </span>
                       </div>
                       <div className="pb-1">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#F2F2F2] text-[#38BDF2] rounded-xl flex items-center justify-center border border-[#2E2E2F]/10">
-                           <ICONS.CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+                          <ICONS.CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                       </div>
                     </div>
@@ -390,21 +386,21 @@ if (subtotal > 0) {
 
                 {/* Delivery Information */}
                 <div className="mt-2 pt-6 sm:pt-8 border-t border-[#2E2E2F]/10">
-                   <div className="flex items-center gap-4 bg-[#F2F2F2] p-4 rounded-2xl border border-[#2E2E2F]/10">
-                      <div className="p-2.5 bg-[#F2F2F2] text-[#38BDF2] rounded-lg border border-[#2E2E2F]/10">
-                        <ICONS.CreditCard className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-[#2E2E2F] uppercase tracking-widest leading-none">Digital Delivery</p>
-                        <p className="text-[9px] text-[#2E2E2F]/60 font-bold mt-1.5 uppercase tracking-widest">Instant Ticket Access</p>
-                      </div>
-                   </div>
+                  <div className="flex items-center gap-4 bg-[#F2F2F2] p-4 rounded-2xl border border-[#2E2E2F]/10">
+                    <div className="p-2.5 bg-[#F2F2F2] text-[#38BDF2] rounded-lg border border-[#2E2E2F]/10">
+                      <ICONS.CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#2E2E2F] uppercase tracking-wide leading-none">Digital Delivery</p>
+                      <p className="text-[10px] text-[#2E2E2F]/60 font-medium mt-1.5 uppercase tracking-wide">Instant Ticket Access</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </Card>
-            
+
             <div className="mt-6 sm:mt-8 px-2 sm:px-10 text-center">
-              <p className="text-[9px] text-[#2E2E2F]/60 font-bold leading-relaxed uppercase tracking-[0.2em]">
+              <p className="text-[10px] text-[#2E2E2F]/60 font-medium leading-relaxed uppercase tracking-wide">
                 Enterprise Shield • Secure Checkout
               </p>
             </div>

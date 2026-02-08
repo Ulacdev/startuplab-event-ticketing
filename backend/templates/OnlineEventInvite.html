@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" style="margin:0;padding:0;">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Access Gateway: {{1.meta.eventName}}</title>
+    <style>
+        /* Global Resets */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #F2F2F2;
+            -webkit-font-smoothing: antialiased;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        .main-card {
+            box-shadow: 0 40px 80px rgba(46, 46, 47, 0.08);
+        }
+
+        /* Responsive Adjustments */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+                padding: 15px !important;
+            }
+
+            .side-gutter {
+                padding: 30px 25px !important;
+            }
+
+            .mobile-stack {
+                display: block !important;
+                width: 100% !important;
+            }
+
+            .mobile-text-lg {
+                font-size: 32px !important;
+            }
+        }
+    </style>
+</head>
+
+<body style="margin:0;padding:0;background-color:#F2F2F2;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F2F2F2; min-height:100vh;">
+        <tr>
+            <td align="center" style="padding: 60px 0;">
+                <table class="container" width="540" cellpadding="0" cellspacing="0" border="0"
+                    style="width:100%; max-width:540px;">
+
+                    <!-- BRAND LOGO HEADER -->
+                    <tr>
+                        <td align="center" style="padding-bottom: 40px;">
+                            <a href="https://startuplab.com">
+                                <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
+                                    height="115" alt="StartupLab Logo">
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- TICKET TOP SECTION -->
+                    <tr>
+                        <td class="main-card"
+                            style="background-color: #FFFFFF; border-radius: 40px 40px 0 0; border: 1px solid #2E2E2F08; overflow: hidden;">
+                            <!-- Event Hero Image -->
+                            <img src="{{1.meta.eventImageUrl}}" width="100%"
+                                style="width: 100%; height: auto; object-fit: cover; max-height: 240px; border-bottom: 1px solid #2E2E2F05;"
+                                alt="Event Banner">
+
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td class="side-gutter" style="padding: 50px 50px 40px 50px;">
+                                        <div style="margin-bottom: 24px;">
+                                            <span
+                                                style="display: inline-block; padding: 6px 12px; background-color: #38BDF2; color: #F2F2F2; font-size: 9px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; border-radius: 8px;">CONFIRMED
+                                                ATTENDEE</span>
+                                        </div>
+                                        <h1 class="mobile-text-lg"
+                                            style="color: #2E2E2F; font-size: 42px; font-weight: 900; letter-spacing: -0.05em; line-height: 1; margin: 0 0 20px 0;">
+                                            Digital Access Gateway.</h1>
+                                        <p
+                                            style="color: #2E2E2F; font-size: 16px; font-weight: 500; line-height: 1.6; margin: 0; opacity: 0.7;">
+                                            Hello {{1.name}}, your encrypted session link for
+                                            <strong>{{1.meta.eventName}}</strong> is now ready for deployment.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- TICKET PERFORATION DIVIDER -->
+                    <tr>
+                        <td style="background-color: #FFFFFF; padding: 0 30px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <!-- Left Cutout -->
+                                    <td width="20" height="40"
+                                        style="background-color: #F2F2F2; border-radius: 0 20px 20px 0; border-right: 1px solid #2E2E2F08; border-top: 1px solid #2E2E2F08; border-bottom: 1px solid #2E2E2F08;">
+                                    </td>
+                                    <!-- Dashed Line -->
+                                    <td height="40"
+                                        style="border-bottom: 2px dashed #2E2E2F10; vertical-align: middle;"></td>
+                                    <!-- Right Cutout -->
+                                    <td width="20" height="40"
+                                        style="background-color: #F2F2F2; border-radius: 20px 0 0 20px; border-left: 1px solid #2E2E2F08; border-top: 1px solid #2E2E2F08; border-bottom: 1px solid #2E2E2F08;">
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- TICKET BOTTOM SECTION -->
+                    <tr>
+                        <td class="main-card"
+                            style="background-color: #FFFFFF; border-radius: 0 0 40px 40px; border: 1px solid #2E2E2F08; overflow: hidden; padding-bottom: 20px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+
+                                <!-- DATA GRID -->
+                                <tr>
+                                    <td class="side-gutter" style="padding: 40px 50px;">
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td class="mobile-stack" width="50%" style="padding-bottom: 25px;">
+                                                    <p
+                                                        style="font-size: 9px; font-weight: 900; color: #2E2E2F; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.4; margin: 0 0 8px 0;">
+                                                        DATE & TIME</p>
+                                                    <p
+                                                        style="font-size: 13px; font-weight: 800; color: #2E2E2F; margin: 0;">
+                                                        {{1.meta.eventStartAt}}</p>
+                                                </td>
+                                                <td class="mobile-stack" width="50%" style="padding-bottom: 25px;">
+                                                    <p
+                                                        style="font-size: 9px; font-weight: 900; color: #2E2E2F; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.4; margin: 0 0 8px 0;">
+                                                        ACCESS TYPE</p>
+                                                    <p
+                                                        style="font-size: 13px; font-weight: 800; color: #38BDF2; margin: 0;">
+                                                        Online Session</p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="mobile-stack" colspan="2" style="padding-bottom: 10px;">
+                                                    <p
+                                                        style="font-size: 9px; font-weight: 900; color: #2E2E2F; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.4; margin: 0 0 8px 0;">
+                                                        PLATFORM</p>
+                                                    <p
+                                                        style="font-size: 13px; font-weight: 800; color: #2E2E2F; margin: 0;">
+                                                        {{1.meta.streamingPlatform}}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                <!-- CTA -->
+                                <tr>
+                                    <td align="center" style="padding: 0 50px 35px 50px;">
+                                        <a href="{{1.meta.eventLocation}}"
+                                            style="display: block; width: 100%; padding: 22px 0; background-color: #2E2E2F; color: #F2F2F2; font-size: 14px; font-weight: 900; text-align: center; text-decoration: none; border-radius: 20px; letter-spacing: 0.2em; box-shadow: 0 20px 40px rgba(46,46,47,0.15);">
+                                            JOIN LIVE SESSION
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                <!-- FALLBACK -->
+                                <tr>
+                                    <td style="padding: 0 50px 20px 50px; text-align: center;">
+                                        <p
+                                            style="font-size: 10px; font-weight: 600; color: #2E2E2F; opacity: 0.3; line-height: 1.6; margin: 0;">
+                                            Encrypted Access Link:<br>
+                                            <a href="{{1.meta.eventLocation}}"
+                                                style="color: #38BDF2; text-decoration: none;">{{1.meta.eventLocation}}</a>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td align="center" style="padding-top: 50px;">
+                            <div style="opacity: 0.2; margin-bottom: 20px;">
+                                <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
+                                    height="25" alt="StartupLab Footer">
+                            </div>
+                            <p style="font-size: 10px; color: #2E2E2F; opacity: 0.4; line-height: 1.5;">
+                                &copy; 2026 StartupLab Business Center. All rights reserved.<br>
+                                Secured by StartupLab Professional Hub.
+                            </p>
+                            <div style="opacity: 0.1; margin-top: 20px;">
+                                <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/images/hitpay.png"
+                                    height="12" alt="HitPay">
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

@@ -22,7 +22,7 @@ import { useUser } from './context/UserContext';
 const API = import.meta.env.VITE_API_BASE;
 const Branding: React.FC<{ className?: string, light?: boolean }> = ({ className = '', light = false }) => (
   <img
-    src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/01_Logos-20260203T092531Z-3-001/01_Logos/StartupLab_16_9_WithIcon_Dark.svg"
+    src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
     alt="StartupLab Business Ticketing Logo"
     className={`h-16 sm:h-24 w-auto ${className}`}
     style={{ filter: light ? 'invert(1) grayscale(1) brightness(2)' : undefined }}
@@ -74,7 +74,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           });
         }
       }
-    } catch {}
+    } catch { }
   };
 
   React.useEffect(() => {
@@ -177,8 +177,8 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           navigate('/login', { replace: true });
           return;
         }
-        setUser({ 
-          role: me.role, 
+        setUser({
+          role: me.role,
           email: me.email,
           name: me.name ?? null,
           imageUrl: me.imageUrl ?? null,
@@ -216,54 +216,50 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }, [isAuthenticated, isStaff, location.pathname, navigate, role, canViewEvents, canManualCheckIn]);
 
   const staffPermsLoaded = role !== UserRole.STAFF || (
-  typeof canViewEvents === 'boolean' && typeof canManualCheckIn === 'boolean'
-);
-const noStaffPerms = role === UserRole.STAFF && canViewEvents === false && canManualCheckIn === false;
-const menuItems = (
-  !isAuthenticated || !role || !staffPermsLoaded
-    ? []
-    : role === UserRole.STAFF && canViewEvents === false && canManualCheckIn === false
-      ? [
+    typeof canViewEvents === 'boolean' && typeof canManualCheckIn === 'boolean'
+  );
+  const noStaffPerms = role === UserRole.STAFF && canViewEvents === false && canManualCheckIn === false;
+  const menuItems = (
+    !isAuthenticated || !role || !staffPermsLoaded
+      ? []
+      : role === UserRole.STAFF && canViewEvents === false && canManualCheckIn === false
+        ? [
           { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
         ]
-      : role === UserRole.STAFF
-      ? [
-          ...(canViewEvents !== false ? [{ label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-5 h-5" /> }] : []),
-          { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
-          ...(canManualCheckIn !== false ? [{ label: 'Check-In', path: '/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> }] : []),
-        ]
-      : [
-          { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-5 h-5" /> },
-          { label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-5 h-5" /> },
-          { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
-          { label: 'Check-In', path: '/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> },
-          { label: 'Settings', path: '/settings', icon: <ICONS.Settings className="w-5 h-5" /> },
-        ]
-);
+        : role === UserRole.STAFF
+          ? [
+            ...(canViewEvents !== false ? [{ label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-5 h-5" /> }] : []),
+            { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
+            ...(canManualCheckIn !== false ? [{ label: 'Check-In', path: '/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> }] : []),
+          ]
+          : [
+            { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-5 h-5" /> },
+            { label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-5 h-5" /> },
+            { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
+            { label: 'Check-In', path: '/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> },
+            { label: 'Settings', path: '/settings', icon: <ICONS.Settings className="w-5 h-5" /> },
+          ]
+  );
 
 
   const handleLogout = async () => {
     try {
       // 1. Call backend logout to clear cookies
-      await fetch(`${API}/api/auth/logout`, { 
-        method: "POST", 
-        credentials: "include" 
+      await fetch(`${API}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include"
       });
-  
+
       // 2. Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Supabase sign out error:", error);
-      }
-  
+      await supabase.auth.signOut();
+
       // 3. Clear any local tokens/storage
       localStorage.removeItem('sb-ddkkbtijqrgpitncxylx-auth-token');
       clearUser();
-      
+
       // 4. Navigate to login
       navigate('/');
-    } catch (error) {
-      console.error("Logout error:", error);
+    } catch {
       // Still navigate to login even if there was an error
       navigate('/');
     }
@@ -275,107 +271,116 @@ const menuItems = (
     <div className="min-h-screen flex bg-[#F2F2F2]">
       {/* Sidebar for desktop */}
       <aside
-        className={`w-72 bg-[#F2F2F2] border-r border-[#2E2E2F]/10 hidden lg:flex flex-col fixed inset-y-0 left-0 z-30 overflow-y-auto transform transition-transform duration-300 ease-in-out ${
-          desktopSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`w-72 bg-[#F2F2F2] border-r border-[#2E2E2F]/10 hidden lg:flex flex-col fixed inset-y-0 left-0 z-30 overflow-y-auto transform transition-transform duration-300 ease-in-out ${desktopSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
 
         <div className="pt-6 pb-2 px-8 flex flex-col items-start">
-      </div>
-      <div className="px-8">
-        <div className="mt-2 flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${isStaff ? 'bg-[#38BDF2]' : 'bg-[#2E2E2F]'}`}></span>
-          <p className="text-[9px] uppercase font-black text-[#2E2E2F]/60 tracking-[0.2em]">
-            {isStaff ? 'Operations Hub' : 'Enterprise Admin'}
-          </p>
         </div>
-      </div>
+        <div className="px-8">
+          <div className="mt-2 flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${isStaff ? 'bg-[#38BDF2]' : 'bg-[#2E2E2F]'}`}></span>
+            <p className="text-[9px] uppercase font-black text-[#2E2E2F]/60 tracking-[0.2em]">
+              {isStaff ? 'Portal' : 'Enterprise Admin'}
+            </p>
+          </div>
+        </div>
         <nav className="flex-1 px-4 py-4 space-y-1">
           {menuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-colors group ${
-                location.pathname === item.path
-                  ? 'bg-[#38BDF2] text-[#F2F2F2]'
-                  : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
-              }`}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-colors group ${location.pathname === item.path
+                ? 'bg-[#38BDF2] text-[#F2F2F2]'
+                : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
+                }`}
             >
               {item.icon}
               <span className="font-bold text-sm tracking-tight">{item.label}</span>
             </Link>
           ))}
         </nav>
-        <div className="p-6 mt-auto">
-  <div className="bg-[#F2F2F2] rounded-2xl p-4 flex items-center gap-3 border border-[#2E2E2F]/10 cursor-pointer relative group" onClick={() => setUserMenuOpen((v) => !v)}>
-    <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#38BDF2]/20 text-[#2E2E2F] flex items-center justify-center font-black text-xs">
-      {imageUrl ? (
-        <img src={imageUrl} alt="Profile" className="w-full h-full object-cover" />
-      ) : (
-        <span className="font-black text-xs text-[#2E2E2F]">{initials}</span>
-      )}
-    </div>
-    <div className="flex-1 overflow-hidden">
-      <p className="text-xs font-black text-[#2E2E2F] truncate">{displayName}</p>
-      <p className="text-[9px] text-[#2E2E2F]/60 font-bold uppercase tracking-widest truncate">StartupLab Global</p>
-    </div>
-    <svg className="w-4 h-4 text-[#2E2E2F]/50 ml-2" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-    {userMenuOpen && (
-      <div
-        className="absolute left-0 bottom-16 w-56 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-xl shadow-none z-50 p-2 flex flex-col gap-1"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button
-          className="w-full min-h-[32px] px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]"
-          onClick={(event) => {
-            event.stopPropagation();
-            setProfileModalOpen(true);
-            setUserMenuOpen(false);
-          }}
-        >
-          Edit Profile
-        </button>
-        <button
-          className="w-full min-h-[32px] px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]"
-          onClick={(event) => {
-            event.stopPropagation();
-            setUserMenuOpen(false);
-            handleLogout();
-          }}
-        >
-          Logout
-        </button>
-      </div>
-    )}
-  </div>
-</div>
+
       </aside>
 
       <main
-        className={`flex-1 flex flex-col min-w-0 transition-[padding-left] duration-300 ease-in-out ${
-          desktopSidebarOpen ? 'lg:pl-72' : 'lg:pl-0'
-        }`}
+        className={`flex-1 flex flex-col min-w-0 transition-[padding-left] duration-300 ease-in-out ${desktopSidebarOpen ? 'lg:pl-72' : 'lg:pl-0'
+          }`}
       >
         <header className="h-20 bg-[#F2F2F2] border-b border-[#2E2E2F]/10 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 w-full">
-  <button
-    className="focus:outline-none bg-transparent border-none p-0 flex items-center"
-    onClick={() => {
-      setDesktopSidebarOpen((prev) => !prev);
-      setSidebarOpen((prev) => !prev);
-    }}
-    aria-label={desktopSidebarOpen || sidebarOpen ? 'Collapse navigation' : 'Expand navigation'}
-    aria-pressed={desktopSidebarOpen || sidebarOpen}
-    style={{ background: 'none' }}
-  >
-    <img
-      src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/01_Logos-20260203T092531Z-3-001/01_Logos/StartupLab_16_9_WithIcon_Dark.svg"
-      alt="StartupLab Business Center Logo"
-      className="h-16 sm:h-24 w-auto max-w-[160px]"
-    />
-  </button>
-  <div className="flex items-center gap-6 min-w-0">
-      </div>
-</header>
+          <button
+            className="focus:outline-none bg-transparent border-none p-0 flex items-center"
+            onClick={() => {
+              setDesktopSidebarOpen((prev) => !prev);
+              setSidebarOpen((prev) => !prev);
+            }}
+            aria-label={desktopSidebarOpen || sidebarOpen ? 'Collapse navigation' : 'Expand navigation'}
+            aria-pressed={desktopSidebarOpen || sidebarOpen}
+            style={{ background: 'none' }}
+          >
+            <img
+              src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
+              alt="StartupLab Business Center Logo"
+              className="h-16 sm:h-24 w-auto max-w-[160px]"
+            />
+          </button>
+          <div className="flex items-center gap-4 min-w-0">
+            {/* Profile Dropdown */}
+            <div className="relative">
+              <button
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 transition-colors"
+                onClick={() => setUserMenuOpen((v) => !v)}
+              >
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#38BDF2]/20 text-[#2E2E2F] flex items-center justify-center">
+                  {imageUrl ? (
+                    <img src={imageUrl} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-semibold text-xs text-[#2E2E2F]">{initials}</span>
+                  )}
+                </div>
+                <div className="hidden sm:block text-left">
+                  <p className="text-xs font-semibold text-[#2E2E2F] truncate max-w-[120px]">{displayName}</p>
+                </div>
+                <svg className="w-4 h-4 text-[#2E2E2F]/50" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {userMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                  <div className="absolute right-0 top-[calc(100%+8px)] w-56 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-2xl shadow-[0_10px_40px_-10px_rgba(46,46,47,0.1)] z-50 p-2 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                    <div className="px-4 py-3 border-b border-[#2E2E2F]/5 mb-1">
+                      <p className="text-[10px] font-medium text-[#2E2E2F]/40 uppercase tracking-widest mb-0.5">Account</p>
+                      <p className="text-xs font-semibold text-[#2E2E2F] truncate">{displayName}</p>
+                    </div>
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-colors text-left group"
+                      onClick={() => {
+                        setProfileModalOpen(true);
+                        setUserMenuOpen(false);
+                      }}
+                    >
+                      <ICONS.Settings className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                      <span>Edit Profile</span>
+                    </button>
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#2E2E2F]/70 hover:bg-red-50 hover:text-red-500 transition-colors text-left group"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        handleLogout();
+                      }}
+                    >
+                      <svg className="w-4 h-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
         {/* Sidebar overlay for mobile */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 flex lg:hidden">
@@ -388,7 +393,7 @@ const menuItems = (
                   onClick={() => setSidebarOpen(false)}
                   aria-label="Close navigation"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
               <nav className="flex-1 px-4 py-4 space-y-1">
@@ -396,11 +401,10 @@ const menuItems = (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-colors group ${
-                      location.pathname === item.path
-                        ? 'bg-[#38BDF2] text-[#F2F2F2]'
-                        : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
-                    }`}
+                    className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-colors group ${location.pathname === item.path
+                      ? 'bg-[#38BDF2] text-[#F2F2F2]'
+                      : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
+                      }`}
                     onClick={() => setSidebarOpen(false)}
                   >
                     {item.icon}
@@ -408,28 +412,7 @@ const menuItems = (
                   </Link>
                 ))}
               </nav>
-              <div className="p-6 mt-auto">
-                <div className="bg-[#F2F2F2] rounded-2xl p-4 flex items-center gap-3 border border-[#2E2E2F]/10 cursor-pointer relative group" onClick={() => setUserMenuOpen((v) => !v)}>
-                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#38BDF2]/20 text-[#2E2E2F] flex items-center justify-center font-black text-xs">
-                    {imageUrl ? (
-                      <img src={imageUrl} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="font-black text-xs text-[#2E2E2F]">{initials}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-xs font-black text-[#2E2E2F] truncate">{displayName}</p>
-                    <p className="text-[9px] text-[#2E2E2F]/60 font-bold uppercase tracking-widest truncate">StartupLab Global</p>
-                  </div>
-                  <svg className="w-4 h-4 text-[#2E2E2F]/50 ml-2" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                  {userMenuOpen && (
-                    <div className="absolute left-0 bottom-16 w-56 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-xl shadow-none z-50 p-2 flex flex-col gap-1">
-                      <button className="w-full min-h-[32px] px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]" onClick={() => { setProfileModalOpen(true); setUserMenuOpen(false); }}>Edit Profile</button>
-                      <button className="w-full min-h-[32px] px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]" onClick={() => { setUserMenuOpen(false); handleLogout(); }}>Logout</button>
-                    </div>
-                  )}
-                </div>
-              </div>
+
             </aside>
           </div>
         )}
@@ -520,9 +503,9 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           <div>
             <Branding className="text-2xl" />
             <p className="mt-4 text-sm font-medium max-w-sm text-[#2E2E2F]/70 leading-relaxed">
-  Your gateway to StartupLab events.<br />
-  From internal workshops to public showcases, this platform delivers seamless, secure registration for every StartupLab gathering.
-</p>
+              Your gateway to StartupLab events.<br />
+              From internal workshops to public showcases, this platform delivers seamless, secure registration for every StartupLab gathering.
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-8 lg:text-right uppercase tracking-[0.2em] font-black text-[9px]">
             <div className="space-y-4">
@@ -541,7 +524,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             © 2026 StartupLab Business Center
           </div>
           <div className="flex items-center gap-6 opacity-60 grayscale">
-             <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/images/hitpay.png" alt="HitPay" className="h-3" />
+            <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/images/hitpay.png" alt="HitPay" className="h-3" />
           </div>
         </div>
       </div>

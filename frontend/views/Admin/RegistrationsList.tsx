@@ -33,10 +33,10 @@ export const RegistrationsList: React.FC = () => {
     : Math.max(1, Math.ceil(filteredRegs.length / itemsPerPage));
 
   const pagedRegs = useMemo(() => {
-  if (isServerPaged) return filteredRegs;
-  const start = (currentPage - 1) * itemsPerPage;
-  return filteredRegs.slice(start, start + itemsPerPage);
-}, [filteredRegs, currentPage, itemsPerPage, isServerPaged]);
+    if (isServerPaged) return filteredRegs;
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredRegs.slice(start, start + itemsPerPage);
+  }, [filteredRegs, currentPage, itemsPerPage, isServerPaged]);
 
   useEffect(() => {
     const handler = window.setTimeout(() => {
@@ -77,7 +77,6 @@ export const RegistrationsList: React.FC = () => {
         }
       } catch (error) {
         if (requestId !== requestIdRef.current) return;
-        console.error('Error fetching registrations:', error);
       } finally {
         if (requestId === requestIdRef.current) {
           setLoading(false);
@@ -91,20 +90,10 @@ export const RegistrationsList: React.FC = () => {
     }
   }, [eventId, currentPage, isServerPaged, itemsPerPage, debouncedSearch]);
 
-  useEffect(() => {
-    console.log('Pagination state updated:', {
-      currentPage,
-      pagination,
-      totalPages,
-      isServerPaged,
-      regsLength: regs?.length || 0
-    });
-  }, [pagination, currentPage, totalPages, isServerPaged, regs]);
-
   const handlePageChange = (page: number) => {
-  setCurrentPage(page);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-};
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleCheckIn = async (reg: RegistrationView) => {
     try {
@@ -143,24 +132,24 @@ export const RegistrationsList: React.FC = () => {
     <div className="space-y-8">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-black text-[#2E2E2F] tracking-tighter">Attendee Directory</h1>
+          <h1 className="text-3xl font-black text-[#2E2E2F] tracking-tighter">Attendee List</h1>
           <p className="text-[#2E2E2F]/70 font-medium text-sm mt-1">
             Full visibility of confirmed registrations and financial transactions.
           </p>
         </div>
         <div className="w-full md:w-80">
           <div className="relative group">
-             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#2E2E2F]/60">
-               <ICONS.Search className="h-4 w-4" strokeWidth={3} />
-             </div>
-             <input 
-              type="text" 
-              placeholder="Search directory..." 
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#2E2E2F]/60">
+              <ICONS.Search className="h-4 w-4" strokeWidth={3} />
+            </div>
+            <input
+              type="text"
+              placeholder="Search directory..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="block w-full pl-10 pr-10 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/30 focus:border-[#2E2E2F] transition-colors"
-             />
-             <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#2E2E2F]/70">
+            />
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#2E2E2F]/70">
               {isFetching && <div className="w-4 h-4 border-2 border-[#2E2E2F]/30 border-t-transparent rounded-full animate-spin" />}
             </div>
           </div>
@@ -183,7 +172,7 @@ export const RegistrationsList: React.FC = () => {
               {pagedRegs.map((reg, index) => {
                 const isCheckedIn = reg.status === 'USED';
                 const rowKey = reg.id ?? reg.ticketCode ?? `${reg.eventId}-${reg.orderId}-${index}`;
-                
+
                 return (
                   <tr
                     key={rowKey}
@@ -203,11 +192,10 @@ export const RegistrationsList: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <span className={`inline-flex px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
-                        isCheckedIn 
-                          ? 'bg-[#38BDF2]/20 text-[#2E2E2F]' 
+                      <span className={`inline-flex px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${isCheckedIn
+                          ? 'bg-[#38BDF2]/20 text-[#2E2E2F]'
                           : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
-                      }`}>
+                        }`}>
                         {isCheckedIn ? 'CHECKED_IN' : 'ISSUED'}
                       </span>
                     </td>
@@ -218,17 +206,17 @@ export const RegistrationsList: React.FC = () => {
                     </td>
                     <td className="px-8 py-6 text-right">
                       {!isCheckedIn ? (
-                          <button 
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleCheckIn(reg);
-                              }}
-                              className="py-2 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] min-h-[32px] transition-colors"
-                              disabled={isStaff && !canManualCheckIn}
-                              style={isStaff && !canManualCheckIn ? { opacity: 0.5, pointerEvents: 'none' } : {}}
-                            >
-                              MANUAL CHECK-IN
-                            </button>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleCheckIn(reg);
+                          }}
+                          className="py-2 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] min-h-[32px] transition-colors"
+                          disabled={isStaff && !canManualCheckIn}
+                          style={isStaff && !canManualCheckIn ? { opacity: 0.5, pointerEvents: 'none' } : {}}
+                        >
+                          MANUAL CHECK-IN
+                        </button>
                       ) : (
                         <span className="text-[12px] font-bold text-[#2E2E2F]/40 italic tracking-tight">Arrived</span>
                       )}
@@ -311,11 +299,10 @@ export const RegistrationsList: React.FC = () => {
               <button
                 key={i}
                 onClick={() => handlePageChange(i + 1)}
-                className={`min-h-[32px] px-4 rounded-full text-[9px] font-black uppercase tracking-widest transition-colors focus:outline-none focus:ring-2 focus:ring-[#38BDF2] focus:ring-offset-2 ${
-                  currentPage === i + 1
+                className={`min-h-[32px] px-4 rounded-full text-[9px] font-black uppercase tracking-widest transition-colors focus:outline-none focus:ring-2 focus:ring-[#38BDF2] focus:ring-offset-2 ${currentPage === i + 1
                     ? 'bg-[#38BDF2] text-[#F2F2F2]'
                     : 'bg-[#F2F2F2] text-[#2E2E2F] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]'
-                }`}
+                  }`}
               >
                 {i + 1}
               </button>

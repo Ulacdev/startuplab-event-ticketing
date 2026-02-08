@@ -2,11 +2,15 @@ const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL
 const MAKE_WEBHOOK_API_KEY = process.env.MAKE_WEBHOOK_API_KEY
 
 export async function sendMakeNotification(body) {
-  // Add type and locationText to the payload root if available in meta
+  // Add metadata to the payload root if available in meta
   if (body?.meta) {
     if (body.meta.eventLocation && !body.locationText) body.locationText = body.meta.eventLocation;
-    if (body.type && !body.type) body.type = body.type;
+    if (body.meta.streamingPlatform && !body.streamingPlatform) body.streamingPlatform = body.meta.streamingPlatform;
+    if (body.meta.locationType && !body.locationType) body.locationType = body.meta.locationType;
+    if (body.meta.inviteLink && !body.inviteLink) body.inviteLink = body.meta.inviteLink;
+    if (body.meta.role && !body.role) body.role = body.meta.role;
   }
+
   if (!MAKE_WEBHOOK_URL) return { ok: false, skipped: true, reason: 'MAKE_WEBHOOK_URL missing' }
   const headers = {
     'Content-Type': 'application/json',

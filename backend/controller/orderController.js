@@ -216,7 +216,7 @@ export const createOrder = async (req, res) => {
       // fetch event details
       const { data: event, error: eventErr } = await supabase
         .from('events')
-        .select('eventName, description, startAt, endAt, locationText, locationType, imageUrl')
+        .select('eventName, description, startAt, endAt, locationText, locationType, imageUrl, streamingPlatform')
         .eq('eventId', eventId)
         .maybeSingle();
       for (const t of issuedTickets) {
@@ -229,16 +229,17 @@ export const createOrder = async (req, res) => {
             orderId,
             eventName: event?.eventName || '',
             eventDescription: event?.description || '',
-            eventStartAt: event?.startAt ? new Date(event.startAt).toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short' }) : '',
-            eventEndAt: event?.endAt ? new Date(event.endAt).toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short' }) : '',
+            eventStartAt: event?.startAt ? new Date(event.startAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '',
+            eventEndAt: event?.endAt ? new Date(event.endAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '',
             eventLocation: event?.locationText || '',
             eventImageUrl: event?.imageUrl || '',
             locationType: event?.locationType || '',
+            streamingPlatform: event?.streamingPlatform || '',
             ticket: t
           }
         };
         console.log('[MakeWebhook] Sending notification payload:', JSON.stringify(notificationPayload, null, 2));
-        sendMakeNotification(notificationPayload).catch(() => {});
+        sendMakeNotification(notificationPayload).catch(() => { });
       }
     }
 

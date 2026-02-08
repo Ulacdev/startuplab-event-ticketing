@@ -15,7 +15,7 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
 export interface Event {
   eventId: string;
   slug: string;
-  eventName: string; 
+  eventName: string;
   description: string;
   startAt: string; // ISO timestamp
   endAt?: string; // ISO timestamp
@@ -26,7 +26,8 @@ export interface Event {
   regOpenAt?: string; // date string
   regCloseAt?: string; // date string
   status: EventStatus;
-  
+  streamingPlatform?: string;
+
   // Audit fields from DB
   created_at?: string;
   updated_at?: string;
@@ -34,9 +35,9 @@ export interface Event {
 
   // Relations
   ticketTypes: TicketType[];
-  
+
   // DB is jsonb, so it could be a string URL, or an object { url: '...' }
-  imageUrl?: string | { url?: string; path?: string } | any; 
+  imageUrl?: string | { url?: string; path?: string } | any;
 }
 
 export interface TicketType {
@@ -73,6 +74,7 @@ export interface Order {
   locationText?: string | null;
   eventStartAt?: string | null;
   eventEndAt?: string | null;
+  streamingPlatform?: string | null;
 }
 
 export interface OrderItem {
@@ -128,9 +130,9 @@ export interface RegistrationView {
   ticketName: string;
   status: TicketStatus;
   paymentStatus: OrderStatus;
-  orderId: string;
   amountPaid: number;
   currency: string;
+  streamingPlatform?: string | null;
   checkInTimestamp?: string;
 }
 

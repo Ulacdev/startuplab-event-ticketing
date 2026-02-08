@@ -111,6 +111,7 @@ export const createEvent = async (req, res) => {
       regCloseAt,
       status = 'DRAFT',
       imageUrl,
+      streamingPlatform,
       createdBy: createdByFromBody
     } = req.body || {};
 
@@ -130,6 +131,7 @@ export const createEvent = async (req, res) => {
       regCloseAt: regCloseAt || null,
       status,
       imageUrl: imageUrl || null,
+      streamingPlatform: streamingPlatform || null,
       createdBy: req.user?.id || createdByFromBody || null,
       updated_at: new Date().toISOString()
     };

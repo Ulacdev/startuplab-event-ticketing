@@ -145,7 +145,7 @@ export const getPaymentStatus = async (req, res) => {
 
     const { data: event, error: eventErr } = await supabase
       .from('events')
-      .select('eventId, eventName, locationType, locationText, startAt, endAt')
+      .select('eventId, eventName, locationType, locationText, streamingPlatform, startAt, endAt')
       .eq('eventId', order.eventId)
       .maybeSingle()
     if (eventErr) return res.status(500).json({ error: eventErr.message })
@@ -173,12 +173,14 @@ export const getPaymentStatus = async (req, res) => {
         normalizedStatus = order.status || 'PENDING'
     }
 
+
     return res.status(200).json({
       ...order,
       status: normalizedStatus,
       eventName: event?.eventName || '',
       locationType: event?.locationType || null,
       locationText: event?.locationText || null,
+      streamingPlatform: event?.streamingPlatform || null,
       eventStartAt: event?.startAt || null,
       eventEndAt: event?.endAt || null
     })
@@ -462,8 +464,8 @@ export const hitpayWebhook = async (req, res) => {
 
     const payloadData = payload && typeof payload === 'object'
       ? Object.fromEntries(
-          Object.entries(payload).filter(([k, v]) => v !== undefined)
-        )
+        Object.entries(payload).filter(([k, v]) => v !== undefined)
+      )
       : {}
 
     console.log('[Debug] Cleaned payload data:', {
@@ -704,7 +706,7 @@ export const hitpayWebhook = async (req, res) => {
             // fetch event details
             const { data: event } = await supabase
               .from('events')
-              .select('eventName, description, startAt, endAt, locationText, imageUrl')
+              .select('eventName, description, startAt, endAt, locationText, locationType, imageUrl, streamingPlatform')
               .eq('eventId', order.eventId)
               .maybeSingle()
             sendMakeNotification({
@@ -716,13 +718,15 @@ export const hitpayWebhook = async (req, res) => {
                 orderId: order.orderId,
                 eventName: event?.eventName || '',
                 eventDescription: event?.description || '',
-                eventStartAt: event?.startAt ? new Date(event.startAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
-                eventEndAt: event?.endAt ? new Date(event.endAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
+                eventStartAt: event?.startAt ? new Date(event.startAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '',
+                eventEndAt: event?.endAt ? new Date(event.endAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '',
                 eventLocation: event?.locationText || '',
+                locationType: event?.locationType || '',
                 eventImageUrl: event?.imageUrl || '',
+                streamingPlatform: event?.streamingPlatform || '',
                 ticket: { ticketCode, qrPayload: ticketCode, status: 'ISSUED' }
               }
-            }).catch(() => {})
+            }).catch(() => { })
           }
         }
 

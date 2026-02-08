@@ -32,7 +32,7 @@ export const apiService = {
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to update name');
     return await res.json();
   },
-  
+
   // --- Public APIs ---
 
   // GET /api/events
@@ -139,6 +139,7 @@ export const apiService = {
       orderId: data.orderId,
       amountPaid: data.amountPaid || 0, // backend may need to populate this
       currency: data.currency || 'PHP', // backend may need to populate this
+      streamingPlatform: data.streamingPlatform || null,
       checkInTimestamp: data.usedAt || data.checkInTimestamp || null
     };
   },
@@ -161,7 +162,7 @@ export const apiService = {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(clean)
-      
+
     });
     if (!res.ok) throw new Error(`Failed to create ticket type: ${res.status}`);
     return await res.json();
@@ -188,7 +189,7 @@ export const apiService = {
     if (!res.ok) throw new Error(`Failed to delete ticket type: ${res.status}`);
   },
 
-// --- Admin APIs ---
+  // --- Admin APIs ---
 
   getAttendeesByEvent: async (eventId: string): Promise<Attendee[]> => {
     const res = await fetch(`${API_BASE}/api/admin/attendees?eventId=${encodeURIComponent(eventId)}`, {
@@ -343,7 +344,7 @@ export const apiService = {
   // GET /api/tickets/registrations?eventId=...
   getEventRegistrations: async (eventId: string, search = ''): Promise<RegistrationView[]> => {
     const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
-    const res = await fetch(`${API_BASE}/api/tickets/registrations?eventId=${encodeURIComponent(eventId)}${searchParam}` , {
+    const res = await fetch(`${API_BASE}/api/tickets/registrations?eventId=${encodeURIComponent(eventId)}${searchParam}`, {
       credentials: 'include'
     });
     if (!res.ok) throw new Error(`Failed to load registrations: ${res.status}`);

@@ -239,7 +239,7 @@ export const AdminDashboard: React.FC = () => {
           ? 'warning'
           : 'neutral';
     return (
-      <Badge type={type} className="text-[10px] font-black uppercase tracking-[0.2em]">
+      <Badge type={type} className="text-[10px] font-semibold uppercase tracking-wide">
         {value}
       </Badge>
     );
@@ -296,7 +296,7 @@ export const AdminDashboard: React.FC = () => {
       <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
         {entries.map(([entryKey, entryValue]) => (
           <div key={entryKey} className="border border-[#2E2E2F]/20 rounded-xl p-3 bg-[#F2F2F2]">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2E2E2F]">{humanizeKey(entryKey)}</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-[#2E2E2F]">{humanizeKey(entryKey)}</p>
             <p className="text-xs text-[#2E2E2F] mt-2">{formatDetailValue(entryValue)}</p>
           </div>
         ))}
@@ -349,7 +349,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Order Summary</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Order Summary</p>
               {renderStatusBadge(order?.status)}
             </div>
             <div className="mt-3 space-y-2">
@@ -362,7 +362,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
           <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Buyer</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Buyer</p>
             <div className="mt-3 space-y-2">
               <p className="text-sm font-bold text-[#2E2E2F]">{order?.buyerName || '—'}</p>
               <p className="text-xs text-[#2E2E2F]">{order?.buyerEmail || '—'}</p>
@@ -373,7 +373,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Event</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Event</p>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <p className="text-sm font-bold text-[#2E2E2F]">{eventLabel}</p>
@@ -392,8 +392,8 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Order Items</p>
-            <Badge type="info" className="text-[9px] font-black uppercase tracking-[0.2em]">{orderItems.length} items</Badge>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Order Items</p>
+            <Badge type="info" className="text-[10px] font-semibold uppercase tracking-wide">{orderItems.length} items</Badge>
           </div>
           {orderItems.length ? (
             <div className="mt-3 space-y-3">
@@ -414,8 +414,8 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Attendees</p>
-            <Badge type="neutral" className="text-[9px] font-black uppercase tracking-[0.2em]">{attendees.length} total</Badge>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Attendees</p>
+            <Badge type="neutral" className="text-[10px] font-semibold uppercase tracking-wide">{attendees.length} total</Badge>
           </div>
           {attendees.length ? (
             <div className="mt-3 space-y-3">
@@ -437,8 +437,8 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Tickets</p>
-            <Badge type="neutral" className="text-[9px] font-black uppercase tracking-[0.2em]">{tickets.length} total</Badge>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Tickets</p>
+            <Badge type="neutral" className="text-[10px] font-semibold uppercase tracking-wide">{tickets.length} total</Badge>
           </div>
           {tickets.length ? (
             <div className="mt-3 space-y-3">
@@ -461,8 +461,8 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Payments</p>
-            <Badge type="neutral" className="text-[9px] font-black uppercase tracking-[0.2em]">{payments.length} total</Badge>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Payments</p>
+            <Badge type="neutral" className="text-[10px] font-semibold uppercase tracking-wide">{payments.length} total</Badge>
           </div>
           {payments.length ? (
             <div className="mt-3 space-y-3">
@@ -499,7 +499,7 @@ export const AdminDashboard: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Ticket Detail</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Ticket Detail</p>
           {renderStatusBadge(ticket?.status)}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4">
@@ -529,7 +529,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Attendee</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Attendee</p>
             <div className="mt-3 space-y-2">
               <p className="text-sm font-bold text-[#2E2E2F]">{attendee?.name || '—'}</p>
               <p className="text-xs text-[#2E2E2F]">{attendee?.email || '—'}</p>
@@ -538,7 +538,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
           <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Event</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Event</p>
             <div className="mt-3 space-y-2">
               <p className="text-sm font-bold text-[#2E2E2F]">{event?.eventName || '—'}</p>
               <p className="text-xs text-[#2E2E2F]">{event?.locationText || '—'}</p>
@@ -585,10 +585,10 @@ export const AdminDashboard: React.FC = () => {
         <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Action Type</p>
-              <p className="text-lg font-black text-[#2E2E2F]">{log.actionType}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Action Type</p>
+              <p className="text-lg font-bold text-[#2E2E2F]">{log.actionType}</p>
             </div>
-            <Badge type="info" className="text-[10px] font-black uppercase tracking-[0.2em]">Audit Log</Badge>
+            <Badge type="info" className="text-[10px] font-semibold uppercase tracking-wide">Audit Log</Badge>
           </div>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-[#2E2E2F]">
             <div>Audit ID: {log.auditLogId}</div>
@@ -603,13 +603,13 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Log Details</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Log Details</p>
           {renderDetailFields(log.details, 'No additional details.')}
         </div>
 
         {paymentTransaction && (
           <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Payment Transaction</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Payment Transaction</p>
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold text-[#2E2E2F]">{paymentTransaction.gateway?.name || paymentTransaction.gateway || 'HITPAY'}</p>
@@ -625,7 +625,7 @@ export const AdminDashboard: React.FC = () => {
 
         {webhookEvent && (
           <div className="rounded-2xl border border-[#2E2E2F]/20 bg-[#F2F2F2] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Webhook Event</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Webhook Event</p>
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold text-[#2E2E2F]">{webhookEvent.eventType || 'HITPAY'}</p>
@@ -647,7 +647,7 @@ export const AdminDashboard: React.FC = () => {
 
         {orderDetails && (
           <div className="space-y-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#2E2E2F]">Order Context</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2F]">Order Context</p>
             {renderOrderDetails(orderDetails)}
           </div>
         )}
@@ -697,11 +697,11 @@ export const AdminDashboard: React.FC = () => {
         <ICONS.CheckCircle className="w-12 h-12 text-[#2E2E2F] mx-auto mb-4 opacity-40" />
         <h2 className="text-xl font-bold text-[#2E2E2F]">Restricted Access</h2>
         <p className="text-[#2E2E2F] mt-2">Revenue reports are available for Administrators only.</p>
-        <button 
+        <button
           onClick={() => navigate(`${basePath}/events?role=${role}`)}
           className="mt-6 text-[#2E2E2F] font-bold hover:underline"
         >
-          Go to Operations Hub
+          Go to Portal
         </button>
       </div>
     );
@@ -713,44 +713,44 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-black text-[#2E2E2F] tracking-tight">Dashboard Overview</h1>
+        <h1 className="text-2xl font-bold text-[#2E2E2F] tracking-tight">Dashboard Overview</h1>
         <p className="text-[#2E2E2F] font-medium">See your latest registrations, tickets, and revenue at a glance.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard 
-          title="Total Registrations" 
-          value={stats.totalRegistrations} 
-          icon={<ICONS.Users className="w-6 h-6" />} 
+        <StatCard
+          title="Total Registrations"
+          value={stats.totalRegistrations}
+          icon={<ICONS.Users className="w-6 h-6" />}
           trend=""
         />
-        <StatCard 
-          title="Tickets Sold Today" 
-          value={stats.ticketsSoldToday} 
-          icon={<ICONS.Ticket className="w-6 h-6" />} 
+        <StatCard
+          title="Tickets Sold Today"
+          value={stats.ticketsSoldToday}
+          icon={<ICONS.Ticket className="w-6 h-6" />}
           trend=""
         />
-        <StatCard 
-          title="Total Revenue" 
-          value={`PHP ${stats.totalRevenue.toLocaleString()}`} 
-          icon={<ICONS.CreditCard className="w-6 h-6" />} 
+        <StatCard
+          title="Total Revenue"
+          value={`PHP ${stats.totalRevenue.toLocaleString()}`}
+          icon={<ICONS.CreditCard className="w-6 h-6" />}
           trend=""
         />
-        <StatCard 
-          title="Revenue Today" 
-          value={`PHP ${stats.revenueToday.toLocaleString()}`} 
-          icon={<ICONS.CreditCard className="w-6 h-6" />} 
+        <StatCard
+          title="Revenue Today"
+          value={`PHP ${stats.revenueToday.toLocaleString()}`}
+          icon={<ICONS.CreditCard className="w-6 h-6" />}
           trend=""
         />
-        <StatCard 
-          title="Attendance Rate" 
-          value={`${stats.attendanceRate.toFixed(1)}%`} 
-          icon={<ICONS.CheckCircle className="w-6 h-6" />} 
+        <StatCard
+          title="Attendance Rate"
+          value={`${stats.attendanceRate.toFixed(1)}%`}
+          icon={<ICONS.CheckCircle className="w-6 h-6" />}
         />
-        <StatCard 
-          title="Payment Success" 
-          value={`${stats.paymentSuccessRate.toFixed(1)}%`} 
-          icon={<ICONS.TrendingUp className="w-6 h-6" />} 
+        <StatCard
+          title="Payment Success"
+          value={`${stats.paymentSuccessRate.toFixed(1)}%`}
+          icon={<ICONS.TrendingUp className="w-6 h-6" />}
         />
       </div>
 
@@ -791,7 +791,7 @@ export const AdminDashboard: React.FC = () => {
                 <div className="text-xs text-[#2E2E2F]">Loading more...</div>
               )}
               {!txHasMore && transactions.length > 0 && (
-                <div className="text-[10px] uppercase tracking-[0.2em] text-[#2E2E2F]/50">End of list</div>
+                <div className="text-[10px] uppercase tracking-wide text-[#2E2E2F]/50">End of list</div>
               )}
             </div>
           )}
@@ -893,13 +893,13 @@ export const AdminDashboard: React.FC = () => {
           <div className="w-20 h-20 bg-[#F2F2F2] border border-[#2E2E2F]/20 text-[#2E2E2F] rounded-3xl flex items-center justify-center mb-6">
             <ICONS.Calendar className="w-10 h-10" />
           </div>
-          <h3 className="text-xl font-black text-[#2E2E2F] mb-2">New Event Concept?</h3>
+          <h3 className="text-xl font-black text-[#2E2E2F] mb-2">New Event?</h3>
           <p className="text-[#2E2E2F] text-sm max-w-xs mb-8 font-medium">Launch a new workshop or conference to drive organization revenue.</p>
-          <button 
+          <button
             onClick={() => navigate(`/events?openModal=true`)}
             className="bg-[#38BDF2] text-[#F2F2F2] px-8 py-3 rounded-2xl font-bold hover:bg-[#38BDF2] transition-colors"
           >
-            Configure Event
+            Create Event
           </button>
         </Card>
       </div>

@@ -1,0 +1,175 @@
+/**
+ * StartupLab Business Ticketing - Global Styles
+ * Brand Guidelines v2.0 Compliant
+ */
+
+/* ========================================
+   TYPOGRAPHY - HELVETICA NEUE (REQUIRED)
+   ======================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure all text elements inherit Helvetica */
+h1, h2, h3, h4, h5, h6,
+p, span, div, a, button, input, textarea, select, label {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* ========================================
+   BRAND COLOR VARIABLES
+   ======================================== */
+
+:root {
+  /* Primary Brand Colors */
+  --color-primary: #38BDF2;
+  --color-text: #2E2E2F;
+  --color-background: #F2F2F2;
+  
+  /* Extended Brand Colors (from guidelines) */
+  --color-navy: #003E86;
+  --color-medium-blue: #3768A2;
+  
+  /* Opacity Variations */
+  --color-primary-10: rgba(56, 189, 242, 0.1);
+  --color-primary-20: rgba(56, 189, 242, 0.2);
+  --color-primary-30: rgba(56, 189, 242, 0.3);
+  --color-primary-40: rgba(56, 189, 242, 0.4);
+  
+  --color-text-10: rgba(46, 46, 47, 0.1);
+  --color-text-20: rgba(46, 46, 47, 0.2);
+  --color-text-40: rgba(46, 46, 47, 0.4);
+  --color-text-60: rgba(46, 46, 47, 0.6);
+  --color-text-70: rgba(46, 46, 47, 0.7);
+}
+
+/* ========================================
+   GLOBAL RESETS & IMPROVEMENTS
+   ======================================== */
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Remove default button styles */
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Remove default input styles */
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Remove default link underline */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Improve image rendering */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ========================================
+   ACCESSIBILITY IMPROVEMENTS
+   ======================================== */
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary);
+  color: var(--color-background);
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 100;
+  font-weight: bold;
+  border-radius: 0 0 8px 0;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
+@media print {
+  /* Optimize for ticket printing */
+  body {
+    background: white;
+    color: black;
+  }
+  
+  /* Hide navigation and non-essential elements */
+  nav,
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Ensure QR codes print clearly */
+  svg,
+  img {
+    page-break-inside: avoid;
+  }
+}

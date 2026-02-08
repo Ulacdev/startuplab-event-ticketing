@@ -1,40 +1,187 @@
 <!DOCTYPE html>
 <html lang="en" style="margin:0;padding:0;">
-  <head>
-    <meta charset="UTF-8">
-    <title>You're Invited to StartupLab</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  </head>
-  <body style="margin:0;padding:0;background:#F2F2F2;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F2F2F2;min-height:100vh;">
-      <tr>
-        <td align="center">
-          <table width="480" cellpadding="0" cellspacing="0" border="0" style="background:#fff;border-radius:16px;box-shadow:0 4px 24px #003E86/10;overflow:hidden;">
-            <tr>
-              <td style="background:#003E86;padding:32px 0;text-align:center;">
-                <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/01_Logos-20260203T092531Z-3-001/01_Logos/StartupLab_Icon_Dark.png" alt="StartupLab Logo" width="56" height="56" style="border-radius:12px;">
-                <h1 style="color:#F2F2F2;font-size:24px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;margin:16px 0 0 0;letter-spacing:1px;">You're Invited!</h1>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:32px 32px 24px 32px;">
-                <p style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#2E2E2F;font-size:16px;line-height:1.6;margin:0 0 24px 0;">Hello <b>{{name}}</b>,<br><br>You have been invited to join <b>StartupLab</b> as <b>{{role}}</b>.<br>Click the button below to accept your invitation:</p>
-                <div style="text-align:center;margin:32px 0;">
-                  <a href="{{inviteLink}}" style="display:inline-block;padding:16px 32px;background:#38BDF2;color:#fff;font-size:16px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:bold;text-decoration:none;border-radius:8px;box-shadow:0 2px 8px #003E86/10;letter-spacing:1px;">Accept Invitation</a>
-                </div>
-                <p style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#3768A2;font-size:13px;line-height:1.5;margin:0 0 8px 0;">If the button doesn't work, copy and paste this link into your browser:</p>
-                <p style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#2E2E2F;font-size:13px;word-break:break-all;margin:0 0 24px 0;">{{inviteLink}}</p>
-                <p style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#2E2E2F;font-size:13px;line-height:1.5;margin:0;">If you did not expect this invitation, you can safely ignore this email.</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="background:#F2F2F2;padding:18px 0;text-align:center;border-radius:0 0 16px 16px;">
-                <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#003E86;font-size:11px;letter-spacing:2px;font-weight:bold;">StartupLab Systems International</span>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invitation to Join: StartupLab</title>
+  <style>
+    /* Global Resets */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #F2F2F2;
+      -webkit-font-smoothing: antialiased;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    table {
+      border-collapse: collapse;
+    }
+
+    .main-card {
+      box-shadow: 0 40px 80px rgba(46, 46, 47, 0.08);
+    }
+
+    /* Responsive Adjustments */
+    @media only screen and (max-width: 600px) {
+      .container {
+        width: 100% !important;
+        padding: 15px !important;
+      }
+
+      .side-gutter {
+        padding: 30px 25px !important;
+      }
+
+      .mobile-stack {
+        display: block !important;
+        width: 100% !important;
+      }
+
+      .mobile-text-lg {
+        font-size: 32px !important;
+      }
+    }
+  </style>
+</head>
+
+<body style="margin:0;padding:0;background-color:#F2F2F2;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F2F2F2; min-height:100vh;">
+    <tr>
+      <td align="center" style="padding: 60px 0;">
+        <table class="container" width="520" cellpadding="0" cellspacing="0" border="0"
+          style="width:100%; max-width:520px;">
+
+          <!-- BRAND LOGO HEADER -->
+          <tr>
+            <td align="center" style="padding-bottom: 40px;">
+              <a href="https://startuplab.com">
+                <img
+                  src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
+                  height="115" alt="StartupLab Logo">
+              </a>
+            </td>
+          </tr>
+
+          <!-- TICKET TOP SECTION -->
+          <tr>
+            <td class="main-card"
+              style="background-color: #FFFFFF; border-radius: 40px 40px 0 0; border: 1px solid #2E2E2F08; overflow: hidden;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td class="side-gutter" style="padding: 50px 50px 40px 50px;">
+                    <div style="margin-bottom: 24px;">
+                      <span
+                        style="display: inline-block; padding: 6px 12px; background-color: #38BDF2; color: #F2F2F2; font-size: 9px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; border-radius: 8px;">PENDING
+                        INVITATION</span>
+                    </div>
+                    <h1 class="mobile-text-lg"
+                      style="color: #2E2E2F; font-size: 42px; font-weight: 900; letter-spacing: -0.05em; line-height: 1; margin: 0 0 20px 0;">
+                      Join the Network.</h1>
+                    <p
+                      style="color: #2E2E2F; font-size: 16px; font-weight: 500; line-height: 1.6; margin: 0; opacity: 0.7;">
+                      Hello <strong>{{name}}</strong>, you have been formally
+                      invited to join <strong>StartupLab</strong>. Access to
+                      our professional business hub is now ready for your activation.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- TICKET PERFORATION DIVIDER -->
+          <tr>
+            <td style="background-color: #FFFFFF; padding: 0 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="20" height="40"
+                    style="background-color: #F2F2F2; border-radius: 0 20px 20px 0; border-right: 1px solid #2E2E2F08; border-top: 1px solid #2E2E2F08; border-bottom: 1px solid #2E2E2F08;">
+                  </td>
+                  <td height="40" style="border-bottom: 2px dashed #2E2E2F10; vertical-align: middle;"></td>
+                  <td width="20" height="40"
+                    style="background-color: #F2F2F2; border-radius: 20px 0 0 20px; border-left: 1px solid #2E2E2F08; border-top: 1px solid #2E2E2F08; border-bottom: 1px solid #2E2E2F08;">
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- TICKET BOTTOM SECTION -->
+          <tr>
+            <td class="main-card"
+              style="background-color: #FFFFFF; border-radius: 0 0 40px 40px; border: 1px solid #2E2E2F08; overflow: hidden; padding-bottom: 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+
+                <!-- DATA GRID -->
+                <tr>
+                  <td class="side-gutter" style="padding: 40px 50px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td class="mobile-stack" width="50%" style="padding-bottom: 25px;">
+                          <p
+                            style="font-size: 9px; font-weight: 900; color: #2E2E2F; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.4; margin: 0 0 8px 0;">
+                            ASSIGNED ROLE</p>
+                          <p style="font-size: 13px; font-weight: 800; color: #38BDF2; margin: 0;">
+                            {{role}}</p>
+                        </td>
+                        <td class="mobile-stack" width="50%" style="padding-bottom: 25px;">
+                          <p
+                            style="font-size: 9px; font-weight: 900; color: #2E2E2F; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.4; margin: 0 0 8px 0;">
+                            ASSOCIATED EMAIL</p>
+                          <p
+                            style="font-size: 13px; font-weight: 800; color: #2E2E2F; margin: 0; word-break: break-all;">
+                            {{email}}</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- CTA -->
+                <tr>
+                  <td align="center" style="padding: 0 50px 35px 50px;">
+                    <a href="{{inviteLink}}"
+                      style="display: block; width: 100%; padding: 22px 0; background-color: #2E2E2F; color: #F2F2F2; font-size: 14px; font-weight: 900; text-align: center; text-decoration: none; border-radius: 20px; letter-spacing: 0.2em; box-shadow: 0 20px 40px rgba(46,46,47,0.15);">
+                      ACCEPT INVITATION
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- FALLBACK -->
+                <tr>
+                  <td style="padding: 0 50px 20px 50px; text-align: center;">
+                    <p
+                      style="font-size: 10px; font-weight: 600; color: #2E2E2F; opacity: 0.3; line-height: 1.6; margin: 0;">
+                      Activation link:<br>
+                      <a href="{{inviteLink}}" style="color: #38BDF2; text-decoration: none;">{{inviteLink}}</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td align="center" style="padding-top: 50px;">
+              <div style="opacity: 0.2; margin-bottom: 20px;">
+                <img
+                  src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
+                  height="25" alt="StartupLab Footer">
+              </div>
+              <p style="font-size: 10px; color: #2E2E2F; opacity: 0.4; line-height: 1.5;">
+                &copy; 2026 StartupLab Business Center. All rights reserved.<br>
+                Secured by StartupLab Professional Hub.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+
 </html>

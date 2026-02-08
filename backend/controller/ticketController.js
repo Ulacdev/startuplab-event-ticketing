@@ -60,7 +60,7 @@ export const getRegistrationsByEvent = async (req, res) => {
       ticketTypeIds.length
         ? supabase.from('ticketTypes').select('ticketTypeId, name').in('ticketTypeId', ticketTypeIds)
         : { data: [], error: null },
-      supabase.from('events').select('eventId, eventName').eq('eventId', eventId).maybeSingle()
+      supabase.from('events').select('eventId, eventName, streamingPlatform, locationType').eq('eventId', eventId).maybeSingle()
     ]);
 
     if (attResp.error) return res.status(500).json({ error: attResp.error.message });
@@ -93,6 +93,8 @@ export const getRegistrationsByEvent = async (req, res) => {
         orderId: t.orderId,
         amountPaid: order.totalAmount || 0,
         currency: order.currency || 'PHP',
+        streamingPlatform: evResp.data?.streamingPlatform || null,
+        locationType: evResp.data?.locationType || null,
         checkInTimestamp: t.usedAt || null
       };
     });
@@ -187,7 +189,7 @@ export const getAllRegistrations = async (req, res) => {
         ? supabase.from('ticketTypes').select('ticketTypeId, name').in('ticketTypeId', ticketTypeIds)
         : { data: [], error: null },
       eventIds.length
-        ? supabase.from('events').select('eventId, eventName').in('eventId', eventIds)
+        ? supabase.from('events').select('eventId, eventName, streamingPlatform, locationType').in('eventId', eventIds)
         : { data: [], error: null }
     ]);
 
@@ -222,6 +224,8 @@ export const getAllRegistrations = async (req, res) => {
         orderId: t.orderId,
         amountPaid: order.totalAmount || 0,
         currency: order.currency || 'PHP',
+        streamingPlatform: event.streamingPlatform || null,
+        locationType: event.locationType || null,
         checkInTimestamp: t.usedAt || null
       };
     });
@@ -367,7 +371,7 @@ export const getTicketById = async (req, res) => {
         ? supabase.from('ticketTypes').select('ticketTypeId, name').eq('ticketTypeId', ticket.ticketTypeId).maybeSingle()
         : { data: null, error: null },
       ticket.eventId
-        ? supabase.from('events').select('eventId, eventName, locationType, locationText, startAt, endAt').eq('eventId', ticket.eventId).maybeSingle()
+        ? supabase.from('events').select('eventId, eventName, locationType, locationText, streamingPlatform, startAt, endAt').eq('eventId', ticket.eventId).maybeSingle()
         : { data: null, error: null }
     ]);
 
@@ -381,6 +385,7 @@ export const getTicketById = async (req, res) => {
       eventName: evResp.data?.eventName || '',
       locationType: evResp.data?.locationType || null,
       locationText: evResp.data?.locationText || null,
+      streamingPlatform: evResp.data?.streamingPlatform || null,
       eventStartAt: evResp.data?.startAt || null,
       eventEndAt: evResp.data?.endAt || null,
       attendeeName: attResp.data?.name || '',

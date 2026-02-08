@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en" style="margin:0;padding:0;">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Ticket: {{1.meta.eventName}}</title>
+    <style>
+        /* Global Resets */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #F2F2F2;
+            -webkit-font-smoothing: antialiased;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        img {
+            border: 0;
+            outline: none;
+            display: block;
+        }
+
+        /* Responsive Adjustments */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+                padding: 10px !important;
+            }
+
+            .side-gutter {
+                padding: 30px 20px !important;
+            }
+
+            .mobile-padding-bottom {
+                padding-bottom: 20px !important;
+            }
+
+            .mobile-no-padding-right {
+                padding-right: 0 !important;
+            }
+
+            .stack {
+                display: block !important;
+                width: 100% !important;
+                box-sizing: border-box;
+            }
+
+            .mobile-text-lg {
+                font-size: 26px !important;
+            }
+
+            .qr-mobile {
+                width: 180px !important;
+                height: 180px !important;
+            }
+        }
+    </style>
+</head>
+
+<body style="margin:0;padding:0;background-color:#F2F2F2;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"
+        style="background-color:#F2F2F2; min-height:100vh; table-layout: fixed;">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                <table class="container" width="580" cellpadding="0" cellspacing="0" border="0"
+                    style="width:100%; max-width:580px;">
+
+                    <!-- LOGO SECTION (Part 1) -->
+                    <tr>
+                        <td align="center" style="padding-bottom: 30px;">
+                            <a href="https://startuplab.com">
+                                <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
+                                    height="115" alt="StartupLab Logo">
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- QR CODE HERO (Part 2) -->
+                    <tr>
+                        <td>
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                                style="background-color: #2E2E2F; border-radius: 16px; box-shadow: 0 10px 30px rgba(46,46,47,0.15);">
+                                <tr>
+                                    <td align="center" class="side-gutter"
+                                        style="padding: 60px 40px; text-align: center;">
+                                        <!-- QR Container -->
+                                        <div align="center"
+                                            style="background-color: #F2F2F2; padding: 18px; border-radius: 12px; display: inline-block; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                            <img class="qr-mobile"
+                                                src="https://quickchart.io/qr?text={{1.meta.ticket.qrPayload}}&size=400&format=png"
+                                                width="220" height="220" alt="Check-in QR Code"
+                                                style="display: block; margin: 0 auto;">
+                                        </div>
+
+                                        <!-- Details -->
+                                        <div style="text-align: center; width: 100%;">
+                                            <h2
+                                                style="color: #F2F2F2; font-size: 14px; font-weight: 500; margin: 0; opacity: 0.6; letter-spacing: 0.15em; text-transform: uppercase;">
+                                                TICKET CODE</h2>
+                                            <p
+                                                style="color: #38BDF2; font-size: 20px; font-weight: 900; margin: 8px 0 0 0; font-family: 'Courier New', Courier, monospace; letter-spacing: 1px;">
+                                                {{1.meta.ticket.ticketCode}}</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- SPACER -->
+                    <tr>
+                        <td height="20"></td>
+                    </tr>
+
+                    <!-- EVENT TITLE & DESC (Part 3) -->
+                    <tr>
+                        <td>
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                                style="background-color: #F2F2F2; border-radius: 16px; border: 1px solid #2E2E2F10; box-shadow: 0 4px 20px rgba(46,46,47,0.05); overflow: hidden;">
+                                <tr>
+                                    <td>
+                                        <!-- Event Image -->
+                                        <img src="{{1.meta.eventImageUrl}}" width="100%"
+                                            style="width: 100%; height: auto; object-fit: cover; max-height: 200px;"
+                                            alt="Event Banner">
+
+                                        <!-- Content Overlay/Area -->
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td class="side-gutter" style="padding: 40px; text-align: center;">
+                                                    <h1 class="mobile-text-lg"
+                                                        style="color: #2E2E2F; font-size: 32px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 12px 0;">
+                                                        You're Confirmed.</h1>
+                                                    <p
+                                                        style="color: #2E2E2F; font-size: 15px; font-weight: 500; line-height: 1.5; margin: 0; opacity: 0.7;">
+                                                        Attendee: <strong>{{1.name}}</strong><br>Access confirmed for
+                                                        <strong>{{1.meta.eventName}}</strong>.
+                                                    </p>
+                                                    <div
+                                                        style="height: 1px; background-color: #2E2E2F10; margin: 25px auto; width: 80px;">
+                                                    </div>
+                                                    <p
+                                                        style="color: #2E2E2F; font-size: 13px; font-weight: 500; line-height: 1.6; margin: 0; opacity: 0.6; font-style: italic; max-width: 420px; margin: 0 auto;">
+                                                        "{{1.meta.eventDescription}}"</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- SPACER -->
+                    <tr>
+                        <td height="20"></td>
+                    </tr>
+
+                    <!-- MODULAR: LOGISTICS (Part 4) -->
+                    <tr>
+                        <td>
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <!-- Location Module -->
+                                    <td class="stack mobile-no-padding-right mobile-padding-bottom" width="280"
+                                        style="vertical-align: top; padding-right: 15px;">
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                                            style="background-color: #F2F2F2; border-radius: 16px; border: 1px solid #2E2E2F10; height: 160px;">
+                                            <tr>
+                                                <td class="side-gutter"
+                                                    style="padding: 30px; vertical-align: middle; text-align: center;">
+                                                    <h3
+                                                        style="color: #2E2E2F; font-size: 11px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 10px 0; opacity: 0.4;">
+                                                        VENUE</h3>
+                                                    <p
+                                                        style="color: #2E2E2F; font-size: 14px; font-weight: 700; line-height: 1.4; margin: 0;">
+                                                        {{1.meta.eventLocation}}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <!-- Time & Order Module -->
+                                    <td class="stack" width="280" style="vertical-align: top;">
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                                            style="background-color: #F2F2F2; border-radius: 16px; border: 1px solid #2E2E2F10; height: 160px;">
+                                            <tr>
+                                                <td class="side-gutter"
+                                                    style="padding: 30px; vertical-align: middle; text-align: center;">
+                                                    <div style="margin-bottom: 20px;">
+                                                        <h3
+                                                            style="color: #38BDF2; font-size: 11px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 4px 0;">
+                                                            DATE & TIME</h3>
+                                                        <p
+                                                            style="color: #2E2E2F; font-size: 13px; font-weight: 700; margin: 0;">
+                                                            {{1.meta.eventStartAt}} —<br>{{1.meta.eventEndAt}}</p>
+                                                    </div>
+                                                    <div>
+                                                        <h3
+                                                            style="color: #38BDF2; font-size: 11px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 4px 0;">
+                                                            ORDER</h3>
+                                                        <p
+                                                            style="color: #2E2E2F; font-size: 14px; font-weight: 700; margin: 0;">
+                                                            #{{1.meta.orderId}}</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- SPACER -->
+                    <tr>
+                        <td height="20"></td>
+                    </tr>
+
+                    <!-- MODULAR: SECURITY NOTICE (Part 5) -->
+                    <tr>
+                        <td>
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                                style="background-color: #38BDF2; border-radius: 16px; box-shadow: 0 4px 15px rgba(56,189,242,0.15);">
+                                <tr>
+                                    <td class="side-gutter" style="padding: 30px; text-align: center;">
+                                        <p
+                                            style="color: #F2F2F2; font-size: 13px; font-weight: 900; letter-spacing: 0.05em; margin: 0;">
+                                            PRESENT THIS DIGITAL PASS AT THE ENTRANCE</p>
+                                        <p
+                                            style="color: #F2F2F2; font-size: 10px; font-weight: 500; opacity: 0.8; margin: 8px 0 0 0;">
+                                            Valid for one-time entry only. Professional ID required.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER (Part 6) -->
+                    <tr>
+                        <td align="center" style="padding-top: 50px;">
+                            <div style="opacity: 0.2; margin-bottom: 20px;">
+                                <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
+                                    height="25" alt="StartupLab Footer">
+                            </div>
+                            <p style="font-size: 10px; color: #2E2E2F; opacity: 0.4; line-height: 1.5;">
+                                &copy; 2026 StartupLab Business Center. All rights reserved.<br>
+                                This ticket is non-transferable and subject to terms of service.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>
