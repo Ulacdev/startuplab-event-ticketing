@@ -168,8 +168,7 @@ export const TeamSettings: React.FC = () => {
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             {notification && (
                 <div className="fixed top-24 right-8 z-[120]">
-                    <Card className={`flex items-center gap-4 px-6 py-4 rounded-2xl border ${notification.type === 'success' ? 'bg-[#38BDF2]/20 border-[#38BDF2]/40 text-[#2E2E2F]' : 'bg-[#2E2E2F]/10 border-[#2E2E2F]/30 text-[#2E2E2F]'
-                        }`}>
+                    <Card className={`flex items-center gap-4 px-6 py-4 rounded-2xl border ${notification.type === 'success' ? 'bg-[#F2F2F2] border-green-200 text-[#2E2E2F]' : 'bg-[#F2F2F2] border-red-200 text-[#2E2E2F]'}`}>
                         <div className={`p-2 rounded-xl ${notification.type === 'success' ? 'bg-[#38BDF2]/10 text-[#2E2E2F]' : 'bg-[#2E2E2F]/20 text-[#2E2E2F]'}`}>
                             {notification.type === 'success' ? <ICONS.CheckCircle className="w-5 h-5" /> : <ICONS.Layout className="w-5 h-5" />}
                         </div>
@@ -275,7 +274,7 @@ export const TeamSettings: React.FC = () => {
                                             <tr key={member.id} className="hover:bg-[#38BDF2]/10 transition-colors group">
                                                 <td className="px-10 py-8">
                                                     <div className="flex items-center gap-5">
-                                                        <div className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center font-black text-sm ${member.isOwner ? 'bg-[#38BDF2] text-[#F2F2F2]' : 'bg-[#38BDF2] text-[#2E2E2F]'}`}>
+                                                        <div className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center font-black text-sm ${member.isOwner ? 'bg-[#38BDF2] text-[#F2F2F2]' : 'bg-[#38BDF2] text-[#F2F2F2]'}`}>
                                                             {member.imageUrl ? (
                                                                 <img src={member.imageUrl} alt={member.name} className="w-full h-full object-cover" />
                                                             ) : (

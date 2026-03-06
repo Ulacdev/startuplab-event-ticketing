@@ -182,11 +182,10 @@ export const OrganizerSettings: React.FC = () => {
       {notification && (
         <div className="fixed top-24 right-8 z-[120]">
           <Card
-            className={`px-5 py-3 rounded-2xl border ${
-              notification.type === 'success'
+            className={`px-5 py-3 rounded-2xl border ${notification.type === 'success'
                 ? 'bg-[#38BDF2]/20 border-[#38BDF2]/40 text-[#2E2E2F]'
                 : 'bg-[#2E2E2F]/10 border-[#2E2E2F]/30 text-[#2E2E2F]'
-            }`}
+              }`}
           >
             <p className="text-sm font-bold tracking-tight">{notification.message}</p>
           </Card>
@@ -199,9 +198,8 @@ export const OrganizerSettings: React.FC = () => {
             <div className="space-y-3">
               <label className="text-[11px] font-semibold text-[#2E2E2F]/60 uppercase tracking-wide">Profile Image</label>
               <div
-                className={`relative rounded-[1.5rem] border-2 border-dashed ${
-                  dragActive ? 'border-[#38BDF2] bg-[#38BDF2]/10' : 'border-[#2E2E2F]/20 bg-[#F2F2F2]'
-                } p-4 transition-colors`}
+                className={`relative rounded-[1.5rem] border-2 border-dashed ${dragActive ? 'border-[#38BDF2] bg-[#38BDF2]/10' : 'border-[#2E2E2F]/20 bg-[#F2F2F2]'
+                  } p-4 transition-colors`}
                 onDragEnter={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -280,7 +278,7 @@ export const OrganizerSettings: React.FC = () => {
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-[#2E2E2F]/70 mb-1.5">Bio / Description (Text only)</label>
                 <textarea
-                  className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-lg outline-none focus:ring-2 focus:ring-[#38BDF2]/40 min-h-[120px]"
+                  className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-lg outline-none focus:ring-2 focus:ring-[#38BDF2]/40 min-h-[120px]"
                   value={formData.bio}
                   onChange={(event) => handleFormChange('bio', stripHtml(event.target.value))}
                   placeholder="Introduce your organization..."
@@ -292,7 +290,7 @@ export const OrganizerSettings: React.FC = () => {
                   Event Page Description (Short)
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-lg outline-none focus:ring-2 focus:ring-[#38BDF2]/40 min-h-[90px]"
+                  className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-lg outline-none focus:ring-2 focus:ring-[#38BDF2]/40 min-h-[90px]"
                   maxLength={280}
                   value={formData.eventPageDescription}
                   onChange={(event) => handleFormChange('eventPageDescription', stripHtml(event.target.value))}

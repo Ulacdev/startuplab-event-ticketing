@@ -589,7 +589,7 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
               <div className="flex flex-wrap items-center gap-3">
                 <Button
                   onClick={() => navigate('/signup')}
-                  className="px-7 py-3 bg-[#38BDF2] hover:bg-[#2E2E2F] text-[#F2F2F2] font-black uppercase tracking-widest text-[10px] h-auto rounded-xl shadow-xl shadow-[#38BDF2]/20 flex items-center gap-2 group"
+                  className="px-7 py-3 bg-[#00AEEF] border border-[#66DBFF] text-white font-black uppercase tracking-widest text-[10px] h-auto rounded-xl shadow-[0_0_16px_rgba(0,174,239,0.45)] hover:bg-black hover:border-black hover:shadow-[0_0_22px_rgba(0,174,239,0.5)] transition-all flex items-center gap-2 active:scale-95 group"
                 >
                   Start Free Trial
                   <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
@@ -597,15 +597,11 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
                   </svg>
                 </Button>
                 <Button
-                  variant="outline"
-                  onClick={() => navigate('/login')}
-                  className="px-7 py-3 border border-[#2E2E2F] text-[#F2F2F2] font-black uppercase tracking-widest text-[10px] h-auto rounded-xl bg-[#2E2E2F] hover:bg-[#38BDF2] hover:border-[#38BDF2] hover:text-[#F2F2F2] flex items-center gap-2 shadow-sm"
+                  onClick={() => navigate('/pricing')}
+                  className="px-7 py-3 bg-[#2E2E2F] text-white font-black uppercase tracking-widest text-[10px] h-auto rounded-xl hover:bg-[#38BDF2] hover:shadow-xl hover:shadow-[#38BDF2]/40 transition-all flex items-center gap-2 active:scale-95"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Sign In
+                  <ICONS.CreditCard className="w-4 h-4" />
+                  Pricing
                 </Button>
               </div>
 
@@ -699,6 +695,12 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
             onTabChange={setActiveBrowseTab}
             selectedLocation={selectedLocation}
             onLocationSelect={setSelectedLocation}
+            onLocationClear={() => {
+              setSearchTerm('');
+              setDebouncedSearch('');
+              setSelectedLocation(DEFAULT_LOCATION);
+              setActiveBrowseTab('ALL');
+            }}
             isLoading={isFetching}
             className="mt-0 mb-2 mx-0 sm:mx-0 lg:mx-0"
           />

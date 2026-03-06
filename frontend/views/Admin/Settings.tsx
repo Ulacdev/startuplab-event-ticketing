@@ -4,6 +4,7 @@ import { Card, Button, Input, Badge, Modal } from '../../components/Shared';
 import { ICONS } from '../../constants';
 import { UserRole } from '../../types';
 import { apiService } from '../../services/apiService';
+import { AdminPaymentSettings } from './AdminPaymentSettings';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -51,7 +52,29 @@ export const SettingsView: React.FC = () => {
   };
 
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [activeTab, setActiveTab] = useState<'team' | 'permission' | 'email'>('team');
+  const [activeTab, setActiveTab] = useState<'team' | 'permission' | 'email' | 'payments' | 'profile'>('team');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const handleResetPassword = async () => {
+    if (!adminEmail) return;
+    setPasswordLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: adminEmail })
+      });
+      if (!res.ok) throw new Error('Failed to send reset email');
+      setNotification({ message: 'Password reset email sent!', type: 'success' });
+    } catch (err: any) {
+      setNotification({ message: err.message || 'Failed to send reset email.', type: 'error' });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -177,14 +200,13 @@ export const SettingsView: React.FC = () => {
   return (
     <div className="space-y-10 pb-20">
       {notification && (
-        <div className="fixed top-24 right-8 z-[120]">
-          <Card className={`flex items-center gap-4 px-6 py-4 rounded-2xl border ${notification.type === 'success' ? 'bg-[#38BDF2]/20 border-[#38BDF2]/40 text-[#2E2E2F]' : 'bg-[#2E2E2F]/10 border-[#2E2E2F]/30 text-[#2E2E2F]'
-            }`}>
-            <div className={`p-2 rounded-xl ${notification.type === 'success' ? 'bg-[#38BDF2]/10 text-[#2E2E2F]' : 'bg-[#2E2E2F]/20 text-[#2E2E2F]'}`}>
+        <div className="fixed top-24 right-8 z-[120] animate-in slide-in-from-right-10 duration-500">
+          <Card className={`flex items-center gap-4 px-6 py-4 rounded-2xl shadow-xl border ${notification.type === 'success' ? 'bg-[#F2F2F2] border-green-200 text-[#2E2E2F]' : 'bg-[#F2F2F2] border-red-200 text-[#2E2E2F]'}`}>
+            <div className={`p-2 rounded-xl ${notification.type === 'success' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' : 'bg-red-500 text-white shadow-lg shadow-red-500/30'}`}>
               {notification.type === 'success' ? <ICONS.CheckCircle className="w-5 h-5" /> : <ICONS.Layout className="w-5 h-5" />}
             </div>
-            <p className="font-bold text-sm tracking-tight">{notification.message}</p>
-            <button onClick={() => setNotification(null)} className="ml-4 text-[#2E2E2F]/60 hover:text-[#2E2E2F] text-lg font-black">&times;</button>
+            <p className="font-black text-sm tracking-tight">{notification.message}</p>
+            <button onClick={() => setNotification(null)} className="ml-4 text-[#2E2E2F]/40 hover:text-[#2E2E2F] text-xl font-black transition-colors">&times;</button>
           </Card>
         </div>
       )}
@@ -197,7 +219,9 @@ export const SettingsView: React.FC = () => {
           {[
             { id: 'team', label: 'Team' },
             { id: 'permission', label: 'Access Control' },
-            { id: 'email', label: 'Email Configuration' }
+            { id: 'email', label: 'Email Configuration' },
+            { id: 'payments', label: 'Payment Gateway' },
+            { id: 'profile', label: 'Profile & Security' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -328,6 +352,83 @@ export const SettingsView: React.FC = () => {
           </div>
         )}
         {activeTab === 'email' && <AdminEmailSettings setNotification={setNotification} />}
+        {activeTab === 'payments' && <AdminPaymentSettings />}
+        {activeTab === 'profile' && (
+          <div className="space-y-8 max-w-2xl">
+            <Card className="p-10 border-[#2E2E2F]/10 rounded-[2.5rem] bg-[#F2F2F2]">
+              <div className="flex items-center gap-3 mb-10">
+                <div className="w-10 h-10 rounded-xl bg-[#38BDF2]/10 text-[#38BDF2] flex items-center justify-center">
+                  <ICONS.Users className="w-5 h-5" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-[#2E2E2F] uppercase tracking-wider">Admin Profile</h3>
+                  <p className="text-[10px] text-[#2E2E2F]/40 font-bold uppercase tracking-widest mt-0.5">Manage your personal identification</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-[#2E2E2F]/30 uppercase tracking-[0.2em] ml-1">Full Name</label>
+                  <Input
+                    value={userName}
+                    onChange={(e: any) => setUserName(e.target.value)}
+                    placeholder="StartupLab Admin"
+                    className="font-bold text-[#2E2E2F]"
+                  />
+                </div>
+                <div className="space-y-1.5 opacity-60">
+                  <label className="text-[10px] font-black text-[#2E2E2F]/30 uppercase tracking-[0.2em] ml-1">Email Address</label>
+                  <div className="px-5 py-3.5 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-xl text-xs text-[#2E2E2F] font-bold">
+                    {adminEmail}
+                  </div>
+                </div>
+                <div className="flex justify-end pt-4">
+                  <Button
+                    className="rounded-xl px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.2em]"
+                    onClick={handleSaveName}
+                  >
+                    Save Profile
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-10 border-[#2E2E2F]/10 rounded-[2.5rem] bg-[#F2F2F2]">
+              <div className="flex items-center gap-3 mb-10">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 flex items-center justify-center">
+                  <ICONS.Shield className="w-5 h-5" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-[#2E2E2F] uppercase tracking-wider">Security</h3>
+                  <p className="text-[10px] text-[#2E2E2F]/40 font-bold uppercase tracking-widest mt-0.5">Manage your authentication credentials</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 rounded-3xl bg-[#F2F2F2] border border-[#2E2E2F]/5">
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold text-[#2E2E2F]">Password Protection</h4>
+                    <p className="text-[11px] text-[#2E2E2F]/50 font-medium tracking-tight">Generate a secure reset link</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="rounded-xl px-5 py-2 text-[10px] font-black uppercase tracking-widest border-[#2E2E2F]/10"
+                    onClick={handleResetPassword}
+                    disabled={passwordLoading}
+                  >
+                    {passwordLoading ? 'Sending link...' : 'Change Password'}
+                  </Button>
+                </div>
+                <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl flex gap-3">
+                  <ICONS.Layout className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-orange-800 font-medium leading-relaxed">
+                    By clicking "Change Password", you will receive a reset link at <strong>{adminEmail}</strong>. This email is sent using your configured Admin SMTP settings.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
 
       <Modal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} title="Invite Team Member" size="lg">

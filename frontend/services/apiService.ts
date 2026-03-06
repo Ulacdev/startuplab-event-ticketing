@@ -10,7 +10,9 @@ import {
   RegistrationView,
   TicketStatus,
   OrderStatus,
-  OrganizerProfile
+  OrganizerProfile,
+  HitPaySettings,
+  HitPaySettingsResponse
 } from '../types';
 import { MOCK_EVENTS } from './mockData';
 // Local storage keys
@@ -79,6 +81,50 @@ export const apiService = {
       throw new Error(error.error || `SMTP Test failed: ${res.status}`);
     }
     return await res.json();
+  },
+
+  getHitPaySettings: async (scope: 'admin' | 'organizer'): Promise<HitPaySettingsResponse> => {
+    const res = await fetch(`${API_BASE}/api/settings/hitpay?scope=${encodeURIComponent(scope)}`, {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      cache: 'no-store'
+    });
+
+    if (res.status === 404 || res.status === 501) {
+      return { backendReady: false, settings: null };
+    }
+
+    if (!res.ok) {
+      const errorPayload = await res.json().catch(() => ({}));
+      throw new Error(errorPayload?.error || `Failed to load HitPay settings: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return { backendReady: true, settings: (data || null) as HitPaySettings | null };
+  },
+
+  updateHitPaySettings: async (
+    scope: 'admin' | 'organizer',
+    payload: Partial<HitPaySettings>
+  ): Promise<HitPaySettingsResponse> => {
+    const res = await fetch(`${API_BASE}/api/settings/hitpay?scope=${encodeURIComponent(scope)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+
+    if (res.status === 404 || res.status === 501) {
+      return { backendReady: false, settings: null };
+    }
+
+    if (!res.ok) {
+      const errorPayload = await res.json().catch(() => ({}));
+      throw new Error(errorPayload?.error || `Failed to save HitPay settings: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return { backendReady: true, settings: (data || null) as HitPaySettings | null };
   },
 
   // --- Organizer APIs ---
@@ -231,9 +277,10 @@ export const apiService = {
   // --- Public APIs ---
 
   // GET /api/events
-  getEvents: async (page = 1, limit = 10, search = ''): Promise<{ events: Event[], pagination: any }> => {
+  getEvents: async (page = 1, limit = 10, search = '', location = ''): Promise<{ events: Event[], pagination: any }> => {
     const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
-    const res = await fetch(`${API_BASE}/api/events?status=PUBLISHED&page=${page}&limit=${limit}${searchParam}`, {
+    const locParam = location ? `&location=${encodeURIComponent(location)}` : '';
+    const res = await fetch(`${API_BASE}/api/events?status=PUBLISHED&page=${page}&limit=${limit}${searchParam}${locParam}`, {
       headers: { 'Content-Type': 'application/json' }
     });
     if (!res.ok) throw new Error(`Failed to load events: ${res.status}`);

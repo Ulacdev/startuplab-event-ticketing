@@ -9,7 +9,7 @@ import { PaymentStatusView } from './views/Public/PaymentStatus';
 import { TicketView } from './views/Public/TicketView';
 import { AboutUsPage } from './views/Public/AboutUsPage';
 import { ContactUsPage } from './views/Public/ContactUsPage';
-import { PublicEventsPage } from './views/Public/PublicEventsPage';
+import { EventDiscoveryPage } from './views/Public/EventDiscoveryPage';
 import { LikedEventsPage } from './views/Public/LikedEventsPage';
 import { FollowingsEventsPage } from './views/Public/FollowingsEventsPage';
 import MyTicketsPage from './views/Public/MyTicketsPage';
@@ -28,6 +28,8 @@ import { SettingsView } from './views/Admin/Settings';
 import { LoginPerspective } from './views/Auth/Login';
 import { SignUpView } from './views/Auth/SignUp';
 import { AcceptInvite } from './views/Auth/AcceptInvite';
+import { ForgotPassword } from './views/Auth/ForgotPassword';
+import { ResetPassword } from './views/Auth/ResetPassword';
 import { UserSettings } from './views/User/UserSettings';
 import { UserEvents } from './views/User/UserEvents';
 import { UserHome } from './views/User/UserHome';
@@ -46,7 +48,7 @@ const Branding: React.FC<{ className?: string, light?: boolean }> = ({ className
   <img
     src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
     alt="StartupLab Business Ticketing Logo"
-    className={`h-16 sm:h-24 w-auto ${className}`}
+    className={`h-20 sm:h-32 w-auto drop-shadow-xl transform transition-all duration-300 hover:scale-[1.03] cursor-pointer ${className}`}
     style={{ filter: light ? 'invert(1) grayscale(1) brightness(2)' : undefined }}
   />
 );
@@ -60,25 +62,41 @@ const getRoleLabel = (roleValue: unknown): string => {
   return 'User';
 };
 
+/**
+ * Enhanced reverse lookup with faster response and better error handling
+ */
 const reverseLookupCity = async (lat: number, lon: number): Promise<string | null> => {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lon))}`,
-      { headers: { Accept: 'application/json' } }
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`,
+      {
+        headers: { 'Accept': 'application/json', 'User-Agent': 'StartupLab-Business-Ticketing' },
+        signal: controller.signal
+      }
     );
+    clearTimeout(timeoutId);
+
     if (!response.ok) return null;
     const payload = await response.json().catch(() => null);
     const address = payload?.address || {};
+
+    // Prioritize city-like fields
     return (
       address.city ||
       address.town ||
       address.village ||
       address.municipality ||
+      address.suburb ||
+      address.city_district ||
       address.state ||
-      payload?.display_name ||
+      payload?.display_name?.split(',')[0] ||
       null
     );
-  } catch {
+  } catch (err) {
+    console.error('GPS Reverse Lookup Error:', err);
     return null;
   }
 };
@@ -347,30 +365,23 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         className={`bg-[#F2F2F2] border-r border-[#2E2E2F]/10 hidden md:flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'w-72' : 'w-20'
           }`}
       >
-        <div className={`pt-6 pb-4 flex flex-col items-center justify-center transition-all duration-300 ${desktopSidebarOpen ? 'px-5' : 'px-3'}`}>
-          <Link to="/dashboard" className="flex items-center justify-center w-full">
+        <div className={`h-20 flex items-center justify-center transition-all duration-300 border-b border-[#2E2E2F]/5 ${desktopSidebarOpen ? 'px-6' : 'px-2'}`}>
+          <Link to="/dashboard" className="flex items-center justify-center w-full group transition-all duration-500 transform hover:scale-[1.05] active:scale-[0.95] relative">
+            <div className="absolute inset-0 bg-[#38BDF2]/5 rounded-2xl opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-500" />
             {desktopSidebarOpen ? (
               <img
                 src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
                 alt="StartupLab Business Center Logo"
-                className="h-16 w-full max-w-[220px] object-contain animate-in fade-in zoom-in duration-300"
+                className="h-[76px] w-full max-w-[260px] object-contain animate-in fade-in zoom-in duration-700 drop-shadow-2xl group-hover:brightness-110 transition-all relative z-10"
               />
             ) : (
               <img
                 src="/lgo.webp"
                 alt="SL Logo"
-                className="h-10 w-10 object-contain animate-in fade-in zoom-in duration-300"
+                className="h-14 w-14 object-contain animate-in fade-in zoom-in duration-300 group-hover:rotate-12 transition-transform shadow-sm"
               />
             )}
           </Link>
-          {desktopSidebarOpen && (
-            <div className="mt-4 flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <span className={`w-2 h-2 rounded-full ${isStaff ? 'bg-[#38BDF2]' : 'bg-[#2E2E2F]'}`}></span>
-              <p className="text-[9px] uppercase font-black text-[#2E2E2F]/60 tracking-[0.2em]">
-                {isStaff ? 'Portal' : 'Enterprise Admin'}
-              </p>
-            </div>
-          )}
         </div>
         <nav className={`flex-1 ${desktopSidebarOpen ? 'px-4' : 'px-2'} py-4 space-y-1`}>
           {menuItems.map((item) => (
@@ -648,7 +659,6 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [headerLocationMenuOpen, setHeaderLocationMenuOpen] = React.useState(false);
   const [headerLocating, setHeaderLocating] = React.useState(false);
   const [headerLocationError, setHeaderLocationError] = React.useState('');
-  const [headerLocationSearch, setHeaderLocationSearch] = React.useState('');
   const headerLocationMenuRef = React.useRef<HTMLDivElement | null>(null);
   const isOrganizer = isAuthenticated && role === UserRole.ORGANIZER;
   const publicMenuMode = isOrganizer ? publicMode : 'attending';
@@ -657,6 +667,8 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const displayName = email?.trim() || name?.trim() || 'User';
   const roleLabel = isOrganizer && isAttendingView ? 'Attending' : getRoleLabel(role);
   const publicUserMenuActionClass = 'w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-colors text-left group';
+  const landingLoginButtonClass = 'px-6 text-[11px] font-black uppercase tracking-widest border !border-black/70 !bg-black !text-white hover:!bg-[#00AEEF] hover:!border-[#66DBFF] hover:!text-white hover:shadow-[0_0_22px_rgba(0,174,239,0.8)] focus-visible:!bg-[#00AEEF] focus-visible:!border-[#66DBFF] focus-visible:shadow-[0_0_22px_rgba(0,174,239,0.8)] transition-all duration-300 ease-out active:scale-95 active:!bg-[#0098D6]';
+  const landingGetStartedButtonClass = 'px-6 text-[11px] font-black uppercase tracking-widest border border-[#66DBFF] bg-[#00AEEF] text-white shadow-[0_0_16px_rgba(0,174,239,0.45)] hover:bg-black hover:border-black hover:text-white hover:shadow-[0_0_22px_rgba(0,174,239,0.5)] focus-visible:bg-black focus-visible:border-black focus-visible:shadow-[0_0_22px_rgba(0,174,239,0.5)] transition-all duration-300 ease-out active:scale-95';
   const initials = (email?.split('@')[0] || name?.trim() || displayName || 'U')
     .split(' ')
     .filter(Boolean)
@@ -719,10 +731,6 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   React.useEffect(() => {
     if (!headerLocationMenuOpen) return;
-    const current = (headerLocationTerm || '').trim();
-    const isDefault =
-      !current || current.toLowerCase() === DEFAULT_HEADER_LOCATION.toLowerCase();
-    setHeaderLocationSearch(isDefault ? '' : current);
   }, [headerLocationMenuOpen, headerLocationTerm]);
 
   React.useEffect(() => {
@@ -760,8 +768,6 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const hasExplicitLocation =
       trimmedLocation &&
       trimmedLocation.toLowerCase() !== DEFAULT_HEADER_LOCATION.toLowerCase();
-    const canSubmit = Boolean(trimmedSearch || hasExplicitLocation);
-    if (!canSubmit) return;
 
     const params = new URLSearchParams();
 
@@ -778,16 +784,20 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setHeaderLocationTerm(value);
     setHeaderLocationError('');
     setHeaderLocationMenuOpen(false);
+
+    // If we're on browse-events or if user picks a specific location, trigger search
+    const trimmedSearch = headerSearchTerm.trim();
+    const hasExplicitLocation = value && value !== DEFAULT_HEADER_LOCATION && value !== ONLINE_LOCATION_VALUE;
+
+    const params = new URLSearchParams();
+    if (trimmedSearch) params.set('search', trimmedSearch);
+    if (hasExplicitLocation) params.set('location', value);
+    else if (value === ONLINE_LOCATION_VALUE) params.set('location', ONLINE_LOCATION_VALUE);
+
+    const query = params.toString();
+    navigate(`/browse-events${query ? `?${query}` : ''}`);
   };
 
-  const handleApplyHeaderLocationSearch = () => {
-    const trimmed = (headerLocationSearch || '').trim();
-    if (!trimmed) {
-      setHeaderLocationError('Please type a location first.');
-      return;
-    }
-    handleSelectHeaderLocation(trimmed);
-  };
 
   const handleUseCurrentLocationInHeader = async () => {
     if (!navigator.geolocation) {
@@ -856,27 +866,27 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             <Branding className="text-xl lg:text-2xl" />
           </Link>
 
-          <nav className="hidden lg:flex flex-1 min-w-0 items-center justify-center gap-6">
+          <nav className="hidden lg:flex flex-1 min-w-0 items-center justify-center gap-8">
             {showHeaderSearchBar && (
-              <form onSubmit={handleHeaderSearchSubmit} className="w-[380px] xl:w-[500px] 2xl:w-[560px] max-w-full">
-                <div className="flex items-center rounded-2xl border border-[#2E2E2F]/10 bg-[#F2F2F2] overflow-hidden shadow-[0_14px_28px_-24px_rgba(46,46,47,0.55)]">
-                  <label className="flex items-center gap-2 px-3.5 py-2.5 min-w-0 flex-1 border-r border-[#2E2E2F]/10 bg-[#F2F2F2]">
-                    <ICONS.Search className="w-3.5 h-3.5 text-[#2E2E2F]/45 shrink-0" />
+              <form onSubmit={handleHeaderSearchSubmit} className="flex-1 max-w-[750px]">
+                <div className="flex items-center h-13 rounded-2xl border border-[#2E2E2F]/10 bg-[#F2F2F2] overflow-hidden shadow-[0_10px_30px_-15px_rgba(46,46,47,0.1)] focus-within:border-[#38BDF2]/50 focus-within:shadow-[0_15px_35px_-12px_rgba(56,189,242,0.15)] transition-all duration-300">
+                  <label className="flex items-center gap-3 px-5 py-3 min-w-0 flex-1 border-r border-[#2E2E2F]/5 hover:bg-white/40 transition-colors">
+                    <ICONS.Search className="w-4 h-4 text-[#38BDF2] shrink-0" />
                     <input
                       type="text"
                       value={headerSearchTerm}
                       onChange={(event) => setHeaderSearchTerm(event.target.value)}
                       placeholder="Search"
-                      className="w-full bg-transparent text-[11px] font-semibold text-[#2E2E2F] placeholder:text-[#2E2E2F]/35 outline-none"
+                      className="w-full bg-transparent text-[12px] font-bold text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 outline-none"
                     />
                   </label>
                   <div
-                    className="relative min-w-0 flex-1 border-r border-[#2E2E2F]/10 bg-[#F2F2F2]"
+                    className="relative min-w-0 flex-1 border-r border-[#2E2E2F]/5 bg-[#F2F2F2] hover:bg-white/40 transition-colors"
                     ref={headerLocationMenuRef}
                   >
-                    <div className="w-full flex items-center">
-                      <div className="flex-1 min-w-0 flex items-center gap-2 px-3.5 py-2.5">
-                        <ICONS.MapPin className="w-3.5 h-3.5 text-[#2E2E2F]/45 shrink-0" />
+                    <div className="w-full h-full flex items-center">
+                      <div className="flex-1 min-w-0 flex items-center gap-3 px-5 py-3 cursor-text" onClick={() => setHeaderLocationMenuOpen(true)}>
+                        <ICONS.MapPin className="w-4 h-4 text-[#38BDF2] shrink-0" />
                         <input
                           type="text"
                           value={hasHeaderExplicitLocation ? headerLocationTerm : ''}
@@ -887,96 +897,110 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                           }}
                           onFocus={() => setHeaderLocationMenuOpen(true)}
                           placeholder="Your Location"
-                          className="w-full bg-transparent text-[11px] font-semibold text-[#2E2E2F] placeholder:text-[#2E2E2F]/35 outline-none"
+                          className="w-full bg-transparent text-[12px] font-bold text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 outline-none"
                           aria-label="Search location"
                         />
                       </div>
                       <button
                         type="button"
-                        className={`px-2.5 py-2.5 transition-colors ${headerLocating
-                          ? 'text-[#2E2E2F]/30 cursor-not-allowed'
-                          : 'text-[#2E2E2F]/45 hover:text-[#38BDF2]'
-                          }`}
-                        onClick={handleUseCurrentLocationInHeader}
+                        className={`w-11 h-11 flex items-center justify-center transition-all ${headerLocating
+                          ? 'text-[#38BDF2] animate-pulse'
+                          : 'text-[#2E2E2F]/40 hover:text-[#38BDF2] hover:bg-[#38BDF2]/8'
+                          } rounded-xl mr-1 group/gps`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUseCurrentLocationInHeader();
+                        }}
                         disabled={headerLocating}
-                        aria-label="Track current location"
+                        title="Search near me"
                       >
                         {headerLocating ? (
-                          <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full inline-block animate-spin" />
+                          <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full inline-block animate-spin" />
                         ) : (
-                          <svg fill="none" stroke="currentColor" strokeWidth={2.3} viewBox="0 0 24 24" className="w-4 h-4">
-                            <circle cx="12" cy="12" r="3.2" />
-                            <path strokeLinecap="round" d="M12 2.5v3m0 13v3M2.5 12h3m13 0h3M5 5l2.1 2.1m9.8 9.8L19 19M19 5l-2.1 2.1M7.1 16.9L5 19" />
-                          </svg>
+                          <div className="relative">
+                            <svg fill="none" stroke="currentColor" strokeWidth={2.4} viewBox="0 0 24 24" className="w-5 h-5 group-hover/gps:scale-110 transition-transform">
+                              <circle cx="12" cy="12" r="3" />
+                              <path strokeLinecap="round" d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+                            </svg>
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#38BDF2] rounded-full opacity-0 group-hover/gps:opacity-100 transition-opacity animate-ping" />
+                          </div>
                         )}
                       </button>
                     </div>
                     {headerLocationMenuOpen && (
-                      <div className="absolute left-0 top-[calc(100%+8px)] z-50 w-[300px] rounded-xl border border-[#2E2E2F]/10 bg-white shadow-[0_18px_34px_-20px_rgba(46,46,47,0.35)] overflow-hidden">
-                        <div className="px-3.5 py-3 border-b border-[#2E2E2F]/10">
-                          <label className="block text-[10px] font-black uppercase tracking-widest text-[#2E2E2F]/45 mb-2">
-                            Search Location
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={headerLocationSearch}
-                              onChange={(event) => setHeaderLocationSearch(event.target.value)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter') {
-                                  event.preventDefault();
-                                  handleApplyHeaderLocationSearch();
-                                }
-                              }}
-                              placeholder="Type city or area"
-                              className="w-full px-3 py-2 rounded-lg border border-[#2E2E2F]/12 bg-[#F2F2F2] text-[12px] font-semibold text-[#2E2E2F] placeholder:text-[#2E2E2F]/35 outline-none focus:border-[#38BDF2]/60"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleApplyHeaderLocationSearch}
-                              className="px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-wide text-[#2E2E2F] bg-[#F2F2F2] border border-[#2E2E2F]/10 hover:bg-[#38BDF2]/12 transition-colors"
-                            >
-                              Use
-                            </button>
-                          </div>
-                        </div>
+                      <div className="absolute left-0 right-0 top-[calc(100%+12px)] z-50 w-[320px] rounded-2xl border border-[#2E2E2F]/10 bg-white shadow-[0_24px_48px_-20px_rgba(46,46,47,0.35)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                         <button
                           type="button"
-                          onClick={handleUseCurrentLocationInHeader}
+                          className="w-full px-5 py-4 flex items-center gap-4 text-left text-[#2E2E2F] hover:bg-[#38BDF2]/5 transition-colors border-b border-[#2E2E2F]/5 disabled:opacity-60 group/btn"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleUseCurrentLocationInHeader();
+                          }}
                           disabled={headerLocating}
-                          className="w-full px-3.5 py-3 text-left text-xs font-semibold text-[#2E2E2F] hover:bg-[#F2F2F2] transition-colors disabled:opacity-60"
                         >
-                          {headerLocating ? 'Detecting location...' : 'Use my current location'}
+                          <div className={`w-10 h-10 rounded-full border border-[#38BDF2]/30 flex items-center justify-center text-[#38BDF2] group-hover/btn:bg-[#38BDF2] group-hover/btn:text-white transition-all shadow-sm ${headerLocating ? 'animate-pulse' : ''}`}>
+                            {headerLocating ? (
+                              <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full inline-block animate-spin" />
+                            ) : (
+                              <svg fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" className="w-5 h-5">
+                                <circle cx="12" cy="12" r="3" />
+                                <path strokeLinecap="round" d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-[#2E2E2F]">Detect My Location</span>
+                            <span className="text-[10px] text-[#2E2E2F]/40 font-bold uppercase tracking-wider">Fast GPS Search</span>
+                          </div>
                         </button>
+
                         <button
                           type="button"
-                          onClick={() => handleSelectHeaderLocation(DEFAULT_HEADER_LOCATION)}
-                          className="w-full px-3.5 py-3 text-left text-xs font-semibold text-[#2E2E2F] hover:bg-[#F2F2F2] transition-colors border-t border-[#2E2E2F]/10"
-                        >
-                          Use default location
-                        </button>
-                        <button
-                          type="button"
+                          className="w-full px-5 py-4 flex items-center gap-4 text-left text-[#2E2E2F] hover:bg-[#38BDF2]/5 transition-colors group/online border-b border-[#2E2E2F]/5"
                           onClick={() => handleSelectHeaderLocation(ONLINE_LOCATION_VALUE)}
-                          className="w-full px-3.5 py-3 text-left text-xs font-semibold text-[#2E2E2F] hover:bg-[#F2F2F2] transition-colors border-t border-[#2E2E2F]/10"
                         >
-                          Browse online events
+                          <div className="w-10 h-10 rounded-xl border border-[#38BDF2]/30 flex items-center justify-center text-[#38BDF2] group-hover/online:bg-[#38BDF2] group-hover/online:text-white transition-all shadow-sm">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10 9l5 3-5 3V9z" />
+                            </svg>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-[#2E2E2F]">Online Events</span>
+                            <span className="text-[10px] text-[#2E2E2F]/40 font-bold uppercase tracking-wider">Virtual Experiences</span>
+                          </div>
                         </button>
+
+                        <button
+                          type="button"
+                          className="w-full px-5 py-3 flex items-center gap-4 text-left text-[#2E2E2F]/60 hover:bg-red-50 hover:text-red-500 transition-colors group/reset"
+                          onClick={() => handleSelectHeaderLocation(DEFAULT_HEADER_LOCATION)}
+                        >
+                          <div className="w-10 h-10 rounded-full border border-current opacity-20 flex items-center justify-center transition-opacity group-hover/reset:opacity-100">
+                            <ICONS.Trash className="w-4 h-4" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-black uppercase tracking-widest">Clear Location</span>
+                            <span className="text-[9px] font-bold opacity-70">Reset to all areas</span>
+                          </div>
+                        </button>
+
                         {headerLocationError && (
-                          <div className="px-3.5 py-2.5 text-[11px] font-semibold text-[#2E2E2F]/80 bg-[#F2F2F2] border-t border-[#2E2E2F]/10">
+                          <div className="px-5 py-3 text-[11px] font-bold text-red-500 bg-red-50 border-t border-red-100 flex items-center gap-2">
+                            <ICONS.AlertTriangle className="w-3.5 h-3.5" />
                             {headerLocationError}
                           </div>
                         )}
+
+                        <div className="px-5 py-4 bg-[#F8F9FA] border-t border-[#2E2E2F]/5">
+                          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#2E2E2F]/30 italic leading-relaxed">Tip: Type any city name in the input field above for custom filtering.</p>
+                        </div>
                       </div>
                     )}
                   </div>
                   <button
                     type="submit"
-                    disabled={!canSubmitHeaderSearch}
-                    className={`w-12 h-11 flex items-center justify-center transition-colors ${canSubmitHeaderSearch
-                      ? 'text-[#2E2E2F] hover:bg-[#38BDF2]/12 hover:text-[#38BDF2]'
-                      : 'text-[#2E2E2F]/25 cursor-not-allowed'
-                      }`}
+                    className="w-12 h-11 flex items-center justify-center transition-colors text-[#2E2E2F] hover:bg-[#38BDF2]/12 hover:text-[#38BDF2]"
                     aria-label="Find events"
                   >
                     <ICONS.Search className="w-4 h-4" />
@@ -985,18 +1009,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
               </form>
             )}
 
-            {secondaryLinks.map((link) => (
-              <Link
-                key={link.label}
-                to={link.path}
-                className={`text-[11px] font-semibold tracking-wide transition-colors ${location.pathname === link.path
-                  ? 'text-[#38BDF2]'
-                  : 'text-[#2E2E2F]/50 hover:text-[#38BDF2]'
-                  }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {/* Navigation links removed for a cleaner search-focused header */}
           </nav>
 
           <div className="flex items-center gap-4 shrink-0 ml-auto">
@@ -1140,6 +1153,17 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                               onClick={() => {
                                 setPublicMode('organizer');
                                 setUserMenuOpen(false);
+                                navigate('/user-settings?tab=payments');
+                              }}
+                            >
+                              <ICONS.CreditCard className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                              <span>Payment Gateway</span>
+                            </button>
+                            <button
+                              className={publicUserMenuActionClass}
+                              onClick={() => {
+                                setPublicMode('organizer');
+                                setUserMenuOpen(false);
                                 navigate('/user-settings?tab=account');
                               }}
                             >
@@ -1199,12 +1223,14 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-4 lg:gap-6">
-                <Link to="/login" className="text-[11px] font-black tracking-wide text-[#2E2E2F]/40 hover:text-[#38BDF2] transition-colors">
-                  Login
+              <div className="flex items-center gap-3">
+                <Link to="/login">
+                  <Button size="sm" className={landingLoginButtonClass}>
+                    Login
+                  </Button>
                 </Link>
                 <Link to="/signup">
-                  <Button size="sm" className="px-5 text-[11px] font-black tracking-wide bg-[#38BDF2] hover:bg-[#2E2E2F] shadow-lg shadow-[#38BDF2]/20">
+                  <Button size="sm" className={landingGetStartedButtonClass}>
                     Get Started
                   </Button>
                 </Link>
@@ -1223,6 +1249,22 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                 Your gateway to StartupLab events.<br />
                 From internal workshops to public showcases, this platform delivers seamless, secure registration for every StartupLab gathering.
               </p>
+
+              {/* Social Links */}
+              <div className="mt-8 flex items-center gap-4">
+                <a href="https://www.facebook.com/StartupLabAI/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-full bg-[#2E2E2F]/10 text-[#2E2E2F]/60 hover:bg-[#1877F2] hover:text-white transition-all duration-300 hover:scale-110">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+                </a>
+                <a href="https://discord.com/invite/abt3dkaYTr" target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-full bg-[#2E2E2F]/10 text-[#2E2E2F]/60 hover:bg-[#5865F2] hover:text-white transition-all duration-300 hover:scale-110">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" /></svg>
+                </a>
+                <a href="https://www.linkedin.com/in/startup-lab-center-36a15734b/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-full bg-[#2E2E2F]/10 text-[#2E2E2F]/60 hover:bg-[#0A66C2] hover:text-white transition-all duration-300 hover:scale-110">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                </a>
+                <a href="mailto:hello@startuplab.ph" target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-full bg-[#2E2E2F]/10 text-[#2E2E2F]/60 hover:bg-[#EA4335] hover:text-white transition-all duration-300 hover:scale-110">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.573l8.073-6.08c1.618-1.214 3.927-.059 3.927 1.964z" /></svg>
+                </a>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-8 lg:text-right uppercase tracking-[0.2em] font-black text-[9px]">
               <div className="space-y-4">
@@ -1240,7 +1282,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           </div>
           <div className="pt-8 border-t border-[#2E2E2F]/10 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-[9px] uppercase tracking-[0.3em] font-black text-[#2E2E2F]/60">
-              Â© 2026 StartupLab Business Center
+              © 2026 StartupLab Business Center
             </div>
             <div className="flex items-center gap-6 opacity-60 grayscale">
               <img src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/images/hitpay.png" alt="HitPay" className="h-3" />
@@ -1367,30 +1409,23 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         className={`bg-[#F2F2F2] border-r border-[#2E2E2F]/10 hidden md:flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'w-72' : 'w-20'
           }`}
       >
-        <div className={`pt-8 pb-6 px-4 flex flex-col items-center justify-center transition-all duration-300`}>
-          <Link to="/user-home" className="flex items-center justify-center w-full">
+        <div className={`h-20 flex items-center justify-center transition-all duration-300 border-b border-[#2E2E2F]/5 ${desktopSidebarOpen ? 'px-6' : 'px-2'}`}>
+          <Link to="/user-home" className="flex items-center justify-center w-full group transition-all duration-500 transform hover:scale-[1.05] active:scale-[0.95] relative">
+            <div className="absolute inset-0 bg-[#38BDF2]/5 rounded-2xl opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-500" />
             {hasOrganizerSidebarLogo ? (
               <img
                 src={organizerSidebarLogoUrl}
                 alt={organizerSidebarLogoAlt}
-                className={`w-full object-contain transition-all duration-300 ${desktopSidebarOpen ? 'h-16 max-w-[220px]' : 'h-10 max-w-[52px]'}`}
+                className={`object-contain transition-all duration-700 drop-shadow-2xl group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[76px] w-full max-w-[260px]' : 'h-14 w-14'}`}
               />
             ) : (
               <img
                 src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
                 alt="StartupLab Logo"
-                className={`w-full object-contain transition-all duration-300 ${desktopSidebarOpen ? 'h-16 max-w-[220px]' : 'h-10 max-w-[52px]'}`}
+                className={`object-contain transition-all duration-700 drop-shadow-2xl group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[76px] w-full max-w-[260px]' : 'h-14 w-14'}`}
               />
             )}
           </Link>
-          {desktopSidebarOpen && (
-            <div className="mt-4 flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <span className="w-2 h-2 rounded-full bg-[#38BDF2]"></span>
-              <p className="text-[9px] uppercase font-black text-[#2E2E2F]/60 tracking-[0.2em]">
-                Organizer Portal
-              </p>
-            </div>
-          )}
         </div>
         <nav className={`flex-1 ${desktopSidebarOpen ? 'px-4' : 'px-2'} py-4 space-y-1`}>
           {menuItems.map((item) => {
@@ -1452,6 +1487,16 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                       >
                         <ICONS.Mail className="w-4 h-4 opacity-80" />
                         Email Setup
+                      </Link>
+                      <Link
+                        to="/user-settings?tab=payments"
+                        className={`flex items-center gap-3 px-4 py-2 rounded-xl text-[13px] font-bold tracking-tight transition-colors ${location.search.includes('tab=payments')
+                          ? 'text-[#38BDF2] bg-[#38BDF2]/5'
+                          : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
+                          }`}
+                      >
+                        <ICONS.CreditCard className="w-4 h-4 opacity-80" />
+                        Payment Gateway
                       </Link>
                       <Link
                         to="/user-settings?tab=account"
@@ -1634,6 +1679,16 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                     <button
                       className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-colors text-left group"
                       onClick={() => {
+                        navigate('/user-settings?tab=payments');
+                        setUserMenuOpen(false);
+                      }}
+                    >
+                      <ICONS.CreditCard className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                      <span>Payment Gateway</span>
+                    </button>
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-colors text-left group"
+                      onClick={() => {
                         navigate('/user-settings?tab=account');
                         setUserMenuOpen(false);
                       }}
@@ -1777,6 +1832,8 @@ const App: React.FC = () => (
     <Routes>
       <Route path="/login" element={<LoginPerspective />} />
       <Route path="/signup" element={<SignUpView />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/" element={<PublicLayout><EventList /></PublicLayout>} />
       <Route path="/categories/:categoryKey" element={<PublicLayout><CategoryEvents /></PublicLayout>} />
@@ -1785,7 +1842,7 @@ const App: React.FC = () => (
       <Route path="/payment/status" element={<PublicLayout><PaymentStatusView /></PublicLayout>} />
       <Route path="/tickets/:ticketId" element={<PublicLayout><TicketView /></PublicLayout>} />
       <Route path="/about-us" element={<PublicLayout><AboutUsPage /></PublicLayout>} />
-      <Route path="/browse-events" element={<PublicLayout><PublicEventsPage /></PublicLayout>} />
+      <Route path="/browse-events" element={<PublicLayout><EventDiscoveryPage /></PublicLayout>} />
       <Route path="/liked" element={<PublicLayout><LikedEventsPage /></PublicLayout>} />
       <Route path="/followings" element={<PublicLayout><FollowingsEventsPage /></PublicLayout>} />
       <Route path="/my-tickets" element={<PublicLayout><MyTicketsPage /></PublicLayout>} />
@@ -1801,6 +1858,7 @@ const App: React.FC = () => (
       <Route path="/my-events" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserEvents /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/user-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserSettings /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/organizer-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><Navigate to="/user-settings?tab=organizer" replace /></RequireRoleRoute>} />
+      <Route path="/payment-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><Navigate to="/user-settings?tab=payments" replace /></RequireRoleRoute>} />
       <Route path="/account-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><Navigate to="/user-settings?tab=account" replace /></RequireRoleRoute>} />
       <Route path="/user/attendees" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><RegistrationsList /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/user/checkin" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><CheckIn /></UserPortalLayout></RequireRoleRoute>} />

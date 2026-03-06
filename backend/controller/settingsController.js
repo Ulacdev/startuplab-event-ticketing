@@ -1,6 +1,7 @@
 
 import supabase from '../database/db.js';
 import { sendSmtpEmail } from '../utils/smtpMailer.js'; // Import existing mailer
+import { encryptString, decryptString, maskString } from '../utils/encryption.js';
 
 /**
  * Save or Update SMTP settings for the current user (Organizer or Admin)
@@ -143,5 +144,118 @@ export async function testSmtpSettings(req, res) {
     } catch (error) {
         console.error('[Settings] Test failed:', error.message);
         return res.status(500).json({ error: 'System error during SMTP test' });
+    }
+}
+
+/**
+ * Update HitPay gateway settings (API key, salt, mode, etc)
+ */
+export async function updateHitPaySettings(req, res) {
+    try {
+        const userId = req.user?.id;
+        // Verify they are authenticated
+        if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+        const scope = req.query.scope || 'organizer';
+
+        // Ensure only admin can save scope=admin
+        if (scope === 'admin') {
+            const { data: userRecord } = await supabase.from('users').select('role').eq('id', userId).maybeSingle();
+            if (userRecord?.role !== 'ADMIN') {
+                return res.status(403).json({ error: 'Only admins can modify platform payment settings' });
+            }
+        }
+
+        const { enabled, mode, hitpayApiKey, hitpaySalt } = req.body;
+
+        // Base keys mapped to db
+        const settings = [
+            { user_id: userId, key: 'hitpay_enabled', value: enabled === true ? 'true' : 'false' },
+            { user_id: userId, key: 'hitpay_mode', value: mode === 'sandbox' ? 'sandbox' : 'live' }
+        ];
+
+        // Only encrypt and upsert if they provided new string values
+        if (typeof hitpayApiKey === 'string' && hitpayApiKey.trim() !== '') {
+            settings.push({ user_id: userId, key: 'hitpay_api_key', value: encryptString(hitpayApiKey.trim()) });
+        }
+
+        if (typeof hitpaySalt === 'string' && hitpaySalt.trim() !== '') {
+            settings.push({ user_id: userId, key: 'hitpay_salt', value: encryptString(hitpaySalt.trim()) });
+        }
+
+        const { error } = await supabase
+            .from('settings')
+            .upsert(settings, { onConflict: 'user_id,key' });
+
+        if (error) throw error;
+
+        // Return updated masked keys to UI so they know it worked
+        // We need to fetch the newly saved keys
+        const { data: updatedData } = await supabase.from('settings').select('key, value').eq('user_id', userId).in('key', ['hitpay_api_key', 'hitpay_salt', 'hitpay_enabled', 'hitpay_mode']);
+
+        const mapped = {};
+        updatedData?.forEach(item => mapped[item.key] = item.value);
+
+        return res.json({
+            backendReady: true,
+            settings: {
+                enabled: mapped['hitpay_enabled'] === 'true',
+                mode: mapped['hitpay_mode'] || 'live',
+                maskedHitpayApiKey: maskString(decryptString(mapped['hitpay_api_key'])),
+                maskedHitpaySalt: maskString(decryptString(mapped['hitpay_salt'])),
+                isConfigured: mapped['hitpay_enabled'] === 'true',
+                updatedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('[HitPay Settings] Update failed:', error.message);
+        return res.status(500).json({ error: 'Failed to save HitPay settings.' });
+    }
+}
+
+/**
+ * Get HitPay settings for the current user
+ */
+export async function getHitPaySettings(req, res) {
+    try {
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+        const scope = req.query.scope || 'organizer';
+
+        // Admins modifying their keys vs Organizers reading theirs.
+        // It always reads from the active user profile:
+        const { data, error } = await supabase
+            .from('settings')
+            .select('key, value, updated_at')
+            .eq('user_id', userId)
+            .in('key', ['hitpay_api_key', 'hitpay_salt', 'hitpay_enabled', 'hitpay_mode']);
+
+        if (error) throw error;
+
+        const mapped = {};
+        let latestUpdate = null;
+
+        data.forEach(item => {
+            mapped[item.key] = item.value;
+            if (!latestUpdate || new Date(item.updated_at) > new Date(latestUpdate)) {
+                latestUpdate = item.updated_at;
+            }
+        });
+
+        // Mask results
+        const result = {
+            enabled: mapped['hitpay_enabled'] === 'true',
+            mode: mapped['hitpay_mode'] || 'live',
+            maskedHitpayApiKey: maskString(decryptString(mapped['hitpay_api_key'])),
+            maskedHitpaySalt: maskString(decryptString(mapped['hitpay_salt'])),
+            isConfigured: !!mapped['hitpay_enabled'],
+            updatedAt: latestUpdate
+        };
+
+        return res.json(result);
+    } catch (error) {
+        console.error('[HitPay Settings] Fetch failed:', error.message);
+        return res.status(500).json({ error: 'Failed to fetch HitPay settings.' });
     }
 }

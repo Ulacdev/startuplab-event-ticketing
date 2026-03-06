@@ -1,5 +1,6 @@
 import supabase from '../database/db.js'
 import crypto from 'crypto'
+import { decryptString } from '../utils/encryption.js'
 import { randomUUID } from 'crypto'
 import { sendMakeNotification } from '../utils/makeWebhook.js'
 import { logAudit } from '../utils/auditLogger.js'
@@ -29,6 +30,55 @@ const ensureEnv = (res) => {
   return true
 }
 
+export const getHitpayCredentials = async (orderId) => {
+  let ownerUserId = null;
+
+  if (orderId) {
+    const { data: order } = await supabase.from('orders').select('eventId').eq('orderId', orderId).maybeSingle();
+    if (order?.eventId) {
+      const { data: event } = await supabase.from('events').select('organizerId, createdBy').eq('eventId', order.eventId).maybeSingle();
+      if (event?.organizerId) {
+        const { data: org } = await supabase.from('organizers').select('ownerUserId').eq('organizerId', event.organizerId).maybeSingle();
+        if (org?.ownerUserId) ownerUserId = org.ownerUserId;
+      }
+      if (!ownerUserId && event?.createdBy) {
+        ownerUserId = event.createdBy;
+      }
+    }
+  }
+
+  // Fallback to platform-level Admin credentials if no owner is found (e.g. platform subscriptions)
+  if (!ownerUserId) {
+    const { data: admin } = await supabase.from('users').select('id').eq('role', 'ADMIN').limit(1).maybeSingle();
+    if (admin?.id) {
+      ownerUserId = admin.id;
+    }
+  }
+
+  if (ownerUserId) {
+    const { data } = await supabase.from('settings').select('key, value').eq('user_id', ownerUserId).in('key', ['hitpay_api_key', 'hitpay_salt', 'hitpay_enabled', 'hitpay_mode']);
+    if (data && data.length > 0) {
+      const mapped = {};
+      data.forEach(item => mapped[item.key] = item.value);
+
+      const enabled = mapped['hitpay_enabled'] === 'true';
+      if (enabled && mapped['hitpay_api_key'] && mapped['hitpay_salt']) {
+        return {
+          apiKey: decryptString(mapped['hitpay_api_key']),
+          salt: decryptString(mapped['hitpay_salt']),
+          mode: mapped['hitpay_mode'] || 'live'
+        };
+      }
+    }
+  }
+
+  return {
+    apiKey: process.env.HITPAY_API_KEY,
+    salt: process.env.HITPAY_SALT,
+    mode: 'sandbox'
+  };
+}
+
 export const createHitpayCheckoutSession = async (req, res) => {
   try {
     const { orderId } = req.body
@@ -48,8 +98,12 @@ export const createHitpayCheckoutSession = async (req, res) => {
       return res.status(503).json({ error: 'HitPay is disabled. Set HITPAY_ENABLED=true to enable payments.' })
     }
 
-    if (!ensureEnv(res)) return
-
+    const credentials = await getHitpayCredentials(order.orderId);
+    if (!credentials || !credentials.apiKey || !credentials.salt) {
+      console.error('[HitPay] Missing API keys for order:', order.orderId);
+      return res.status(500).json({ error: 'Payment gateway configuration is missing.' });
+    }
+    const hitpayApiUrl = credentials.mode === 'sandbox' ? 'https://api.sandbox.hit-pay.com' : 'https://api.hit-pay.com';
     const payload = new URLSearchParams()
     payload.set('amount', String(Number(order.totalAmount)))
     payload.set('currency', order.currency || 'PHP')
@@ -60,11 +114,11 @@ export const createHitpayCheckoutSession = async (req, res) => {
     if (order.buyerEmail) payload.set('email', order.buyerEmail)
     if (order.buyerName) payload.set('name', order.buyerName)
 
-    const response = await fetch(`${HITPAY_BASE_URL}/v1/payment-requests`, {
+    const response = await fetch(`${hitpayApiUrl}/v1/payment-requests`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'X-BUSINESS-API-KEY': HITPAY_API_KEY
+        'X-BUSINESS-API-KEY': credentials.apiKey
       },
       body: payload.toString()
     })
@@ -222,8 +276,8 @@ export const getPaymentStatus = async (req, res) => {
   }
 }
 
-const computeHmac = (message, digest = 'hex') => {
-  return crypto.createHmac('sha256', HITPAY_SALT).update(message).digest(digest)
+const computeHmac = (message, salt, digest = 'hex') => {
+  return crypto.createHmac('sha256', salt || process.env.HITPAY_SALT).update(message).digest(digest)
 }
 
 const safeDecode = (value) => {
@@ -242,16 +296,16 @@ const safeEncode = (value) => {
   }
 }
 
-const computeLegacyHmac = (payloadObj) => {
+const computeLegacyHmac = (payloadObj, salt) => {
   const entries = Object.entries(payloadObj)
     .filter(([k, v]) => k !== 'hmac' && v !== undefined && v !== null && v !== '')
     .sort(([a], [b]) => a.localeCompare(b))
   const message = entries.map(([k, v]) => `${k}${v}`).join('')
-  return computeHmac(message, 'hex')
+  return computeHmac(message, salt, 'hex')
 }
 
-const computeRawSignature = (rawBody) => {
-  return computeHmac(rawBody, 'hex')
+const computeRawSignature = (rawBody, salt) => {
+  return computeHmac(rawBody, salt, 'hex')
 }
 
 const buildLegacyHmacCandidates = ({ payload, rawBody }) => {
@@ -375,8 +429,19 @@ export const hitpayWebhook = async (req, res) => {
           null
       }
     })
-    if (!ensureEnv(res)) return
     const payload = req.body || {}
+
+    // Determine eventType and reference BEFORE verifying signature:
+    const eventType = payload.event || payload.type || payload.event_type
+    const eventData = payload?.data?.payment_request || payload?.data || payload?.payment_request || payload
+    const reference = eventData.reference_number || payload.reference_number || payload.reference || payload.order_id
+    const hitpayReferenceId = eventData.payment_request_id || eventData.id || payload.payment_request_id || payload.id
+    const statusValue = (eventData.status || payload.status || '').toUpperCase()
+
+    // Fetch credentials securely based on reference (orderId) ownership
+    const credentials = await getHitpayCredentials(reference)
+    const currentSalt = credentials?.salt || process.env.HITPAY_SALT
+
     const rawBody = typeof req.rawBody === 'string' ? req.rawBody : ''
     const payloadString = JSON.stringify(payload || {})
     const bodyCandidates = rawBody && rawBody.length ? [rawBody] : ['']
@@ -412,10 +477,10 @@ export const hitpayWebhook = async (req, res) => {
     if (signatureHeader) {
       const received = String(signatureHeader || '').trim().replace(/^sha256=/i, '')
       const matchesHex = bodyCandidates.some((body) =>
-        computeRawSignature(body).toLowerCase() === received.toLowerCase()
+        computeRawSignature(body, currentSalt).toLowerCase() === received.toLowerCase()
       )
       const matchesBase64 = bodyCandidates.some((body) =>
-        crypto.createHmac('sha256', HITPAY_SALT).update(body).digest('base64') === received
+        crypto.createHmac('sha256', currentSalt).update(body).digest('base64') === received
       )
       if (!matchesHex && !matchesBase64) {
         console.error('[Webhook] Signature mismatch', {
@@ -433,8 +498,8 @@ export const hitpayWebhook = async (req, res) => {
     } else if (legacyHmac) {
       const legacyCandidates = buildLegacyHmacCandidates({ payload, rawBody })
       const legacyCandidateDigests = legacyCandidates.map((candidate) => {
-        const hex = computeHmac(candidate, 'hex')
-        const base64 = computeHmac(candidate, 'base64')
+        const hex = computeHmac(candidate, currentSalt, 'hex')
+        const base64 = computeHmac(candidate, currentSalt, 'base64')
         return { candidate, hex, base64 }
       })
       const matchesLegacyHex = legacyCandidateDigests.some((entry) =>
@@ -469,12 +534,6 @@ export const hitpayWebhook = async (req, res) => {
       console.error('[Webhook] Missing signature', signatureDebug)
       return res.status(400).json({ error: 'Missing webhook signature' })
     }
-
-    const eventType = payload.event || payload.type || payload.event_type
-    const eventData = payload?.data?.payment_request || payload?.data || payload?.payment_request || payload
-    const reference = eventData.reference_number || payload.reference_number || payload.reference || payload.order_id
-    const hitpayReferenceId = eventData.payment_request_id || eventData.id || payload.payment_request_id || payload.id
-    const statusValue = (eventData.status || payload.status || '').toUpperCase()
 
     const externalId = deriveWebhookExternalId({ payload, eventData, rawBody, eventType })
     const receivedAt = new Date().toISOString()

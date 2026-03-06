@@ -95,11 +95,18 @@ export const AccountSettings: React.FC = () => {
         if (!email) return;
         setPasswordLoading(true);
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/#/login?reset=true`,
+            const res = await fetch(`${API}/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
             });
-            if (error) throw error;
-            setNotification({ message: 'Password reset email sent!', type: 'success' });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to send reset link');
+            }
+
+            setNotification({ message: 'Password reset link sent to your email!', type: 'success' });
         } catch (err: any) {
             setNotification({ message: err.message || 'Failed to send reset email.', type: 'error' });
         } finally {
@@ -118,12 +125,13 @@ export const AccountSettings: React.FC = () => {
     return (
         <div className="space-y-10 pb-20">
             {notification && (
-                <div className="fixed top-24 right-8 z-[120]">
-                    <Card className={`flex items-center gap-4 px-6 py-4 rounded-2xl shadow-xl border ${notification.type === 'success' ? 'bg-white border-[#38BDF2]/40 text-[#2E2E2F]' : 'bg-white border-red-200 text-red-600'}`}>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notification.type === 'success' ? 'bg-[#38BDF2]/10 text-[#38BDF2]' : 'bg-red-50 text-red-500'}`}>
+                <div className="fixed top-24 right-8 z-[120] animate-in slide-in-from-right-10 duration-500">
+                    <Card className={`flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border ${notification.type === 'success' ? 'bg-[#F2F2F2] border-green-200 text-[#2E2E2F]' : 'bg-[#F2F2F2] border-red-200 text-[#2E2E2F]'}`}>
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${notification.type === 'success' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' : 'bg-red-500 text-white shadow-lg shadow-red-500/30'}`}>
                             {notification.type === 'success' ? <ICONS.CheckCircle className="w-5 h-5" /> : <XCircleIcon className="w-5 h-5" />}
                         </div>
-                        <p className="font-bold text-sm tracking-tight">{notification.message}</p>
+                        <p className="font-black text-sm tracking-tight">{notification.message}</p>
+                        <button onClick={() => setNotification(null)} className="ml-4 text-[#2E2E2F]/40 hover:text-[#2E2E2F] text-xl font-black transition-colors">&times;</button>
                     </Card>
                 </div>
             )}
@@ -143,7 +151,7 @@ export const AccountSettings: React.FC = () => {
                 <div className="space-y-10">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-8">
                         <div
-                            className="relative group w-28 h-28 rounded-[2rem] overflow-hidden border-2 border-[#2E2E2F]/5 bg-[#F8F8F8] flex items-center justify-center cursor-pointer hover:border-[#38BDF2] transition-all"
+                            className="relative group w-28 h-28 rounded-[2rem] overflow-hidden border-2 border-[#2E2E2F]/5 bg-[#F2F2F2] flex items-center justify-center cursor-pointer hover:border-[#38BDF2] transition-all"
                             onClick={() => fileInputRef.current?.click()}
                         >
                             {previewUrl ? (
@@ -179,13 +187,13 @@ export const AccountSettings: React.FC = () => {
                             <Input
                                 value={formName}
                                 onChange={(e: any) => setFormName(e.target.value)}
-                                placeholder="Enter your name"
+                                placeholder="StartupLab Admin"
                                 className="font-bold text-[#2E2E2F]"
                             />
                         </div>
                         <div className="space-y-1.5 opacity-60">
                             <label className="text-[10px] font-black text-[#2E2E2F]/30 uppercase tracking-[0.2em] ml-1">Email Address</label>
-                            <div className="px-5 py-3.5 bg-[#F8F8F8] border border-[#2E2E2F]/10 rounded-xl text-xs text-[#2E2E2F] font-bold">
+                            <div className="px-5 py-3.5 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-xl text-xs text-[#2E2E2F] font-bold">
                                 {email}
                             </div>
                         </div>
@@ -199,6 +207,44 @@ export const AccountSettings: React.FC = () => {
                         >
                             {saving ? 'Updating...' : 'Save Changes'}
                         </Button>
+                    </div>
+                </div>
+            </Card>
+
+            {/* Security Section */}
+            <Card className="p-10 border-[#2E2E2F]/10 rounded-[2.5rem] bg-[#F2F2F2]">
+                <div className="flex items-center gap-3 mb-10">
+                    <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 flex items-center justify-center">
+                        <ShieldIcon className="w-5 h-5" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-black text-[#2E2E2F] uppercase tracking-wider">Security & Access</h3>
+                        <p className="text-[10px] text-[#2E2E2F]/40 font-bold uppercase tracking-widest mt-0.5">Manage your credentials and account safety</p>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 rounded-3xl bg-[#F2F2F2] border border-[#2E2E2F]/5">
+                        <div className="space-y-1">
+                            <h4 className="text-xs font-bold text-[#2E2E2F]">Password</h4>
+                            <p className="text-[11px] text-[#2E2E2F]/50 font-medium">Last changed: (Not recorded)</p>
+                        </div>
+                        <Button
+                            variant="outline"
+                            className="rounded-xl px-5 py-2 text-[10px] font-black uppercase tracking-widest border-[#2E2E2F]/10"
+                            onClick={handleResetPassword}
+                            disabled={passwordLoading}
+                        >
+                            {passwordLoading ? 'Sending Link...' : 'Change Password'}
+                        </Button>
+                    </div>
+
+                    <div className="flex gap-3 items-start p-4 bg-orange-50/50 border border-orange-100 rounded-2xl">
+                        <AlertIcon className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                        <p className="text-[10px] text-orange-800 font-medium leading-relaxed">
+                            Clicking "Change Password" will send a secure reset link to your email ({email}).
+                            This link is powered by the system's professional SMTP configuration.
+                        </p>
                     </div>
                 </div>
             </Card>

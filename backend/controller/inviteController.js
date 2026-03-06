@@ -1,24 +1,13 @@
 import crypto from 'crypto';
 import db, { supabase } from '../database/db.js';
 import { sendSmtpEmail } from '../utils/smtpMailer.js';
+import { getSmtpConfig } from '../utils/notificationService.js';
 
 const normalizeRole = (role) => {
   const normalized = String(role || '').toUpperCase();
   if (!normalized || normalized === 'USER') return 'ORGANIZER';
   return normalized;
 };
-
-const SMTP_SETTING_KEYS = [
-  'email_provider',
-  'email_driver',
-  'email_host',
-  'email_port',
-  'email_username',
-  'email_password',
-  'email_encryption',
-  'email_from_address',
-  'email_from_name'
-];
 
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 
@@ -30,33 +19,6 @@ const escapeHtml = (value) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-async function getUserSmtpConfig(userId) {
-  if (!userId) return null;
-  const { data, error } = await db
-    .from('settings')
-    .select('key, value')
-    .eq('user_id', userId)
-    .in('key', SMTP_SETTING_KEYS);
-
-  if (error || !data || data.length === 0) return null;
-
-  const map = new Map(data.map((item) => [item.key, item.value]));
-  const smtpHost = map.get('email_host');
-  const smtpUser = map.get('email_username');
-  if (!smtpHost || !smtpUser) return null;
-
-  return {
-    emailProvider: map.get('email_provider') || 'SMTP',
-    mailDriver: map.get('email_driver') || 'smtp',
-    smtpHost,
-    smtpPort: parseInt(map.get('email_port'), 10) || 587,
-    smtpUser,
-    smtpPass: map.get('email_password') || '',
-    mailEncryption: map.get('email_encryption') || 'TLS',
-    fromAddress: map.get('email_from_address') || smtpUser,
-    fromName: map.get('email_from_name') || 'StartupLab Organizer'
-  };
-}
 
 function buildInviteEmailHtml({ recipientName, inviteRole, inviteLink }) {
   const safeName = escapeHtml(recipientName);
@@ -90,10 +52,11 @@ export async function inviteUser(req, res) {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return res.status(400).json({ error: 'Email required' });
   const inviteRole = normalizeRole(role);
-  const smtpConfig = await getUserSmtpConfig(inviterUserId);
+  // Resolve SMTP config using professional hierarchy (Organizer -> Staff Owner -> Admin Fallback)
+  const smtpConfig = await getSmtpConfig(null, inviterUserId);
   if (!smtpConfig) {
     return res.status(400).json({
-      error: 'Invite email sender is not configured. Please set up your Organizer SMTP settings first.'
+      error: 'Invite email sender is not configured. Please ensure Admin or Organizer SMTP settings are set up.'
     });
   }
 
@@ -145,10 +108,11 @@ export async function createInviteAndSend(req, res) {
     if (!role) return res.status(400).json({ error: 'Role required' });
     const inviteRole = normalizeRole(role);
 
-    const smtpConfig = await getUserSmtpConfig(inviterUserId);
+    // Resolve SMTP config using professional hierarchy (Organizer -> Staff Owner -> Admin Fallback)
+    const smtpConfig = await getSmtpConfig(null, inviterUserId);
     if (!smtpConfig) {
       return res.status(400).json({
-        error: 'Invite email sender is not configured. Please set up your Organizer SMTP settings first.'
+        error: 'Invite email sender is not configured. Please ensure Admin or Organizer SMTP settings are set up.'
       });
     }
 

@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { updateSmtpSettings, getSmtpSettings, testSmtpSettings } from '../controller/settingsController.js';
+import { updateSmtpSettings, getSmtpSettings, testSmtpSettings, getHitPaySettings, updateHitPaySettings } from '../controller/settingsController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -11,5 +11,8 @@ router.use(authMiddleware);
 router.get('/smtp', getSmtpSettings);
 router.post('/smtp', updateSmtpSettings);
 router.post('/smtp/test', testSmtpSettings);
+
+router.get('/hitpay', getHitPaySettings);
+router.post('/hitpay', updateHitPaySettings);
 
 export default router;

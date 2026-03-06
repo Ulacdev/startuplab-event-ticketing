@@ -52,7 +52,8 @@ export const createOrder = async (req, res) => {
   };
 
   try {
-    // 0) Check for duplicate registration for the same event and email
+    // [REMOVED] Duplicate registration check removed as per user request to allow multiple registrations per email.
+    /*
     const { data: existingAttendee, error: exAttErr } = await supabase
       .from('attendees')
       .select('attendeeId')
@@ -78,6 +79,7 @@ export const createOrder = async (req, res) => {
     if (existingOrder) {
       return res.status(400).json({ error: 'You have an existing order for this event. Please check your tickets or complete the existing payment.' });
     }
+    */
 
     // 1) Validate inventory and reserve with CAS update
     const ids = items.map(i => i.ticketTypeId);

@@ -3,9 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { AccountSettings } from './AccountSettings';
 import { OrganizerSettings } from './OrganizerSettings';
 import { EmailSettings } from './EmailSettings';
+import { PaymentSettings } from './PaymentSettings';
 import { TeamSettings } from './TeamSettings';
 
-type SettingsTab = 'organizer' | 'account' | 'email' | 'team';
+type SettingsTab = 'organizer' | 'payments' | 'account' | 'email' | 'team';
 
 const tabItems: Array<{
   id: SettingsTab;
@@ -28,6 +29,11 @@ const tabItems: Array<{
     description: 'Professional SMTP server configuration',
   },
   {
+    id: 'payments',
+    label: 'Payment Gateway',
+    description: 'HitPay credentials and payout routing',
+  },
+  {
     id: 'account',
     label: 'Account',
     description: 'Name, avatar, and login preferences',
@@ -36,6 +42,7 @@ const tabItems: Array<{
 
 const normalizeTab = (value: string | null): SettingsTab => {
   if (value === 'email') return 'email';
+  if (value === 'payments') return 'payments';
   if (value === 'team') return 'team';
   return value === 'account' ? 'account' : 'organizer';
 };
@@ -67,6 +74,7 @@ export const UserSettings: React.FC = () => {
       <div>
         {activeTab === 'organizer' && <OrganizerSettings />}
         {activeTab === 'email' && <EmailSettings />}
+        {activeTab === 'payments' && <PaymentSettings />}
         {activeTab === 'team' && <TeamSettings />}
         {activeTab === 'account' && <AccountSettings />}
       </div>

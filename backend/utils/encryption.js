@@ -1,0 +1,48 @@
+import crypto from 'crypto';
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex'); // 32 bytes (256 bits)
+const ALGORITHM = 'aes-256-cbc';
+
+// Helper to ensure key is exactly 32 bytes
+const hashKey = (key) => crypto.createHash('sha256').update(String(key)).digest('base64').substr(0, 32);
+const USE_KEY = ENCRYPTION_KEY.length === 32 ? ENCRYPTION_KEY : hashKey(ENCRYPTION_KEY);
+
+export function encryptString(text) {
+    if (!text) return text;
+    try {
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(USE_KEY), iv);
+        let encrypted = cipher.update(text, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        return `${iv.toString('hex')}:${encrypted}`;
+    } catch (error) {
+        console.error('[Encryption] Encryption failed', error);
+        return null;
+    }
+}
+
+export function decryptString(encryptedText) {
+    if (!encryptedText) return encryptedText;
+    try {
+        const parts = encryptedText.split(':');
+        if (parts.length !== 2) return encryptedText; // Might be unencrypted old stuff
+
+        const iv = Buffer.from(parts[0], 'hex');
+        const encryptedData = Buffer.from(parts[1], 'hex');
+        const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(USE_KEY), iv);
+
+        let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+    } catch (error) {
+        console.error('[Encryption] Decryption failed', error);
+        return null;
+    }
+}
+
+export function maskString(text) {
+    if (!text) return null;
+    const str = String(text).trim();
+    if (str.length <= 6) return '*'.repeat(str.length);
+    return '*'.repeat(Math.max(0, str.length - 4)) + str.slice(-4);
+}

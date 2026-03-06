@@ -46,6 +46,22 @@ export interface OrganizerProfile {
   updated_at?: string;
 }
 
+export interface HitPaySettings {
+  enabled: boolean;
+  mode?: 'sandbox' | 'live' | null;
+  hitpayApiKey?: string | null;
+  hitpaySalt?: string | null;
+  maskedHitpayApiKey?: string | null;
+  maskedHitpaySalt?: string | null;
+  isConfigured?: boolean;
+  updatedAt?: string | null;
+}
+
+export interface HitPaySettingsResponse {
+  backendReady: boolean;
+  settings: HitPaySettings | null;
+}
+
 export interface Event {
   eventId: string;
   slug: string;

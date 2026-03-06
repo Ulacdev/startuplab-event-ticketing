@@ -8,6 +8,7 @@ type BrowseEventsNavigatorProps = {
   onTabChange: (tab: BrowseTabKey) => void;
   selectedLocation: string;
   onLocationSelect: (location: string) => void;
+  onLocationClear?: () => void;
   isLoading?: boolean;
   className?: string;
 };
@@ -21,23 +22,35 @@ const TABS: Array<{ key: BrowseTabKey; label: string }> = [
 
 const reverseLookupCity = async (lat: number, lon: number): Promise<string | null> => {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lon))}`,
-      { headers: { Accept: 'application/json' } }
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`,
+      {
+        headers: { 'Accept': 'application/json', 'User-Agent': 'StartupLab-Business-Ticketing' },
+        signal: controller.signal
+      }
     );
+    clearTimeout(timeoutId);
+
     if (!response.ok) return null;
     const payload = await response.json().catch(() => null);
     const address = payload?.address || {};
+
     return (
       address.city ||
       address.town ||
       address.village ||
       address.municipality ||
+      address.suburb ||
+      address.city_district ||
       address.state ||
-      payload?.display_name ||
+      payload?.display_name?.split(',')[0] ||
       null
     );
-  } catch {
+  } catch (err) {
+    console.error('GPS Reverse Lookup Error:', err);
     return null;
   }
 };
@@ -47,6 +60,7 @@ export const BrowseEventsNavigator: React.FC<BrowseEventsNavigatorProps> = ({
   onTabChange,
   selectedLocation,
   onLocationSelect,
+  onLocationClear,
   isLoading = false,
   className = ''
 }) => {
@@ -120,6 +134,16 @@ export const BrowseEventsNavigator: React.FC<BrowseEventsNavigatorProps> = ({
     setIsLocationDropdownOpen(false);
   };
 
+  const handleClearLocation = () => {
+    if (onLocationClear) {
+      onLocationClear();
+    } else {
+      onLocationSelect('');
+    }
+    setLocationError('');
+    setIsLocationDropdownOpen(false);
+  };
+
   return (
     <section className={`mx-1 sm:mx-2 lg:mx-3 ${className}`}>
       <div>
@@ -173,6 +197,22 @@ export const BrowseEventsNavigator: React.FC<BrowseEventsNavigatorProps> = ({
                     </svg>
                   </span>
                   <span className="text-base font-medium">Browse online events</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="w-full px-4 py-3.5 flex items-center gap-3 text-left text-red-500 hover:bg-red-50 transition-colors group/reset"
+                  onClick={handleClearLocation}
+                >
+                  <span className="w-6 h-6 rounded-full border border-red-200 flex items-center justify-center text-red-400 group-hover/reset:text-red-500 group-hover/reset:border-red-400 transition-all">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-[13px] font-bold uppercase tracking-wider">Clear Location</span>
+                    <span className="text-[10px] opacity-70">Reset to all areas</span>
+                  </div>
                 </button>
 
                 {locationError && (

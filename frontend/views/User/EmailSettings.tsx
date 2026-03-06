@@ -97,11 +97,14 @@ export const EmailSettings: React.FC = () => {
             </div>
 
             {notification && (
-                <div className={`p-4 rounded-xl border ${notification.type === 'success'
-                    ? 'bg-[#38BDF2]/10 border-[#38BDF2]/30 text-[#38BDF2]'
-                    : 'bg-red-50 border-red-200 text-red-700'
-                    } font-bold text-sm animate-in fade-in slide-in-from-top-4`}>
-                    {notification.message}
+                <div className="fixed top-24 right-8 z-[120] animate-in slide-in-from-right-10 duration-500">
+                    <Card className={`flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border ${notification.type === 'success' ? 'bg-[#F2F2F2] border-green-200 text-[#2E2E2F]' : 'bg-[#F2F2F2] border-red-200 text-[#2E2E2F]'}`}>
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${notification.type === 'success' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' : 'bg-red-500 text-white shadow-lg shadow-red-500/30'}`}>
+                            {notification.type === 'success' ? <ICONS.CheckCircle className="w-5 h-5" /> : <ICONS.Layout className="w-5 h-5" />}
+                        </div>
+                        <p className="font-black text-sm tracking-tight">{notification.message}</p>
+                        <button onClick={() => setNotification(null)} className="ml-4 text-[#2E2E2F]/40 hover:text-[#2E2E2F] text-xl font-black transition-colors">&times;</button>
+                    </Card>
                 </div>
             )}
 
@@ -115,7 +118,7 @@ export const EmailSettings: React.FC = () => {
                                 name="emailProvider"
                                 value={formData.emailProvider}
                                 onChange={handleChange}
-                                className="w-full px-6 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-full outline-none focus:ring-2 focus:ring-[#38BDF2] focus:border-[#38BDF2] font-medium text-[#2E2E2F] transition-all hover:bg-[#F2F2F2]/80"
+                                className="w-full px-6 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-full outline-none focus:ring-2 focus:ring-[#38BDF2] focus:border-[#38BDF2] font-medium text-[#2E2E2F] transition-all hover:bg-[#F2F2F2]/80 px-6 py-3"
                             >
                                 <option value="SMTP">SMTP</option>
                                 <option value="SES">Amazon SES</option>
@@ -186,7 +189,7 @@ export const EmailSettings: React.FC = () => {
                                 name="mailEncryption"
                                 value={formData.mailEncryption}
                                 onChange={handleChange}
-                                className="w-full px-6 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-full outline-none focus:ring-2 focus:ring-[#38BDF2] focus:border-[#38BDF2] font-medium text-[#2E2E2F] transition-all hover:bg-[#F2F2F2]/80"
+                                className="w-full px-6 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-full outline-none focus:ring-2 focus:ring-[#38BDF2] focus:border-[#38BDF2] font-medium text-[#2E2E2F] transition-all hover:bg-[#F2F2F2]/80 px-6 py-3"
                             >
                                 <option value="TLS">TLS</option>
                                 <option value="SSL">SSL</option>

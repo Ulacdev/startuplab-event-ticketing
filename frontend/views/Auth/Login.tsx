@@ -84,30 +84,49 @@ export const LoginPerspective: React.FC = () => {
             <p className="text-[#2E2E2F]/70 text-lg font-medium">Sign in to your account</p>
             <div className="w-20 h-1 bg-[#38BDF2] mx-auto mt-4 rounded-full"></div>
           </div>
-          <form onSubmit={handleLogin} className="flex flex-col gap-6">
-            <Input
-              placeholder="Email"
-              value={email}
-              onChange={(e: any) => setEmail(e.target.value)}
-              type="email"
-              required
-            />
-            <Input
-              placeholder="Password"
-              value={password}
-              onChange={(e: any) => setPassword(e.target.value)}
-              type="password"
-              required
-            />
-            <Button
-              className="w-full mt-2"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? 'Signing you in...' : 'Sign In'}
-            </Button>
+          <form onSubmit={handleLogin} className="flex flex-col gap-5">
+            <div className="space-y-4">
+              <Input
+                placeholder="Email address"
+                value={email}
+                onChange={(e: any) => setEmail(e.target.value)}
+                type="email"
+                required
+              />
+              <div className="space-y-2">
+                <Input
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e: any) => setPassword(e.target.value)}
+                  type="password"
+                  required
+                />
+                <div className="flex justify-end pr-1">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="text-[12px] font-semibold text-[#38BDF2] hover:text-[#2E2E2F] transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-2">
+              <Button
+                className="w-full py-4 text-[13px] font-black uppercase tracking-widest shadow-lg shadow-[#38BDF2]/20"
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? 'Signing you in...' : 'Sign In'}
+              </Button>
+            </div>
+
             {error && (
-              <div className="mt-2 text-[#2E2E2F] text-sm font-bold text-center">{error}</div>
+              <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-[11px] font-bold text-center animate-in fade-in slide-in-from-top-1 duration-300">
+                {error}
+              </div>
             )}
           </form>
           <div className="mt-8 pt-6 border-t border-[#2E2E2F]/10 text-center">

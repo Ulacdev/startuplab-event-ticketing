@@ -2,6 +2,8 @@ import db from "../database/db.js";
 import supabase, { createAuthClient } from '../database/db.js';
 import { sendMakeNotification } from '../utils/makeWebhook.js';
 
+import { notifyUserByPreference } from "../utils/notificationService.js";
+
 const ORGANIZER_ROLE = 'ORGANIZER';
 
 export const register = async (req, res) => {
@@ -103,19 +105,37 @@ export const register = async (req, res) => {
       }
     }
 
-    // Send welcome email via Make.com webhook (same format as invite so Make.com sends the email)
-    const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-    const inviteLink = `${frontendUrl}/#/login`;
-
+    // Notify User via the Admin's Professional SMTP settings (Fallback mechanism)
     try {
-      await sendMakeNotification({
-        type: 'invite',
-        email: email.toLowerCase().trim(),
-        name: name.trim(),
-        meta: { inviteLink, role: ORGANIZER_ROLE }
+      const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+      const loginUrl = `${frontendUrl}/#/login`;
+
+      await notifyUserByPreference({
+        recipientFallbackEmail: email.toLowerCase().trim(),
+        type: 'ADMIN_ALERT', // Using system template
+        title: 'Welcome to StartupLab!',
+        message: `Hello ${name.trim()}, your account for StartupLab has been created as an ${ORGANIZER_ROLE}. You can now sign in using your credentials.`,
+        metadata: {
+          tag: 'WELCOME',
+          typeIcon: '🚀',
+          actionLabel: 'SIGN IN TO DASHBOARD',
+          actionUrl: loginUrl,
+        }
       });
-    } catch (webhookErr) {
-      console.warn("Make.com webhook failed (non-blocking):", webhookErr?.message);
+      console.log(`✅ [Auth] Welcome email queued for ${email} via Admin SMTP.`);
+    } catch (notifyErr) {
+      console.warn("[Auth] SMTP Welcome notification failed:", notifyErr?.message);
+      // Fallback to Make.com as a secondary if SMTP is not configured
+      try {
+        await sendMakeNotification({
+          type: 'invite',
+          email: email.toLowerCase().trim(),
+          name: name.trim(),
+          meta: { inviteLink: `${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/#/login`, role: ORGANIZER_ROLE }
+        });
+      } catch (webhookErr) {
+        console.warn("Make.com fallback also failed:", webhookErr?.message);
+      }
     }
 
     return res.status(201).json({
@@ -214,3 +234,57 @@ export async function logout(req, res) {
   }
 }
 
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 1. Verify user exists in our records
+    const { data: user, error: userErr } = await db
+      .from('users')
+      .select('name, email')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (userErr) throw userErr;
+    if (!user) {
+      return res.status(404).json({ error: 'No account found with this email address.' });
+    }
+
+    // 2. Generate Supabase Password Reset Link
+    // Note: This requires the service role key (admin client)
+    const { data, error: resetErr } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: normalizedEmail,
+      options: {
+        redirectTo: `${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/#/reset-password`
+      }
+    });
+
+    if (resetErr) throw resetErr;
+
+    const resetLink = data.properties?.action_link;
+    if (!resetLink) throw new Error('Failed to generate reset link');
+
+    // 3. Send the link via Professional SMTP hierarchy (Admin fallback)
+    await notifyUserByPreference({
+      recipientFallbackEmail: normalizedEmail,
+      type: 'ADMIN_ALERT',
+      title: 'Reset Your Password',
+      message: `Hello ${user.name || 'User'}, we received a request to reset your password for your StartupLab account. If you didn't make this request, you can safely ignore this email.`,
+      metadata: {
+        tag: 'SECURITY',
+        typeIcon: '🔐',
+        actionLabel: 'RESET PASSWORD',
+        actionUrl: resetLink,
+      }
+    });
+
+    return res.status(200).json({ message: 'Reset link sent successfully.' });
+  } catch (err) {
+    console.error('[Auth] Forgot password error:', err);
+    return res.status(500).json({ error: 'Failed to process password reset request.' });
+  }
+};
