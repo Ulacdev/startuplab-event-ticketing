@@ -113,6 +113,11 @@ app.use("/api/plans", planRoutes);
 app.use("/api/admin/events", authMiddleware, adminEventRoutes);
 app.use("/api/admin/plans", authMiddleware, adminPlanRoutes);
 
+// Root endpoint for status check
+app.get("/", (req, res) => {
+  res.status(200).json({ status: "ok", message: "StartupLab Ticketing API is running!" });
+});
+
 if (process.env.VERCEL !== "1") {
   startReservationCleanup();
 }
