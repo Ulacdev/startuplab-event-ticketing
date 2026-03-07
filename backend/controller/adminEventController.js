@@ -2,6 +2,7 @@ import supabase from '../database/db.js';
 import crypto from 'crypto';
 import path from 'path';
 import { getOrCreateOrganizerForUser, getOrganizerByOwnerUserId } from '../utils/organizerData.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 const STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'startuplab-business-ticketing';
 const ADMIN_ROLES = ['ADMIN', 'STAFF'];
@@ -432,6 +433,13 @@ export const createEvent = async (req, res) => {
       .single();
 
     if (error) return res.status(500).json({ error: error.message });
+
+    await logAudit({
+      actionType: 'EVENT_CREATED',
+      details: { eventId: data?.eventId, eventName: data?.eventName },
+      req
+    });
+
     return res.status(201).json(data);
   } catch (err) {
     return res.status(500).json({ error: err?.message || 'Unexpected error' });
@@ -467,6 +475,12 @@ export const updateEvent = async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
     if (!data) return res.status(404).json({ error: 'Event not found' });
 
+    await logAudit({
+      actionType: 'EVENT_UPDATED',
+      details: { eventId: data?.eventId, eventName: data?.eventName, updates },
+      req
+    });
+
     return res.json(data);
   } catch (err) {
     return res.status(500).json({ error: err?.message || 'Unexpected error' });
@@ -482,6 +496,13 @@ export const deleteEvent = async (req, res) => {
       .eq('eventId', id);
 
     if (error) return res.status(500).json({ error: error.message });
+
+    await logAudit({
+      actionType: 'EVENT_DELETED',
+      details: { eventId: id },
+      req
+    });
+
     return res.status(204).send();
   } catch (err) {
     return res.status(500).json({ error: err?.message || 'Unexpected error' });
@@ -500,6 +521,13 @@ export const publishEvent = async (req, res) => {
 
     if (error) return res.status(500).json({ error: error.message });
     if (!data) return res.status(404).json({ error: 'Event not found' });
+
+    await logAudit({
+      actionType: 'EVENT_PUBLISHED',
+      details: { eventId: data?.eventId, eventName: data?.eventName },
+      req
+    });
+
     return res.json(data);
   } catch (err) {
     return res.status(500).json({ error: err?.message || 'Unexpected error' });
@@ -518,6 +546,13 @@ export const closeEvent = async (req, res) => {
 
     if (error) return res.status(500).json({ error: error.message });
     if (!data) return res.status(404).json({ error: 'Event not found' });
+
+    await logAudit({
+      actionType: 'EVENT_CLOSED',
+      details: { eventId: data?.eventId, eventName: data?.eventName },
+      req
+    });
+
     return res.json(data);
   } catch (err) {
     return res.status(500).json({ error: err?.message || 'Unexpected error' });

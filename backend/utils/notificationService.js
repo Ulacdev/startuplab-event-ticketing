@@ -151,6 +151,15 @@ export async function getSmtpConfig(organizerId = null, triggerUserId = null, re
     }
   }
 
+  // 2b. Direct user settings lookup - check if user has their own SMTP settings
+  if (!targetUserId && recipientUserId) {
+    const config = await fetchSmtpFromSettingsTable(recipientUserId);
+    if (config) {
+      debugLog('✅ [SMTP] User personal settings loaded.');
+      return config;
+    }
+  }
+
   // Fetch Settings from general settings table if owner resolved
   if (targetUserId) {
     const config = await fetchSmtpFromSettingsTable(targetUserId);

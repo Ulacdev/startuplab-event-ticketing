@@ -111,6 +111,7 @@ export const register = async (req, res) => {
       const loginUrl = `${frontendUrl}/#/login`;
 
       await notifyUserByPreference({
+        recipientUserId: userId,
         recipientFallbackEmail: email.toLowerCase().trim(),
         type: 'ADMIN_ALERT', // Using system template
         title: 'Welcome to StartupLab!',
@@ -244,7 +245,7 @@ export const forgotPassword = async (req, res) => {
     // 1. Verify user exists in our records
     const { data: user, error: userErr } = await db
       .from('users')
-      .select('name, email')
+      .select('userId, name, email')
       .eq('email', normalizedEmail)
       .maybeSingle();
 
@@ -275,6 +276,7 @@ export const forgotPassword = async (req, res) => {
 
     // 3. Send the link via Professional SMTP hierarchy (Admin fallback)
     await notifyUserByPreference({
+      recipientUserId: user?.userId,
       recipientFallbackEmail: normalizedEmail,
       type: 'ADMIN_ALERT',
       title: 'Reset Your Password',

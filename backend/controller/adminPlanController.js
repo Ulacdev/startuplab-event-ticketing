@@ -1,4 +1,5 @@
 import supabase from '../database/db.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 const DEFAULT_FEATURES = {
   aiIntegration: false,
@@ -266,6 +267,13 @@ export const createAdminPlan = async (req, res) => {
     if (featureError) throw featureError;
 
     const responsePlan = buildPlanResponse(inserted, featureRows);
+
+    await logAudit({
+      actionType: 'PLAN_CREATED',
+      details: { planId: inserted?.planId, planName: inserted?.name },
+      req
+    });
+
     return res.status(201).json({ plan: responsePlan });
   } catch (error) {
     console.error('createAdminPlan error:', error);
@@ -320,6 +328,12 @@ export const updateAdminPlan = async (req, res) => {
       .upsert(featureRows, { onConflict: 'planId,key' });
     if (featureError) throw featureError;
 
+    await logAudit({
+      actionType: 'PLAN_UPDATED',
+      details: { planId: updated?.planId, planName: updated?.name },
+      req
+    });
+
     return res.json({ plan: buildPlanResponse(updated, featureRows) });
   } catch (error) {
     console.error('updateAdminPlan error:', error);
@@ -344,6 +358,12 @@ export const updateAdminPlanStatus = async (req, res) => {
 
     if (error) throw error;
     if (!updated) return res.status(404).json({ error: 'Plan not found.' });
+
+    await logAudit({
+      actionType: 'PLAN_STATUS_CHANGED',
+      details: { planId: updated?.planId, planName: updated?.name, isActive: updated?.isActive },
+      req
+    });
 
     return res.json({ planId, isActive: updated.isActive });
   } catch (error) {
@@ -371,6 +391,12 @@ export const deleteAdminPlan = async (req, res) => {
       .delete()
       .eq('planId', planId);
     if (deleteError) throw deleteError;
+
+    await logAudit({
+      actionType: 'PLAN_DELETED',
+      details: { planId },
+      req
+    });
 
     return res.json({ success: true });
   } catch (error) {

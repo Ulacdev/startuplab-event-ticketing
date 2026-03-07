@@ -573,6 +573,19 @@ export const getAuditLogs = async (req, res) => {
     const role = normalizeRole(req.user?.role);
     const allowedEventIds = filteredEventIds;
 
+    // ADMIN role sees ALL audit logs
+    if (role === 'ADMIN') {
+      const { data, error, count } = await query
+        .order('createdAt', { ascending: false })
+        .range(from, to);
+      if (error) return res.status(500).json({ error: error.message });
+      const total = typeof count === 'number' ? count : 0;
+      return res.json({
+        items: data || [],
+        pagination: buildPagination(page, limit, total)
+      });
+    }
+
     const { data: eventOrders } = allowedEventIds && allowedEventIds.length > 0
       ? await supabase.from('orders').select('orderId').in('eventId', allowedEventIds)
       : { data: [] };
@@ -580,21 +593,9 @@ export const getAuditLogs = async (req, res) => {
     const orderIds = (eventOrders || []).map(o => o.orderId);
 
     if (orderIds.length > 0) {
-      if (role === 'ADMIN') {
-        const { data: adminUsers } = await supabase.from('users').select('userId').eq('role', 'ADMIN');
-        const adminIds = (adminUsers || []).map(u => u.userId);
-        query = query.or(`actorUserId.in.(${adminIds.join(',')}),orderId.in.(${orderIds.join(',')})`);
-      } else {
-        query = query.or(`actorUserId.eq.${req.user.id},orderId.in.(${orderIds.join(',')})`);
-      }
+      query = query.or(`actorUserId.eq.${req.user.id},orderId.in.(${orderIds.join(',')})`);
     } else {
-      if (role === 'ADMIN') {
-        const { data: adminUsers } = await supabase.from('users').select('userId').eq('role', 'ADMIN');
-        const adminIds = (adminUsers || []).map(u => u.userId);
-        query = query.filter('actorUserId', 'in', `(${adminIds.join(',')})`);
-      } else {
-        query = query.eq('actorUserId', req.user.id);
-      }
+      query = query.eq('actorUserId', req.user.id);
     }
 
     const { data, error, count } = await query
