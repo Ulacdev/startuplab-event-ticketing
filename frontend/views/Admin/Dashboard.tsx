@@ -704,7 +704,7 @@ export const AdminDashboard: React.FC = () => {
         loadAuditLogs(1);
       }
     }
-  }, [isStaff]);
+  }, [isStaff, role]);
 
   if (isStaff) {
     return (
