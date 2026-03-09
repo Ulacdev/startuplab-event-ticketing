@@ -252,7 +252,7 @@ export const getAllUsers = async (req, res) => {
 
     let query = db
       .from("users")
-      .select("userId, id, name, email, role, imageUrl, canviewevents, caneditevents, canmanualcheckin, canreceivenotifications, employerId");
+      .select("userId, name, email, role, imageUrl, canviewevents, caneditevents, canmanualcheckin, canreceivenotifications, employerId");
 
     let { data, error } = await query;
     console.log('[getAllUsers] db response data length:', data?.length, 'error:', error);

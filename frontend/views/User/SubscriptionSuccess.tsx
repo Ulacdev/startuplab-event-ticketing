@@ -10,12 +10,26 @@ export const SubscriptionSuccess: React.FC = () => {
     const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'pending'>('loading');
     const [message, setMessage] = useState('Processing your subscription...');
 
-    // HitPay passes the reference_id (which is our subscriptionId) in the redirect URL
-    const referenceId = searchParams.get('reference_id');
+    // HitPay passes the reference_id in the redirect URL
+    // We try multiple ways to get it, because HashRouter can be tricky on localhost
+    const referenceId = searchParams.get('reference_id') ||
+        new URLSearchParams(window.location.hash.split('?')[1]).get('reference_id') ||
+        new URLSearchParams(window.location.search).get('reference_id');
 
     useEffect(() => {
         const verify = async () => {
+            console.log('🔍 [SubscriptionSuccess] Reference ID detected:', referenceId);
             if (!referenceId) {
+                // If it's still missing, try one last check on the current subscription
+                try {
+                    const subData = await apiService.getCurrentSubscription();
+                    if (subData.subscription && subData.subscription.status === 'active') {
+                        setStatus('success');
+                        setMessage('Your subscription is already active!');
+                        return;
+                    }
+                } catch (e) { }
+
                 setStatus('error');
                 setMessage('Missing subscription reference. Please check your subscription page.');
                 return;
@@ -24,7 +38,7 @@ export const SubscriptionSuccess: React.FC = () => {
             try {
                 // Try to verify the subscription
                 const result = await apiService.verifySubscription(referenceId);
-                
+
                 if (result.success && result.status === 'active') {
                     setStatus('success');
                     setMessage('Your subscription has been activated!');
@@ -32,7 +46,7 @@ export const SubscriptionSuccess: React.FC = () => {
                     // Payment might still be processing
                     setStatus('pending');
                     setMessage('Payment is still being processed. Please wait a moment...');
-                    
+
                     // Retry verification after a delay
                     setTimeout(async () => {
                         try {
@@ -57,7 +71,7 @@ export const SubscriptionSuccess: React.FC = () => {
                 // Let's try to check the current subscription instead
                 setStatus('pending');
                 setMessage('Verifying your subscription...');
-                
+
                 // Try to get current subscription
                 try {
                     const subData = await apiService.getCurrentSubscription();

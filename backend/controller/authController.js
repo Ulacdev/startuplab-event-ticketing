@@ -31,6 +31,13 @@ export const register = async (req, res) => {
       return res.status(409).json({ message: "An account with this email already exists" });
     }
 
+    // --- GET DEFAULT PLAN ---
+    const { data: defaultPlan } = await db
+      .from('plans')
+      .select('planId, trialDays')
+      .eq('isDefault', true)
+      .maybeSingle();
+
     // Create user in Supabase Auth using admin API (service role key)
     let authData, authError;
     ({ data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -91,6 +98,27 @@ export const register = async (req, res) => {
       return res.status(500).json({ message: "Failed to create user record" });
     }
 
+    // --- CREATE ORGANIZER PROFILE WITH DEFAULT PLAN ---
+    const trialDays = defaultPlan?.trialDays || 0;
+    const planExpiresAt = trialDays > 0
+      ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
+    const { error: orgError } = await db
+      .from('organizers')
+      .insert({
+        ownerUserId: userId,
+        organizerName: name.trim() || 'My Organization',
+        currentPlanId: defaultPlan?.planId || null,
+        subscriptionStatus: trialDays > 0 ? 'trial' : 'active',
+        planExpiresAt
+      });
+
+    if (orgError) {
+      console.error("Failed to create default organizer profile:", orgError);
+    }
+
+
     // Safety net: if any DB default/trigger rewrote role to USER, force ORGANIZER.
     const persistedRole = String(userData?.role || '').toUpperCase();
     if (persistedRole !== ORGANIZER_ROLE) {
@@ -108,7 +136,7 @@ export const register = async (req, res) => {
     // Notify User via the Admin's Professional SMTP settings (Fallback mechanism)
     // Check if admin SMTP is configured - if not, show error
     const adminSmtpConfig = await getAdminSmtpConfig();
-    
+
     if (!adminSmtpConfig) {
       // Still allow account creation, but warn about email
       console.warn('[Auth] Admin SMTP not configured - welcome email will not be sent.');
@@ -287,14 +315,14 @@ export const forgotPassword = async (req, res) => {
     // 3. Send the link via Professional SMTP hierarchy (Admin fallback)
     // Check if admin SMTP is configured - if not, show error
     const adminSmtpConfig = await getAdminSmtpConfig();
-    
+
     if (!adminSmtpConfig) {
-      return res.status(503).json({ 
+      return res.status(503).json({
         error: 'Email service not configured. Please contact the administrator to set up SMTP settings in Admin Settings > Email Configuration.',
         code: 'SMTP_NOT_CONFIGURED'
       });
     }
-    
+
     await notifyUserByPreference({
       recipientUserId: user?.userId,
       recipientFallbackEmail: normalizedEmail,

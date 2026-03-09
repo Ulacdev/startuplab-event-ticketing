@@ -6,41 +6,88 @@ import supabase from '../database/db.js';
  */
 export const checkPlanLimits = async (organizerId, featureKey, requestedValue = 1) => {
     try {
-        // 1. Fetch organizer's current plan with limits/features
-        const { data: organizer, error: orgError } = await supabase
-            .from('organizers')
-            .select(`
-        organizerId,
-        subscriptionStatus,
-        planExpiresAt,
-        plan:plans(*)
-      `)
-            .eq('organizerId', organizerId)
-            .single();
+        let organizerRecord = null;
 
-        if (orgError || !organizer) {
-            throw new Error('Organizer not found');
+        if (organizerId) {
+            const { data, error } = await supabase
+                .from('organizers')
+                .select(`
+                    organizerId,
+                    ownerUserId,
+                    subscriptionStatus,
+                    planExpiresAt,
+                    currentPlanId,
+                    plan:plans(*)
+                `)
+                .eq('organizerId', organizerId)
+                .maybeSingle();
+
+            if (error) {
+                console.error(`[checkPlanLimits] Database error fetching organizer ${organizerId}:`, error);
+                // PGRST200 means FK/join is missing — fetch organizer without join
+                if (error.code === 'PGRST200') {
+                    const { data: plainOrg } = await supabase
+                        .from('organizers')
+                        .select('*')
+                        .eq('organizerId', organizerId)
+                        .maybeSingle();
+                    if (plainOrg) {
+                        organizerRecord = plainOrg;
+                    }
+                }
+            } else {
+                organizerRecord = data;
+            }
+        }
+
+        // Use requested organizer or a safe default mock
+        const organizer = organizerRecord || {
+            organizerId,
+            plan: null,
+            subscriptionStatus: 'free',
+            planExpiresAt: null
+        };
+
+        // 1.5. Manual fetch fallback if join fails
+        if (organizer.currentPlanId && !organizer.plan) {
+            const { data: planData } = await supabase
+                .from('plans')
+                .select('*')
+                .eq('planId', organizer.currentPlanId)
+                .maybeSingle();
+            organizer.plan = planData;
         }
 
         const { plan, subscriptionStatus, planExpiresAt } = organizer;
 
-        // 2. Treat as "Basic/Trial" if no plan or expired
-        const isExpired = planExpiresAt && new Date(planExpiresAt) < new Date();
-        const isActive = subscriptionStatus === 'active' && !isExpired;
+        // 2. Determine if the subscription is currently valid
+        const isNotExpired = !planExpiresAt || new Date(planExpiresAt) > new Date();
+        const isSubscriptionLive = (subscriptionStatus === 'active' || subscriptionStatus === 'trial' || subscriptionStatus === 'free');
+        const isActive = isSubscriptionLive && isNotExpired;
 
-        // Use default limits if no active plan
-        const limits = (isActive && plan?.limits) ? plan.limits : {
+        // Base defaults
+        const defaultLimits = {
             max_events: 1,
+            max_active_events: 1,
+            max_total_events: 3,
+            max_staff_accounts: 0,
+            monthly_attendees: 100,
             max_tickets_per_event: 3,
-            max_attendees_per_event: 50,
-            enable_custom_branding: false
+            max_attendees_per_event: 100
         };
 
-        const features = (isActive && plan?.features) ? plan.features : {
-            custom_domain: false,
+        const defaultFeatures = {
+            enable_custom_branding: false,
+            discount_codes: false,
+            advanced_reports: false,
             priority_support: false
         };
 
+        // Merge plan limits/features into defaults if plan exists
+        const limits = { ...defaultLimits, ...(plan?.limits || {}) };
+        const features = { ...defaultFeatures, ...(plan?.features || {}) };
+
+        console.log(`[checkPlanLimits] Organizer: ${organizerId}, Key: ${featureKey}, Plan: ${plan?.name || 'None'}, Limits:`, limits);
         // 3. Validate specific feature/limit
         switch (featureKey) {
             case 'max_events': {
@@ -51,11 +98,98 @@ export const checkPlanLimits = async (organizerId, featureKey, requestedValue = 
                     .eq('is_archived', false);
 
                 if (error) throw error;
-                if (count >= (limits.max_events || 1)) {
+                const limitValue = limits.max_active_events ?? limits.max_events ?? 1;
+                if (count >= limitValue) {
                     return {
                         allowed: false,
-                        message: `Event limit reached. Your current plan allows up to ${limits.max_events} active events.`,
-                        limit: limits.max_events,
+                        message: `Event limit reached. Your current plan allows up to ${limitValue} active events.`,
+                        limit: limitValue,
+                        current: count
+                    };
+                }
+                break;
+            }
+
+            case 'max_total_events': {
+                const { count, error } = await supabase
+                    .from('events')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('organizerId', organizerId);
+
+                if (error) throw error;
+                const limitValue = limits.max_total_events ?? 3;
+                if (count >= limitValue) {
+                    return {
+                        allowed: false,
+                        message: `Total event limit reached. Your current plan allows up to ${limitValue} total events.`,
+                        limit: limitValue,
+                        current: count
+                    };
+                }
+                break;
+            }
+
+            case 'max_staff_accounts': {
+                const ownerUserId = organizer.ownerUserId;
+
+                // 1. Get all current staff IDs
+                const { data: staffUsers } = await supabase
+                    .from('users')
+                    .select('userId')
+                    .eq('employerId', ownerUserId);
+
+                const staffIds = (staffUsers || []).map(u => u.userId);
+                staffIds.push(ownerUserId); // Include owner to find their invites too
+
+                // 2. Count current staff (excluding owner if they aren't counted as staff)
+                const currentCount = (staffUsers || []).length;
+
+                // 3. Count pending invites from anyone in the organization
+                const { count: inviteCount } = await supabase
+                    .from('invites')
+                    .select('*', { count: 'exact', head: true })
+                    .in('invitedBy', staffIds);
+
+                const totalStaffPotential = currentCount + (inviteCount || 0);
+                const limitValue = (limits.max_staff_accounts ?? 2);
+
+                if (totalStaffPotential >= limitValue) {
+                    return {
+                        allowed: false,
+                        message: `Staff account limit reached. Your current plan allows up to ${limitValue} staff accounts (including pending invites).`,
+                        limit: limitValue,
+                        current: totalStaffPotential
+                    };
+                }
+                break;
+            }
+
+            case 'monthly_attendees': {
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                // We need to count attendees for all events of this organizer
+                const { data: eventIds } = await supabase
+                    .from('events')
+                    .select('eventId')
+                    .eq('organizerId', organizerId);
+
+                const ids = (eventIds || []).map(e => e.eventId);
+                if (ids.length === 0) break;
+
+                const { count, error } = await supabase
+                    .from('attendees')
+                    .select('*', { count: 'exact', head: true })
+                    .in('eventId', ids)
+                    .gte('created_at', thirtyDaysAgo.toISOString());
+
+                if (error) throw error;
+                const limitValue = limits.monthly_attendees ?? limits.max_attendees_per_month ?? 100;
+                if ((count + requestedValue) > limitValue) {
+                    return {
+                        allowed: false,
+                        message: `Monthly attendee limit reached. Your current plan allows up to ${limitValue} attendees per month.`,
+                        limit: limitValue,
                         current: count
                     };
                 }
@@ -63,11 +197,11 @@ export const checkPlanLimits = async (organizerId, featureKey, requestedValue = 
             }
 
             case 'max_tickets_per_event': {
-                const limitValue = limits.max_tickets_per_event || 3;
+                const limitValue = limits.max_tickets_per_event ?? 3;
                 if (requestedValue > limitValue) {
                     return {
                         allowed: false,
-                        message: `Limit reached. Your current plan allows up to ${limitValue} ticket types per event.`,
+                        message: `Ticket type limit reached. Your current plan allows up to ${limitValue} ticket types per event.`,
                         limit: limitValue
                     };
                 }
@@ -75,22 +209,56 @@ export const checkPlanLimits = async (organizerId, featureKey, requestedValue = 
             }
 
             case 'max_attendees_per_event': {
-                const limitValue = limits.max_attendees_per_event || 50;
+                const limitValue = limits.max_attendees_per_event ?? 50;
                 if (requestedValue > limitValue) {
                     return {
                         allowed: false,
-                        message: `Capacity limit reached. Your current plan allows up to ${limitValue} attendees per event.`,
+                        message: `Event capacity limit reached. Your current plan allows up to ${limitValue} attendees per event.`,
                         limit: limitValue
                     };
                 }
                 break;
             }
 
-            case 'custom_branding': {
-                if (!features.enable_custom_branding) {
+            case 'custom_branding':
+            case 'enable_custom_branding': {
+                if (features.enable_custom_branding === false && features.custom_branding === false) {
                     return {
                         allowed: false,
                         message: "Custom branding is not included in your current plan. Upgrade to unlock this feature."
+                    };
+                }
+                break;
+            }
+
+            case 'advanced_reports':
+            case 'enable_advanced_reports': {
+                if (features.enable_advanced_reports === false && features.advanced_reports === false) {
+                    return {
+                        allowed: false,
+                        message: "Advanced reports are not included in your current plan. Upgrade to unlock this feature."
+                    };
+                }
+                break;
+            }
+
+            case 'discount_codes':
+            case 'enable_discount_codes': {
+                if (features.enable_discount_codes === false && features.discount_codes === false) {
+                    return {
+                        allowed: false,
+                        message: "Discount codes are not included in your current plan. Upgrade to unlock this feature."
+                    };
+                }
+                break;
+            }
+
+            case 'priority_support':
+            case 'enable_priority_support': {
+                if (features.enable_priority_support === false && features.priority_support === false) {
+                    return {
+                        allowed: false,
+                        message: "Priority support is not included in your current plan. Upgrade to unlock this feature."
                     };
                 }
                 break;
@@ -104,6 +272,6 @@ export const checkPlanLimits = async (organizerId, featureKey, requestedValue = 
         return { allowed: true };
     } catch (error) {
         console.error('Plan validation error:', error);
-        return { allowed: true }; // Fallback to allow if error occurs
+        return { allowed: false, message: 'Internal error checking plan limits.' };
     }
 };

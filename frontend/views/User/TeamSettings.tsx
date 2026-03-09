@@ -26,49 +26,87 @@ export const TeamSettings: React.FC = () => {
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [isInviting, setIsInviting] = useState(false);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [staffLimit, setStaffLimit] = useState<{ allowed: boolean; message?: string; limit?: number; current?: number } | null>(null);
+
+    const refreshTeamData = async () => {
+        try {
+            // Fetch staff limit
+            const limitRes = await fetch(`${API_BASE}/api/invite/check-limit`, { credentials: 'include' });
+            if (limitRes.ok) {
+                const limitData = await limitRes.json();
+                setStaffLimit(limitData);
+            }
+
+            // Fetch team members
+            const res = await fetch(`${API_BASE}/api/users/all?teamOnly=true`, { credentials: 'include' });
+            const data = await res.json();
+
+            // Fetch pending invites to show in UI
+            const inviteRes = await fetch(`${API_BASE}/api/invite/list-invites`, { credentials: 'include' });
+            const pendingInvites = inviteRes.ok ? await inviteRes.json() : [];
+
+            const mapped = Array.isArray(data)
+                ? data
+                    .map(u => {
+                        const rawRole = String(u.role || '').toUpperCase();
+                        const role = rawRole === 'USER' ? UserRole.ORGANIZER : rawRole;
+                        if (role !== UserRole.ADMIN && role !== UserRole.STAFF && role !== UserRole.ORGANIZER) return null;
+                        const isOwner = role === UserRole.ORGANIZER;
+                        return {
+                            id: u.userId,
+                            name: u.name || '',
+                            email: u.email,
+                            imageUrl: u.imageUrl || null,
+                            role,
+                            perspective: role as UserRole,
+                            status: 'Active',
+                            isOwner,
+                            permissions: isOwner
+                                ? ['view_events', 'edit_events', 'manual_checkin', 'receive_notifications']
+                                : [
+                                    ...(u.canViewEvents ? ['view_events'] : []),
+                                    ...(u.canEditEvents ? ['edit_events'] : []),
+                                    ...(u.canManualCheckIn ? ['manual_checkin'] : []),
+                                    ...(u.canReceiveNotifications ? ['receive_notifications'] : [])
+                                ],
+                        } as TeamMember;
+                    })
+                    .filter((member): member is TeamMember => member !== null)
+                : [];
+
+            // Add pending invites to list
+            if (Array.isArray(pendingInvites)) {
+                pendingInvites.forEach(inv => {
+                    // Check if already in list by email (in case they just accepted but invite row still exists)
+                    if (!mapped.some(m => m.email.toLowerCase() === inv.email.toLowerCase())) {
+                        mapped.push({
+                            id: inv.inviteId || `pending-${inv.email}`,
+                            name: inv.email.split('@')[0],
+                            email: inv.email,
+                            role: inv.role || 'STAFF',
+                            perspective: (inv.role || 'STAFF') as UserRole,
+                            status: 'Pending',
+                            permissions: ['view_events']
+                        });
+                    }
+                });
+            }
+
+            const sorted = mapped.sort((a, b) => {
+                const rank = { [UserRole.ORGANIZER]: 0, [UserRole.ADMIN]: 1, [UserRole.STAFF]: 2 } as const;
+                const aRank = rank[a.perspective] ?? 99;
+                const bRank = rank[b.perspective] ?? 99;
+                if (aRank !== bRank) return aRank - bRank;
+                return a.name.localeCompare(b.name);
+            });
+            setTeamMembers(sorted);
+        } catch (err) {
+            console.error("Failed to load team data", err)
+        }
+    };
 
     useEffect(() => {
-        // Fetch all users/team members
-        // For now, this points to the same API as the admin. You may need to create a specific API for Organizer's team members later.
-        fetch(`${API_BASE}/api/users/all?teamOnly=true`, { credentials: 'include' })
-            .then(res => res.json())
-            .then(data => {
-                const mapped = Array.isArray(data)
-                    ? data
-                        .map(u => {
-                            const rawRole = String(u.role || '').toUpperCase();
-                            const role = rawRole === 'USER' ? UserRole.ORGANIZER : rawRole;
-                            if (role !== UserRole.ADMIN && role !== UserRole.STAFF && role !== UserRole.ORGANIZER) return null;
-                            const isOwner = role === UserRole.ORGANIZER;
-                            return {
-                                id: u.userId,
-                                name: u.name || '',
-                                email: u.email,
-                                imageUrl: u.imageUrl || null,
-                                role,
-                                perspective: role as UserRole,
-                                isOwner,
-                                permissions: isOwner
-                                    ? ['view_events', 'edit_events', 'manual_checkin', 'receive_notifications']
-                                    : [
-                                        ...(u.canViewEvents ? ['view_events'] : []),
-                                        ...(u.canEditEvents ? ['edit_events'] : []),
-                                        ...(u.canManualCheckIn ? ['manual_checkin'] : []),
-                                        ...(u.canReceiveNotifications ? ['receive_notifications'] : [])
-                                    ],
-                            } as TeamMember;
-                        })
-                        .filter((member): member is TeamMember => member !== null)
-                    : [];
-                const sorted = mapped.sort((a, b) => {
-                    const rank = { [UserRole.ORGANIZER]: 0, [UserRole.ADMIN]: 1, [UserRole.STAFF]: 2 } as const;
-                    const aRank = rank[a.perspective] ?? 99;
-                    const bRank = rank[b.perspective] ?? 99;
-                    if (aRank !== bRank) return aRank - bRank;
-                    return a.name.localeCompare(b.name);
-                });
-                setTeamMembers(sorted);
-            }).catch(err => console.error("Failed to load team members", err));
+        refreshTeamData();
     }, []);
 
     const [inviteData, setInviteData] = useState({
@@ -146,6 +184,7 @@ export const TeamSettings: React.FC = () => {
             setInviteData({ email: '', role: 'STAFF', perspective: UserRole.STAFF, permissions: ['view_events'] });
             setIsInviteModalOpen(false);
             setNotification({ message: 'Invitation sent successfully.', type: 'success' });
+            refreshTeamData(); // Refetch to update limit status and pending list
         } catch {
             setNotification({ message: 'Failed to send invitation.', type: 'error' });
         } finally {
@@ -210,10 +249,19 @@ export const TeamSettings: React.FC = () => {
                     <div className="space-y-6">
                         <div className="flex justify-between items-center">
                             <label className="block text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.2em] mb-1 ml-1">Team Directory</label>
-                            <Button onClick={() => setIsInviteModalOpen(true)}>
-                                <span className="text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
-                                    <ICONS.Users className="w-3.5 h-3.5" />
-                                    Invite a Team Member
+                            <Button
+                                onClick={() => setIsInviteModalOpen(true)}
+                                disabled={staffLimit?.allowed === false}
+                                variant={staffLimit?.allowed === false ? 'outline' : 'primary'}
+                                className={staffLimit?.allowed === false ? 'opacity-50 cursor-not-allowed border-[#2E2E2F]/10' : ''}
+                            >
+                                <span className="text-[9px] font-black uppercase tracking-widest flex items-center gap-2 text-[#2E2E2F]">
+                                    {staffLimit?.allowed === false ? (
+                                        <ICONS.Lock className="w-3.5 h-3.5" />
+                                    ) : (
+                                        <ICONS.Users className="w-3.5 h-3.5" />
+                                    )}
+                                    {staffLimit?.allowed === false ? 'Invite Locked' : 'Invite a Team Member'}
                                 </span>
                             </Button>
                         </div>

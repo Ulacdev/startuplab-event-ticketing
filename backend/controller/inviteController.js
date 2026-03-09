@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import db, { supabase } from '../database/db.js';
 import { sendSmtpEmail } from '../utils/smtpMailer.js';
 import { getSmtpConfig } from '../utils/notificationService.js';
+import { checkPlanLimits } from '../utils/planValidator.js';
+import { getOrganizerByUserId } from '../utils/organizerData.js';
 
 const normalizeRole = (role) => {
   const normalized = String(role || '').toUpperCase();
@@ -52,6 +54,22 @@ export async function inviteUser(req, res) {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return res.status(400).json({ error: 'Email required' });
   const inviteRole = normalizeRole(role);
+
+  // --- CHECK STAFF LIMIT ---
+  const organizer = await getOrganizerByUserId(inviterUserId);
+  console.log(`[inviteController/inviteUser] Inviter: ${inviterUserId}, Organizer Found: ${organizer?.organizerId}`);
+
+  if (organizer?.organizerId) {
+    const limitCheck = await checkPlanLimits(organizer.organizerId, 'max_staff_accounts');
+    console.log(`[inviteController/inviteUser] Staff Limit Check:`, limitCheck);
+    if (!limitCheck.allowed) {
+      return res.status(403).json({
+        error: limitCheck.message,
+        code: 'PLAN_LIMIT_REACHED'
+      });
+    }
+  }
+
   // Resolve SMTP config using professional hierarchy (Organizer -> Staff Owner -> Admin Fallback)
   const smtpConfig = await getSmtpConfig(null, inviterUserId);
   if (!smtpConfig) {
@@ -108,6 +126,21 @@ export async function createInviteAndSend(req, res) {
     if (!role) return res.status(400).json({ error: 'Role required' });
     const inviteRole = normalizeRole(role);
 
+    // --- CHECK STAFF LIMIT ---
+    const organizer = await getOrganizerByUserId(inviterUserId);
+    console.log(`[inviteController] Creating invite. Inviter: ${inviterUserId}, Organizer Found: ${organizer?.organizerId}`);
+
+    if (organizer?.organizerId) {
+      const limitCheck = await checkPlanLimits(organizer.organizerId, 'max_staff_accounts');
+      console.log(`[inviteController] Staff Limit Check:`, limitCheck);
+      if (!limitCheck.allowed) {
+        return res.status(403).json({
+          error: limitCheck.message,
+          code: 'PLAN_LIMIT_REACHED'
+        });
+      }
+    }
+
     // Resolve SMTP config using professional hierarchy (Organizer -> Staff Owner -> Admin Fallback)
     const smtpConfig = await getSmtpConfig(null, inviterUserId);
     if (!smtpConfig) {
@@ -163,89 +196,143 @@ export async function createInviteAndSend(req, res) {
 
 // Accept invite and set password
 export async function acceptInvite(req, res) {
-  const { token, password, name } = req.body;
-  const normalizedToken = String(token || '').trim().replace(/[?.,;:!]+$/, '');
-  const { data: invites, error } = await db.from('invites').select('*').eq('token', normalizedToken).gt('expiresAt', new Date().toISOString());
-  if (error || !invites.length) return res.status(400).json({ error: 'Invalid or expired invite' });
-  const invite = invites[0];
-  const normalizedInviteRole = normalizeRole(invite.role);
+  try {
+    const { token, password, name } = req.body;
+    const normalizedToken = String(token || '').trim().replace(/[?.,;:!]+$/, '');
+    const { data: invites, error } = await db.from('invites').select('*').eq('token', normalizedToken).gt('expiresAt', new Date().toISOString());
+    if (error || !invites.length) return res.status(400).json({ error: 'Invalid or expired invite' });
+    const invite = invites[0];
+    const normalizedInviteRole = normalizeRole(invite.role);
 
-  let userId;
+    let userId;
 
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-    email: invite.email,
-    password,
-    email_confirm: true,
-  });
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: invite.email,
+      password,
+      email_confirm: true,
+    });
 
-  if (!authError && authData?.user?.id) {
-    userId = authData.user.id;
-  }
-
-  if (!userId) {
-    const authErrorMessage = authError?.message || '';
-    if (!authErrorMessage.toLowerCase().includes('already')) {
-      return res.status(500).json({ error: authErrorMessage || 'Failed to create auth user' });
+    if (!authError && authData?.user?.id) {
+      userId = authData.user.id;
     }
 
-    const { data: existingUser, error: existingUserError } = await db
+    if (!userId) {
+      const authErrorMessage = authError?.message || '';
+      if (!authErrorMessage.toLowerCase().includes('already')) {
+        return res.status(500).json({ error: authErrorMessage || 'Failed to create auth user' });
+      }
+
+      const { data: existingUser, error: existingUserError } = await db
+        .from('users')
+        .select('userId')
+        .eq('email', invite.email)
+        .maybeSingle();
+
+      if (existingUserError) {
+        return res.status(500).json({ error: existingUserError.message });
+      }
+
+      if (!existingUser?.userId) {
+        return res.status(409).json({ error: 'Account already exists. Please log in.' });
+      }
+
+      userId = existingUser.userId;
+    }
+
+    const finalName = (name || invite.name || '').trim();
+    let userUpsertError = null;
+
+    console.log('[invite/acceptInvite] Attempting upsert for user:', { userId, email: invite.email, finalName });
+    let upsertResp = await db
+      .from('users')
+      .upsert({ userId, email: invite.email, role: normalizedInviteRole, name: finalName, employerId: invite.invitedBy || null }, { onConflict: 'userId' });
+    userUpsertError = upsertResp.error;
+
+    if (userUpsertError && userUpsertError.message?.includes('column "userId"')) {
+      console.log('[invite/acceptInvite] Retrying upsert by id column');
+      upsertResp = await db
+        .from('users')
+        .upsert({ id: userId, email: invite.email, role: normalizedInviteRole, name: finalName, employerId: invite.invitedBy || null }, { onConflict: 'id' });
+      userUpsertError = upsertResp.error;
+    }
+
+    // Always update the user's name by email to guarantee it is set
+    const emailToUpdate = (invite.email || '').trim().toLowerCase();
+    await db
+      .from('users')
+      .update({ name: finalName })
+      .eq('email', emailToUpdate);
+
+    if (userUpsertError && !/duplicate key|unique/i.test(userUpsertError.message || '')) {
+      return res.status(500).json({ error: userUpsertError.message });
+    }
+
+    await db.from('invites').delete().eq('token', token);
+    return res.json({ message: 'Invitation accepted successfully' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+// List pending invites for an organizer
+export async function listInvites(req, res) {
+  try {
+    const inviterUserId = req.user?.id;
+    if (!inviterUserId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const organizer = await getOrganizerByUserId(inviterUserId);
+    if (!organizer) return res.status(404).json({ error: 'Organizer not found' });
+
+    // Find all staff IDs to find their invites too
+    const { data: staffUsers, error: staffError } = await db
       .from('users')
       .select('userId')
-      .eq('email', invite.email)
-      .maybeSingle();
+      .eq('employerId', organizer.ownerUserId || 'null-employer');
 
-    if (existingUserError) {
-      return res.status(500).json({ error: existingUserError.message });
+    const staffIds = (staffUsers || []).map(u => u.userId);
+    if (organizer.ownerUserId) {
+      staffIds.push(organizer.ownerUserId);
     }
 
-    if (!existingUser?.userId) {
-      return res.status(409).json({ error: 'Account already exists. Please log in.' });
+    const safeStaffIds = staffIds.filter(Boolean);
+    if (safeStaffIds.length === 0) {
+      return res.json([]);
     }
 
-    userId = existingUser.userId;
+    const { data: invites, error } = await db
+      .from('invites')
+      .select('*')
+      .in('invitedBy', safeStaffIds)
+      .gt('expiresAt', new Date().toISOString());
+
+    if (error) {
+      console.error('[listInvites] Supabase Query Error:', error);
+      throw error;
+    }
+
+    return res.json(invites || []);
+  } catch (err) {
+    console.error('[listInvites] Catch Block Error:', err);
+    return res.status(500).json({
+      error: err.message || 'Unknown error',
+      code: err.code,
+      details: err
+    });
   }
+}
 
-  const finalName = (name || invite.name || '').trim();
-  let userUpsertError = null;
+// Check if more staff can be invited
+export async function checkStaffLimitEndpoint(req, res) {
+  try {
+    const inviterUserId = req.user?.id;
+    if (!inviterUserId) return res.status(401).json({ error: 'Unauthorized' });
 
-  console.log('[invite/acceptInvite] Attempting upsert for user:', { userId, email: invite.email, finalName });
-  let upsertResp = await db
-    .from('users')
-    .upsert({ userId, email: invite.email, role: normalizedInviteRole, name: finalName, employerId: invite.invitedBy || null }, { onConflict: 'userId' });
-  userUpsertError = upsertResp.error;
-  if (userUpsertError) console.error('[invite/acceptInvite] Upsert by userId error:', userUpsertError);
+    const organizer = await getOrganizerByUserId(inviterUserId);
+    if (!organizer?.organizerId) return res.status(404).json({ error: 'Organizer not found' });
 
-  if (userUpsertError && userUpsertError.message?.includes('column "userId"')) {
-    console.log('[invite/acceptInvite] Retrying upsert by id column');
-    upsertResp = await db
-      .from('users')
-      .upsert({ id: userId, email: invite.email, role: normalizedInviteRole, name: finalName, employerId: invite.invitedBy || null }, { onConflict: 'id' });
-    userUpsertError = upsertResp.error;
-    if (userUpsertError) console.error('[invite/acceptInvite] Upsert by id error:', userUpsertError);
+    const limitCheck = await checkPlanLimits(organizer.organizerId, 'max_staff_accounts');
+    return res.json(limitCheck);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
-
-  // Always update the user's name by email to guarantee it is set
-  const emailToUpdate = (invite.email || '').trim().toLowerCase();
-  const updateName = await db
-    .from('users')
-    .update({ name: finalName })
-    .eq('email', emailToUpdate);
-  if (updateName.error) {
-    console.error('[invite/acceptInvite] Final name update error:', updateName.error);
-    return res.status(500).json({ error: updateName.error.message || 'Failed to update user name' });
-  }
-
-  if (userUpsertError && /duplicate key|unique/i.test(userUpsertError.message || '')) {
-    console.log('[invite/acceptInvite] Upsert duplicate, attempted update by email');
-    // Already updated above
-  }
-
-  if (userUpsertError) {
-    const message = userUpsertError.message || 'Failed to save user';
-    console.error('[invite/acceptInvite] Final error:', message);
-    return res.status(500).json({ error: message });
-  }
-
-  await db.from('invites').delete().eq('token', token);
-  return res.json({ message: 'Account created, you can now login.' });
 }

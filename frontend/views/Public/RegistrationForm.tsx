@@ -47,6 +47,10 @@ export const RegistrationForm: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState<string | null>(null);
   const [paymentMethodId, setPaymentMethodId] = useState(PAYMENT_METHODS[0].id);
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<any>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [validatingPromo, setValidatingPromo] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -83,13 +87,49 @@ export const RegistrationForm: React.FC = () => {
 
   const subtotal = selectedItems.reduce((acc, item) => acc + (item.ticket.priceAmount * item.qty), 0);
   const totalQuantity = selectedItems.reduce((acc, item) => acc + item.qty, 0);
-  const selectedPayment = PAYMENT_METHODS.find((method) => method.id === paymentMethodId) ?? PAYMENT_METHODS[0];
-  let paymentFee = 0;
-  if (subtotal > 0) {
-    paymentFee = roundCurrency(subtotal * selectedPayment.feeRate);
+
+  let discountAmount = 0;
+  if (appliedPromo) {
+    if (appliedPromo.discountType === 'PERCENTAGE') {
+      discountAmount = (subtotal * Number(appliedPromo.discountValue)) / 100;
+    } else {
+      discountAmount = Number(appliedPromo.discountValue);
+    }
   }
-  const totalPayable = roundCurrency(subtotal + paymentFee);
+
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+  const selectedPayment = PAYMENT_METHODS.find((method) => method.id === paymentMethodId) ?? PAYMENT_METHODS[0];
+
+  let paymentFee = 0;
+  if (discountedSubtotal > 0) {
+    paymentFee = roundCurrency(discountedSubtotal * selectedPayment.feeRate);
+  }
+
+  const totalPayable = roundCurrency(discountedSubtotal + paymentFee);
   const hasPaid = totalPayable > 0;
+  const brandColor = event?.organizer?.brandColor || '#38BDF2';
+
+  const handleApplyPromo = async () => {
+    if (!event?.eventId || !promoCode) return;
+    setPromoError(null);
+    setValidatingPromo(true);
+    try {
+      const promo = await apiService.validatePromotion(event.eventId, promoCode);
+      setAppliedPromo(promo);
+      setPromoCode(promo.code); // normalized
+    } catch (err: any) {
+      setPromoError(err.message || 'Invalid promotion code');
+      setAppliedPromo(null);
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode('');
+    setPromoError(null);
+  };
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -116,7 +156,8 @@ export const RegistrationForm: React.FC = () => {
         company: formData.company,
         items: selectedItems.map(i => ({ ticketTypeId: i.ticket.ticketTypeId, quantity: i.qty, price: i.ticket.priceAmount })),
         totalAmount: totalPayable,
-        currency: selectedItems[0]?.ticket.currency || 'PHP'
+        currency: selectedItems[0]?.ticket.currency || 'PHP',
+        promoCode: appliedPromo?.code || null
       });
       if (!hasPaid) {
         navigate(`/payment/status?sessionId=${orderId}`); // Free order also goes to status page for confirmation
@@ -169,7 +210,7 @@ export const RegistrationForm: React.FC = () => {
             Complete Registration
           </h1>
           <div className="flex items-center gap-3">
-            <span className="bg-[#38BDF2] text-[#F2F2F2] text-[9px] font-semibold px-2.5 py-1 rounded-lg uppercase tracking-wide">
+            <span className="text-[#F2F2F2] text-[9px] font-semibold px-2.5 py-1 rounded-lg uppercase tracking-wide" style={{ backgroundColor: brandColor }}>
               {totalQuantity} {totalQuantity === 1 ? 'Ticket' : 'Tickets'}
             </span>
             <p className="text-[#2E2E2F]/70 font-medium text-sm">
@@ -206,7 +247,8 @@ export const RegistrationForm: React.FC = () => {
                       <label className="text-[13px] font-medium text-[#2E2E2F]/70 ml-1">Full Name *</label>
                       <Input
                         placeholder="Full name as per identification"
-                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-normal bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] focus:border-[#38BDF2]/40 text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[14px]"
+                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-normal bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[14px]"
+                        style={{ '--tw-ring-color': brandColor } as any}
                         value={formData.name}
                         onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
                         error={errors.name}
@@ -217,7 +259,8 @@ export const RegistrationForm: React.FC = () => {
                       <Input
                         type="email"
                         placeholder="name@organization.com"
-                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-normal bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] focus:border-[#38BDF2]/40 text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[14px]"
+                        className="py-3 sm:py-4 px-4 sm:px-5 rounded-[1rem] font-normal bg-[#F2F2F2] border border-[#2E2E2F]/20 focus:bg-[#F2F2F2] text-[#2E2E2F] placeholder:text-[#2E2E2F]/40 transition-colors text-[14px]"
+                        style={{ '--tw-ring-color': brandColor } as any}
                         value={formData.email}
                         onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
                         error={errors.email}
@@ -261,7 +304,7 @@ export const RegistrationForm: React.FC = () => {
                           ))}
                         </select>
                         <div className={`mt-2 text-xs font-medium ${subtotal === 0 ? 'text-[#2E2E2F]/30' : 'text-[#2E2E2F]/70'}`}>
-                          Fee: <span className="text-[#38BDF2]">{selectedPayment.feeLabel}</span>
+                          Fee: <span style={{ color: brandColor }}>{selectedPayment.feeLabel}</span>
                           {subtotal === 0 && <span className="ml-2">(No payment required for free ticket)</span>}
                         </div>
                       </div>
@@ -281,7 +324,7 @@ export const RegistrationForm: React.FC = () => {
                           </div>
                         </div>
                         <span className="text-sm font-medium text-[#2E2E2F]/70 leading-relaxed group-hover:text-[#2E2E2F] transition-colors">
-                          I acknowledge that I have read and agree to the <a href="#" className="text-[#2E2E2F] font-bold hover:text-[#38BDF2] hover:underline">Terms and Conditions</a> and <a href="#" className="text-[#2E2E2F] font-bold hover:text-[#38BDF2] hover:underline">Privacy Policy</a> governing this event session.
+                          I acknowledge that I have read and agree to the <a href="#" className="text-[#2E2E2F] font-bold hover:underline" style={{ color: brandColor }}>Terms and Conditions</a> and <a href="#" className="text-[#2E2E2F] font-bold hover:underline" style={{ color: brandColor }}>Privacy Policy</a> governing this event session.
                         </span>
                       </label>
                       {errors.terms && <p className="text-[11px] font-semibold text-[#2E2E2F] uppercase tracking-wide pl-10">{errors.terms}</p>}
@@ -299,7 +342,7 @@ export const RegistrationForm: React.FC = () => {
                 >
                   {submitting ? (
                     <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-[#38BDF2]/30 border-t-[#F2F2F2] rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-t-[#F2F2F2] rounded-full animate-spin" style={{ borderColor: `${brandColor}4D` }}></div>
                       Processing...
                     </span>
                   ) : totalPayable === 0 ? 'Confirm Registration' : `Checkout PHP ${formatCurrency(totalPayable)}`}
@@ -354,7 +397,7 @@ export const RegistrationForm: React.FC = () => {
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="text-sm sm:text-base font-bold text-[#38BDF2] tracking-tight block">
+                          <span className="text-sm sm:text-base font-bold tracking-tight block" style={{ color: brandColor }}>
                             PHP {(item.ticket.priceAmount * item.qty).toLocaleString()}
                           </span>
                           <span className="text-[10px] text-[#2E2E2F]/50 font-medium uppercase tracking-wide block mt-0.5">
@@ -365,16 +408,64 @@ export const RegistrationForm: React.FC = () => {
                     ))}
                   </div>
 
+                  {/* Promo Code Input */}
+                  <div className="pt-5 sm:pt-6 border-t border-[#2E2E2F]/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#2E2E2F]/60">Got a promo code?</span>
+                    </div>
+                    {appliedPromo ? (
+                      <div className="flex items-center justify-between bg-[#38BDF2]/10 border border-[#38BDF2]/30 px-3 py-2.5 rounded-xl">
+                        <div className="flex items-center gap-2">
+                          <ICONS.CheckCircle className="w-4 h-4 text-[#38BDF2]" />
+                          <span className="text-[12px] font-bold text-[#2E2E2F] uppercase">{appliedPromo.code}</span>
+                        </div>
+                        <button
+                          onClick={handleRemovePromo}
+                          className="text-[10px] font-bold text-[#2E2E2F]/40 hover:text-red-500 uppercase tracking-tighter"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="ENTER CODE"
+                          className="flex-1 bg-white border border-[#2E2E2F]/10 rounded-xl px-3 py-2 text-[12px] font-bold uppercase tracking-wider text-[#2E2E2F] focus:outline-none focus:ring-1"
+                          style={{ '--tw-ring-color': brandColor } as any}
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleApplyPromo())}
+                        />
+                        <button
+                          type="button"
+                          disabled={!promoCode || validatingPromo}
+                          onClick={handleApplyPromo}
+                          className="bg-[#2E2E2F] text-[#F2F2F2] px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-[#38BDF2] transition-colors disabled:opacity-50"
+                        >
+                          {validatingPromo ? '...' : 'Apply'}
+                        </button>
+                      </div>
+                    )}
+                    {promoError && <p className="text-[10px] font-bold text-red-500 pl-1 uppercase tracking-tighter">{promoError}</p>}
+                  </div>
+
                   {/* Fee Breakdown */}
                   <div className="pt-5 sm:pt-6 border-t border-[#2E2E2F]/10 space-y-4">
                     <div className="flex justify-between items-center text-[#2E2E2F]/60">
                       <span className="text-[10px] font-medium uppercase tracking-wide">Platform Subtotal</span>
                       <span className="text-[11px] sm:text-[12px] font-semibold tracking-wide">PHP {formatCurrency(subtotal)}</span>
                     </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between items-center text-green-600">
+                        <span className="text-[10px] font-medium uppercase tracking-wide">Discount Applied</span>
+                        <span className="text-[11px] sm:text-[12px] font-bold tracking-wide">- PHP {formatCurrency(discountAmount)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-medium text-[#2E2E2F]/60 uppercase tracking-wide">HitPay Service Fee</span>
                       {subtotal === 0 ? (
-                        <span className="text-[10px] font-semibold text-[#2E2E2F] border border-[#38BDF2]/40 px-2.5 py-0.5 rounded-lg tracking-wide bg-[#38BDF2]/10">
+                        <span className="text-[10px] font-semibold text-[#2E2E2F] border px-2.5 py-0.5 rounded-lg tracking-wide bg-[#38BDF2]/10" style={{ borderColor: `${brandColor}66`, backgroundColor: `${brandColor}1A` }}>
                           WAIVED
                         </span>
                       ) : (
@@ -395,7 +486,7 @@ export const RegistrationForm: React.FC = () => {
                     <div className="flex justify-between items-end">
                       <div className="space-y-1.5">
                         <span className="text-[11px] font-semibold text-[#2E2E2F] uppercase tracking-wide block">Grand Total</span>
-                        <span className="text-2xl sm:text-3xl font-black text-[#38BDF2] tracking-tighter block leading-none">
+                        <span className="text-2xl sm:text-3xl font-black tracking-tighter block leading-none" style={{ color: brandColor }}>
                           {totalPayable === 0 ? 'FREE' : `PHP ${formatCurrency(totalPayable)}`}
                         </span>
                       </div>

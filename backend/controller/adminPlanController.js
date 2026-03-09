@@ -251,6 +251,8 @@ export const createAdminPlan = async (req, res) => {
         isDefault: plan.isDefault,
         isRecommended: plan.isRecommended,
         isActive: plan.isActive,
+        features, // Sync JSONB column
+        limits,   // Sync JSONB column
         createdBy: userId,
         updated_at: now,
       })
@@ -315,6 +317,8 @@ export const updateAdminPlan = async (req, res) => {
         isDefault: plan.isDefault,
         isRecommended: plan.isRecommended,
         isActive: plan.isActive,
+        features, // Sync JSONB column
+        limits,   // Sync JSONB column
         updated_at: new Date().toISOString(),
       })
       .eq('planId', planId)

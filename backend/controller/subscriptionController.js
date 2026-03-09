@@ -19,12 +19,12 @@ const sendSubscriptionConfirmationEmail = async (subscription, plan, organizer) 
     }
 
     const planName = plan?.name || 'Unknown Plan';
-    const price = subscription.billingInterval === 'yearly' 
-      ? plan?.yearlyPrice 
+    const price = subscription.billingInterval === 'yearly'
+      ? plan?.yearlyPrice
       : plan?.monthlyPrice;
     const currency = subscription.currency || 'PHP';
-    const endDate = subscription.endDate 
-      ? new Date(subscription.endDate).toLocaleDateString() 
+    const endDate = subscription.endDate
+      ? new Date(subscription.endDate).toLocaleDateString()
       : 'N/A';
 
     const subject = `🎉 Subscription Activated: ${planName} Plan`;
@@ -113,7 +113,8 @@ const createHitPayPayment = async (amount, currency, organizerName, planName, su
     : 'https://api.sandbox.hit-pay.com/v1';
 
   const baseUrl = process.env.BACKEND_URL || process.env.SERVER_BASE_URL || 'http://localhost:5000';
-  const webhookUrl = `${baseUrl.replace(/\/$/, '')}/api/subscriptions/webhook`;
+  const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const webhookUrl = `${cleanBaseUrl}/api/subscriptions/webhook`;
   const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/#/subscription/success`;
 
   console.log('📍 [Subscription] Webhook URL for HitPay dashboard:', webhookUrl);
@@ -248,8 +249,13 @@ export const createSubscription = async (req, res) => {
     }
 
     const priceAmount = billingInterval === 'yearly'
-      ? Number(plan.yearlyPrice)
-      : Number(plan.monthlyPrice);
+      ? Number(plan.yearlyPrice || 0)
+      : Number(plan.monthlyPrice || 0);
+
+    const trialDays = Number(plan.trialDays || 0);
+    const trialEndDate = trialDays > 0
+      ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString()
+      : null;
 
     // If price is 0, create free subscription
     if (priceAmount === 0) {
@@ -269,6 +275,7 @@ export const createSubscription = async (req, res) => {
           currency: plan.currency || 'PHP',
           startDate: new Date().toISOString(),
           endDate: endDate.toISOString(),
+          trialEndDate: trialEndDate,
         })
         .select()
         .single();
@@ -299,10 +306,11 @@ export const createSubscription = async (req, res) => {
         organizerId: organizer.organizerId,
         planId: planId,
         billingInterval,
-        status: 'pending',
+        status: trialDays > 0 ? 'trial' : 'pending',
         priceAmount,
         currency: plan.currency || 'PHP',
         startDate: new Date().toISOString(),
+        trialEndDate: trialEndDate,
       })
       .select()
       .single();
@@ -326,6 +334,18 @@ export const createSubscription = async (req, res) => {
         hitPayPaymentId: payment?.id || payment?.payment_request_id,
       })
       .eq('subscriptionId', subscription.subscriptionId);
+
+    // If it's a trial, update organizer status now so features are unlocked immediately
+    if (trialDays > 0) {
+      await supabase
+        .from('organizers')
+        .update({
+          currentPlanId: planId,
+          subscriptionStatus: 'trial',
+          planExpiresAt: trialEndDate,
+        })
+        .eq('organizerId', organizer.organizerId);
+    }
 
     await logAudit({
       actionType: 'SUBSCRIPTION_INITIATED',
@@ -569,13 +589,21 @@ export const verifySubscription = async (req, res) => {
     });
 
     if (!response.ok) {
-      throw new Error(`HitPay verification failed: ${await response.text()}`);
+      const errorText = await response.text();
+      console.error('❌ [Subscription] HitPay verification failed:', errorText);
+      throw new Error(`HitPay verification failed: ${errorText}`);
     }
 
     const hitPayData = await response.json();
     const hitPayStatus = hitPayData.status; // 'completed', 'paid', 'pending', etc.
 
+    console.log(`📡 [Subscription] HitPay state for ${subscriptionId}:`, {
+      status: hitPayStatus,
+      paymentId: subscription.hitPayPaymentId
+    });
+
     if (hitPayStatus === 'completed' || hitPayStatus === 'paid' || hitPayStatus === 'succeeded' || hitPayStatus === 'payment_successful') {
+      console.log('✅ [Subscription] Valid payment detected, activating...');
       // 3. Update the database (similar to webhook)
       const endDate = new Date();
       if (subscription.billingInterval === 'monthly') {

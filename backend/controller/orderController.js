@@ -24,7 +24,7 @@ const getReservationTtlMs = () => {
  * Body: { eventId, buyerName, buyerEmail, items: [{ ticketTypeId, quantity, price }], totalAmount, currency }
  */
 export const createOrder = async (req, res) => {
-  const { eventId, buyerName, buyerEmail, buyerPhone, company, items, totalAmount, currency } = req.body;
+  const { eventId, buyerName, buyerEmail, buyerPhone, company, items, totalAmount, currency, promoCode } = req.body;
   if (!eventId || !buyerName || !buyerEmail || !Array.isArray(items) || !items.length) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -119,8 +119,52 @@ export const createOrder = async (req, res) => {
       reservations.push({ ticketTypeId: item.ticketTypeId, from: currentSold, to: newSold });
     }
 
+    // 1b) Handle Promotion/Discount
+    let discountAmount = 0;
+    let finalTotal = totalAmount;
+    let promotionId = null;
+
+    if (promoCode) {
+      const normalizedCode = String(promoCode).trim().toUpperCase();
+      const { data: promo, error: promoError } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('eventId', eventId)
+        .eq('code', normalizedCode)
+        .eq('isActive', true)
+        .maybeSingle();
+
+      if (promo && !promoError) {
+        // Validate usage limit and dates
+        const now = new Date();
+        const withinDates = (!promo.validFrom || new Date(promo.validFrom) <= now) &&
+          (!promo.validUntil || new Date(promo.validUntil) >= now);
+        const withinUsage = !promo.maxUses || promo.currentUses < promo.maxUses;
+
+        if (withinDates && withinUsage) {
+          promotionId = promo.promotionId;
+          const originalTotal = totalAmount;
+
+          if (promo.discountType === 'PERCENTAGE') {
+            discountAmount = (originalTotal * Number(promo.discountValue)) / 100;
+          } else {
+            discountAmount = Number(promo.discountValue);
+          }
+
+          finalTotal = Math.max(0, originalTotal - discountAmount);
+          console.log(`[Promotion] Code ${normalizedCode} applied: -${discountAmount} ${currency}`);
+
+          // Increment usage
+          await supabase
+            .from('promotions')
+            .update({ currentUses: (promo.currentUses || 0) + 1 })
+            .eq('promotionId', promo.promotionId);
+        }
+      }
+    }
+
     // 2) Create order
-    const isFree = totalAmount === 0;
+    const isFree = finalTotal === 0;
     const expiresAt = isFree ? null : new Date(Date.now() + getReservationTtlMs()).toISOString();
     const { data: orderData, error: orderErr } = await supabase
       .from('orders')
@@ -129,11 +173,14 @@ export const createOrder = async (req, res) => {
         buyerName,
         buyerEmail,
         buyerPhone: buyerPhone || null,
-        totalAmount,
+        totalAmount: finalTotal,
         currency,
         metadata: company ? { company } : null,
         status: isFree ? 'PAID' : 'PENDING_PAYMENT',
-        expiresAt
+        expiresAt,
+        promotionId,
+        discountAmount,
+        promoCode: promoCode ? String(promoCode).trim().toUpperCase() : null
       })
       .select('*')
       .single();

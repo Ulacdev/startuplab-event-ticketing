@@ -161,36 +161,114 @@ export async function getEventsHostedCounts(organizerIds = []) {
 export async function getOrganizerByOwnerUserId(ownerUserId) {
   if (!ownerUserId) return null;
 
-  const { data, error } = await supabase
+  // Try fetching with join first
+  let { data, error } = await supabase
     .from('organizers')
     .select('*, plan:plans(*)')
     .eq('ownerUserId', ownerUserId)
     .maybeSingle();
 
+  // If join fails due to missing relationship in cache, fetch just the organizer
+  if (error && error.code === 'PGRST200') {
+    const fallback = await supabase
+      .from('organizers')
+      .select('*')
+      .eq('ownerUserId', ownerUserId)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
+
   if (error) {
     if (isOrganizerTableMissingError(error)) return null;
     throw error;
   }
   if (!data) return null;
+
+  // If plan is missing (even though join was attempted or fallback used), fetch it manually
+  if (!data.plan && data.currentPlanId) {
+    const { data: planData } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('planId', data.currentPlanId)
+      .maybeSingle();
+    data.plan = planData;
+  }
 
   const counts = await getEventsHostedCounts([data.organizerId]);
   return serializeOrganizerRecord(data, counts.get(data.organizerId) || 0);
 }
 
+/**
+ * Gets organizer details for ANY user (Owner or Staff).
+ * If the user is a staff member, it looks up their employer's organizer record.
+ */
+export async function getOrganizerByUserId(userId) {
+  if (!userId) return null;
+
+  // 1. Try if user is an owner
+  const byOwner = await getOrganizerByOwnerUserId(userId);
+  if (byOwner) return byOwner;
+
+  // 2. Try if user is staff (fetch employerId)
+  // Logic: Some tables use "userId" column, others "id".
+  let userQuery = await supabase
+    .from('users')
+    .select('employerId')
+    .eq('userId', userId)
+    .maybeSingle();
+
+  if (!userQuery.data && !userQuery.error) {
+    userQuery = await supabase
+      .from('users')
+      .select('employerId')
+      .eq('id', userId)
+      .maybeSingle();
+  }
+
+  if (userQuery.data?.employerId) {
+    return getOrganizerByOwnerUserId(userQuery.data.employerId);
+  }
+
+  return null;
+}
+
 export async function getOrganizerWithStatsById(organizerId) {
   if (!organizerId) return null;
 
-  const { data, error } = await supabase
+  // Try fetching with join first
+  let { data, error } = await supabase
     .from('organizers')
     .select('*, plan:plans(*)')
     .eq('organizerId', organizerId)
     .maybeSingle();
+
+  // If join fails due to missing relationship in cache, fetch just the organizer
+  if (error && error.code === 'PGRST200') {
+    const fallback = await supabase
+      .from('organizers')
+      .select('*')
+      .eq('organizerId', organizerId)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     if (isOrganizerTableMissingError(error)) return null;
     throw error;
   }
   if (!data) return null;
+
+  // If plan is missing (even though join was attempted or fallback used), fetch it manually
+  if (!data.plan && data.currentPlanId) {
+    const { data: planData } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('planId', data.currentPlanId)
+      .maybeSingle();
+    data.plan = planData;
+  }
 
   const counts = await getEventsHostedCounts([organizerId]);
   return serializeOrganizerRecord(data, counts.get(organizerId) || 0);

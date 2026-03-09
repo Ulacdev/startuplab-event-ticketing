@@ -426,12 +426,15 @@ export const EventDetails: React.FC = () => {
       : `You and ${formatCompactCount(likesCount - 1)} others`)
     : `${formatCompactCount(likesCount)} likes`;
 
+  const brandColor = event.organizer?.brandColor || '#38BDF2';
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 pb-24 sm:pb-32 lg:py-16 lg:pb-16">
       <div className="mb-8">
         <button
           onClick={() => navigate('/')}
-          className="text-[#2E2E2F] hover:text-[#38BDF2] text-[11px] font-black tracking-widest uppercase flex items-center mb-10 gap-2 transition-colors"
+          className="hover:opacity-75 text-[#2E2E2F] text-[11px] font-black tracking-widest uppercase flex items-center mb-10 gap-2 transition-colors"
+          style={{ color: brandColor }}
         >
           <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
           BACK TO EVENTS
@@ -454,8 +457,9 @@ export const EventDetails: React.FC = () => {
                     onClick={handleLike}
                     className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-colors ${liked
                       ? 'bg-red-500 text-white border-red-500'
-                      : 'bg-[#F2F2F2] text-[#2E2E2F] border-[#2E2E2F]/20 hover:bg-[#38BDF2]/20'
+                      : 'bg-[#F2F2F2] text-[#2E2E2F] border-[#2E2E2F]/20 hover:bg-black/5'
                       }`}
+                    style={!liked ? { color: brandColor } : {}}
                     title={organizerRestricted ? 'Switch to Attending to like events' : 'Like event'}
                   >
                     <ICONS.Heart className="w-4 h-4" />
@@ -463,7 +467,8 @@ export const EventDetails: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="w-10 h-10 rounded-xl border bg-[#F2F2F2] text-[#2E2E2F] border-[#2E2E2F]/20 flex items-center justify-center hover:bg-[#38BDF2]/20 transition-colors"
+                    className="w-10 h-10 rounded-xl border bg-[#F2F2F2] text-[#2E2E2F] border-[#2E2E2F]/20 flex items-center justify-center hover:bg-black/5 transition-colors"
+                    style={{ color: brandColor }}
                     title="Share event"
                   >
                     <ICONS.Download className="w-4 h-4" />
@@ -479,21 +484,27 @@ export const EventDetails: React.FC = () => {
                 />
               </div>
               {interactionNotice && (
-                <div className="mb-4 rounded-xl border border-[#38BDF2]/30 bg-[#38BDF2]/10 px-3 py-2 text-xs font-semibold text-[#2E2E2F]">
+                <div
+                  className="mb-4 rounded-xl border px-3 py-2 text-xs font-semibold text-[#2E2E2F]"
+                  style={{ backgroundColor: `${brandColor}15`, borderColor: `${brandColor}30` }}
+                >
                   {interactionNotice}
                 </div>
               )}
               <div id="event-schedule-info" className="flex flex-wrap gap-4 mb-12">
                 <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-4 py-2 rounded-2xl border border-[#2E2E2F]/10 text-[12px]">
-                  <ICONS.Calendar className="w-4 h-4 mr-3 text-[#38BDF2]" />
+                  <ICONS.Calendar className="w-4 h-4 mr-3" style={{ color: brandColor }} />
                   {formatRange(event.startAt, event.endAt, event.timezone)}{event.timezone ? ` TZ: ${event.timezone}` : ''}
                 </div>
                 <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-4 py-2 rounded-2xl border border-[#2E2E2F]/10 text-[11px] font-bold">
-                  <ICONS.Monitor className="w-3.5 h-3.5 mr-2 text-[#38BDF2]" />
+                  <ICONS.Monitor className="w-3.5 h-3.5 mr-2" style={{ color: brandColor }} />
                   {event.locationType === 'ONLINE' ? 'DIGITAL SESSION' : event.locationType === 'HYBRID' ? 'HYBRID ACCESS' : 'IN-PERSON EVENT'}
                 </div>
                 {event.streamingPlatform && (event.locationType === 'ONLINE' || event.locationType === 'HYBRID') && (
-                  <div className="flex items-center text-[#38BDF2] bg-[#38BDF2]/5 px-4 py-2 rounded-2xl border border-[#38BDF2]/20 text-[11px] font-black tracking-wide">
+                  <div
+                    className="flex items-center px-4 py-2 rounded-2xl border text-[11px] font-black tracking-wide"
+                    style={{ color: brandColor, backgroundColor: `${brandColor}10`, borderColor: `${brandColor}20` }}
+                  >
                     VIA {event.streamingPlatform.toUpperCase()}
                   </div>
                 )}
@@ -588,17 +599,17 @@ export const EventDetails: React.FC = () => {
                     )}
                     <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide">
                       {organizerWebsite && (
-                        <a href={organizerWebsite} target="_blank" rel="noreferrer" className="text-[#38BDF2] hover:text-[#2E2E2F]">
+                        <a href={organizerWebsite} target="_blank" rel="noreferrer" className="hover:opacity-70" style={{ color: brandColor }}>
                           Website
                         </a>
                       )}
                       {facebookLink && (
-                        <a href={facebookLink} target="_blank" rel="noreferrer" className="text-[#38BDF2] hover:text-[#2E2E2F]">
+                        <a href={facebookLink} target="_blank" rel="noreferrer" className="hover:opacity-70" style={{ color: brandColor }}>
                           Facebook
                         </a>
                       )}
                       {twitterLink && (
-                        <a href={twitterLink} target="_blank" rel="noreferrer" className="text-[#38BDF2] hover:text-[#2E2E2F]">
+                        <a href={twitterLink} target="_blank" rel="noreferrer" className="hover:opacity-70" style={{ color: brandColor }}>
                           Twitter
                         </a>
                       )}
@@ -632,7 +643,8 @@ export const EventDetails: React.FC = () => {
                       href={openMapUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[10px] font-black uppercase tracking-widest text-[#38BDF2] hover:text-[#2E2E2F] transition-colors"
+                      className="text-[10px] font-black uppercase tracking-widest hover:opacity-70 transition-colors"
+                      style={{ color: brandColor }}
                     >
                       Open in Maps
                     </a>
@@ -657,8 +669,8 @@ export const EventDetails: React.FC = () => {
             <Card className="p-8 rounded-[2.5rem] bg-[#F2F2F2] border border-[#2E2E2F]/10 lg:max-h-[calc(100vh-7rem)] lg:flex lg:flex-col">
               {isOwnEvent ? (
                 <div className="flex flex-col items-center text-center py-6">
-                  <div className="w-16 h-16 rounded-2xl bg-[#38BDF2]/10 flex items-center justify-center mb-5">
-                    <ICONS.Calendar className="w-8 h-8 text-[#38BDF2]" />
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ backgroundColor: `${brandColor}15` }}>
+                    <ICONS.Calendar className="w-8 h-8" style={{ color: brandColor }} />
                   </div>
                   <h2 className="text-xl font-black text-[#2E2E2F] mb-2 tracking-tight">
                     This is your event
@@ -669,6 +681,7 @@ export const EventDetails: React.FC = () => {
                   <Button
                     className="w-full"
                     onClick={() => navigate('/browse-events')}
+                    style={{ backgroundColor: brandColor }}
                   >
                     Browse Events
                   </Button>
@@ -688,12 +701,15 @@ export const EventDetails: React.FC = () => {
                       return (
                         <div
                           key={ticket.ticketTypeId}
-                          className={`p-6 rounded-[1.75rem] border-2 transition-colors ${qty > 0 ? 'border-[#38BDF2] bg-[#F2F2F2]' : 'border-[#2E2E2F]/10 bg-[#F2F2F2] hover:border-[#38BDF2]/40'
-                            }`}
+                          className="p-6 rounded-[1.75rem] border-2 transition-colors bg-[#F2F2F2] hover:opacity-90"
+                          style={{ borderColor: qty > 0 ? brandColor : '#2E2E2F1A' }}
                         >
                           <div className="flex justify-between items-start mb-2">
                             <span className="text-[#2E2E2F] text-[13px] uppercase tracking-wider">{ticket.name}</span>
-                            <span className={`text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${isSoldOut ? 'bg-[#2E2E2F] text-[#F2F2F2]' : 'bg-[#38BDF2] text-[#F2F2F2]'}`}>
+                            <span
+                              className="text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest text-[#F2F2F2]"
+                              style={{ backgroundColor: isSoldOut ? '#2E2E2F' : brandColor }}
+                            >
                               {isSoldOut ? 'SOLD OUT' : 'AVAILABLE'}
                             </span>
                           </div>
@@ -707,8 +723,8 @@ export const EventDetails: React.FC = () => {
                               <button
                                 onClick={() => updateQuantity(ticket.ticketTypeId, -1, available)}
                                 disabled={qty === 0}
-                                className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors ${qty > 0 ? 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]' : 'bg-[#F2F2F2] text-[#2E2E2F]/40 cursor-not-allowed border border-[#2E2E2F]/10'
-                                  }`}
+                                className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors disabled:opacity-20 disabled:cursor-not-allowed border border-[#2E2E2F]/10"
+                                style={qty > 0 ? { backgroundColor: brandColor, color: '#F2F2F2' } : {}}
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M20 12H4" /></svg>
                               </button>
@@ -716,8 +732,8 @@ export const EventDetails: React.FC = () => {
                               <button
                                 onClick={() => updateQuantity(ticket.ticketTypeId, 1, available)}
                                 disabled={isSoldOut || qty >= available}
-                                className={`w-8 h-8 flex items-center justify-center rounded-xl text-[#F2F2F2] transition-colors ${isSoldOut || qty >= available ? 'bg-[#F2F2F2] text-[#2E2E2F]/40 cursor-not-allowed border border-[#2E2E2F]/10' : 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]'
-                                  }`}
+                                className="w-8 h-8 flex items-center justify-center rounded-xl text-[#F2F2F2] transition-colors disabled:opacity-20 disabled:cursor-not-allowed border border-[#2E2E2F]/10"
+                                style={!isSoldOut && qty < available ? { backgroundColor: brandColor } : {}}
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M12 4v16m8-8H4" /></svg>
                               </button>
@@ -733,6 +749,7 @@ export const EventDetails: React.FC = () => {
                       className="w-full"
                       disabled={totalQuantity === 0}
                       onClick={handleRegister}
+                      style={{ backgroundColor: brandColor }}
                     >
                       {ctaLabel}
                     </Button>
@@ -765,6 +782,7 @@ export const EventDetails: React.FC = () => {
                 className="w-full mt-5"
                 disabled={totalQuantity === 0}
                 onClick={handleRegister}
+                style={{ backgroundColor: brandColor }}
               >
                 {ctaLabel}
               </Button>

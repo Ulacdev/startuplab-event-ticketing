@@ -66,10 +66,10 @@ const toDraft = (plan: AdminPlan): PlanDraft => ({
   isRecommended: !!plan.isRecommended,
   isActive: !!plan.isActive,
   features: {
-    enable_custom_branding: !!plan.features?.enable_custom_branding,
-    enable_discount_codes: !!plan.features?.enable_discount_codes,
-    enable_advanced_reports: !!plan.features?.enable_advanced_reports,
-    enable_priority_support: !!plan.features?.enable_priority_support,
+    enable_custom_branding: !!(plan.features?.enable_custom_branding || (plan.features as any)?.custom_branding),
+    enable_discount_codes: !!(plan.features?.enable_discount_codes || (plan.features as any)?.discount_codes),
+    enable_advanced_reports: !!(plan.features?.enable_advanced_reports || (plan.features as any)?.advanced_reports),
+    enable_priority_support: !!(plan.features?.enable_priority_support || (plan.features as any)?.priority_support),
   },
   limits: {
     max_events: plan.limits?.max_events ?? 0,
@@ -90,9 +90,13 @@ const toPayload = (draft: PlanDraft): Partial<AdminPlan> => ({
   isActive: !!draft.isActive,
   features: {
     enable_custom_branding: !!draft.features.enable_custom_branding,
+    custom_branding: !!draft.features.enable_custom_branding,
     enable_discount_codes: !!draft.features.enable_discount_codes,
+    discount_codes: !!draft.features.enable_discount_codes,
     enable_advanced_reports: !!draft.features.enable_advanced_reports,
+    advanced_reports: !!draft.features.enable_advanced_reports,
     enable_priority_support: !!draft.features.enable_priority_support,
+    priority_support: !!draft.features.enable_priority_support,
   },
   limits: {
     max_events: draft.limits.max_events,
@@ -305,10 +309,10 @@ export const SubscriptionPlans: React.FC = () => {
                     <label className="block text-[9px] font-black text-[#2E2E2F]/30 uppercase tracking-[0.2em] mb-4 ml-1">Plan Features</label>
                     <div className="grid grid-cols-1 gap-3">
                       {[
-                        { label: 'Custom Branding', enabled: plan.features.enable_custom_branding },
-                        { label: 'Discount Codes', enabled: plan.features.enable_discount_codes },
-                        { label: 'Advanced Reports', enabled: plan.features.enable_advanced_reports },
-                        { label: 'Priority Support', enabled: plan.features.enable_priority_support },
+                        { label: 'Custom Branding', enabled: (plan.features as any)?.enable_custom_branding || (plan.features as any)?.custom_branding },
+                        { label: 'Discount Codes', enabled: (plan.features as any)?.enable_discount_codes || (plan.features as any)?.discount_codes },
+                        { label: 'Advanced Reports', enabled: (plan.features as any)?.enable_advanced_reports || (plan.features as any)?.advanced_reports },
+                        { label: 'Priority Support', enabled: (plan.features as any)?.enable_priority_support || (plan.features as any)?.priority_support },
                       ].map((feature, idx) => (
                         <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-[#F2F2F2]/50 border border-[#2E2E2F]/5 group/feat transition-all hover:border-[#38BDF2]/30 hover:shadow-sm">
                           <span className={`text-[11px] font-black uppercase tracking-widest ${feature.enabled ? 'text-[#2E2E2F]' : 'text-[#2E2E2F]/30'}`}>{feature.label}</span>
@@ -330,10 +334,10 @@ export const SubscriptionPlans: React.FC = () => {
                     <label className="block text-[9px] font-black text-[#2E2E2F]/30 uppercase tracking-[0.2em] mb-4 ml-1">Plan Limits</label>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { label: 'Total Events', val: plan.limits.max_events, icon: <ICONS.Box /> },
-                        { label: 'Active Events', val: plan.limits.max_active_events, icon: <ICONS.CheckCircle /> },
-                        { label: 'Staff Accounts', val: plan.limits.max_staff_accounts, icon: <ICONS.Users /> },
-                        { label: 'Monthly Attendees', val: plan.limits.max_attendees_per_month, icon: <ICONS.Users /> },
+                        { label: 'Total Events', val: plan.limits?.max_total_events || plan.limits?.max_events || 0, icon: <ICONS.Box /> },
+                        { label: 'Active Events', val: plan.limits?.max_active_events || plan.limits?.max_events || 0, icon: <ICONS.CheckCircle /> },
+                        { label: 'Staff Accounts', val: plan.limits?.max_staff_accounts || 0, icon: <ICONS.Users /> },
+                        { label: 'Monthly Attendees', val: plan.limits?.monthly_attendees || plan.limits?.max_attendees_per_month || 0, icon: <ICONS.Users /> },
                       ].map((limit, idx) => (
                         <div key={idx} className="p-4 bg-[#F2F2F2]/50 rounded-2xl border border-[#2E2E2F]/5 hover:border-[#38BDF2]/30 transition-all group/limit hover:shadow-sm">
                           <div className="flex items-center gap-2 mb-2">

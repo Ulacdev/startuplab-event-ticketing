@@ -45,25 +45,39 @@ export const OrganizerReports: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('all');
 
+  const [profile, setProfile] = useState<any>(null);
+
   useEffect(() => {
     loadTransactions();
+    loadProfile();
   }, [page, filter]);
+
+  const loadProfile = async () => {
+    try {
+      const organizer = await apiService.getMyOrganizer();
+      setProfile(organizer);
+    } catch (err) {
+      console.error('Failed to load organizer profile for reports plan check', err);
+    }
+  };
+
+  const hasAdvancedReports = profile?.plan?.features?.enable_advanced_reports || profile?.plan?.features?.advanced_reports;
 
   const loadTransactions = async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await apiService.getRecentTransactions(page, 20);
-      
+
       let filtered = data.transactions || [];
-      
+
       // Filter by payment status
       if (filter !== 'all') {
-        filtered = filtered.filter((t: Transaction) => 
+        filtered = filtered.filter((t: Transaction) =>
           t.paymentStatus?.toLowerCase() === filter
         );
       }
-      
+
       setTransactions(filtered);
       setTotalPages(Math.ceil((data.total || 1) / 20));
     } catch (err: any) {
@@ -71,6 +85,15 @@ export const OrganizerReports: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExport = () => {
+    if (!hasAdvancedReports) {
+      alert('Advanced Reports are only available on Professional and Enterprise plans.');
+      return;
+    }
+    // Logic for export would go here
+    alert('Exporting report...');
   };
 
   const getStatusBadge = (status: string) => {
@@ -82,9 +105,9 @@ export const OrganizerReports: React.FC = () => {
       'failed': 'bg-red-100 text-red-800 border-red-200',
       'expired': 'bg-gray-100 text-gray-800 border-gray-200'
     };
-    
+
     const colorClass = statusColors[status?.toLowerCase()] || 'bg-gray-100 text-gray-800 border-gray-200';
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${colorClass}`}>
         {status || 'Unknown'}
@@ -110,12 +133,22 @@ export const OrganizerReports: React.FC = () => {
           <h1 className="text-3xl font-black text-[#2E2E2F] tracking-tight">Reports</h1>
           <p className="text-[#2E2E2F]/60 font-medium mt-1">View all transactions and orders</p>
         </div>
-        <Button 
-          onClick={loadTransactions}
-          className="px-4 py-2 rounded-xl font-black text-[10px]"
-        >
-          Refresh
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            className={`px-4 py-2 rounded-xl font-black text-[10px] flex items-center gap-2 ${!hasAdvancedReports ? 'opacity-50 grayscale' : ''}`}
+          >
+            {!hasAdvancedReports && <ICONS.Shield className="w-3 h-3" />}
+            Export CSV
+          </Button>
+          <Button
+            onClick={loadTransactions}
+            className="px-4 py-2 rounded-xl font-black text-[10px]"
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -124,15 +157,25 @@ export const OrganizerReports: React.FC = () => {
           <p className="text-[10px] font-semibold text-[#2E2E2F]/60 uppercase tracking-widest">Total Transactions</p>
           <p className="text-3xl font-black text-[#2E2E2F] mt-2">{transactions.length}</p>
         </Card>
-        
+
         <Card className="p-6 rounded-2xl border-[#2E2E2F]/10 bg-gradient-to-br from-green-50 to-green-100/50">
           <p className="text-[10px] font-semibold text-[#2E2E2F]/60 uppercase tracking-widest">Completed Revenue</p>
           <p className="text-3xl font-black text-green-700 mt-2">{formatCurrency(completedAmount)}</p>
         </Card>
-        
-        <Card className="p-6 rounded-2xl border-[#2E2E2F]/10 bg-gradient-to-br from-[#2E2E2F]/5 to-[#2E2E2F]/10">
+
+        <Card className={`p-6 rounded-2xl border-[#2E2E2F]/10 bg-gradient-to-br from-[#2E2E2F]/5 to-[#2E2E2F]/10 relative overflow-hidden group ${!hasAdvancedReports ? 'cursor-not-allowed' : ''}`}>
           <p className="text-[10px] font-semibold text-[#2E2E2F]/60 uppercase tracking-widest">Total Amount</p>
-          <p className="text-3xl font-black text-[#2E2E2F] mt-2">{formatCurrency(totalAmount)}</p>
+          <div className={`${!hasAdvancedReports ? 'blur-sm select-none' : ''}`}>
+            <p className="text-3xl font-black text-[#2E2E2F] mt-2">{formatCurrency(totalAmount)}</p>
+          </div>
+          {!hasAdvancedReports && (
+            <div className="absolute inset-0 bg-white/40 flex items-center justify-center backdrop-blur-[1px] pointer-events-none">
+              <div className="bg-[#2E2E2F] text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5 translate-y-2">
+                <ICONS.Shield className="w-2.5 h-2.5" />
+                Premium Feature
+              </div>
+            </div>
+          )}
         </Card>
       </div>
 
@@ -146,11 +189,10 @@ export const OrganizerReports: React.FC = () => {
                 <button
                   key={status}
                   onClick={() => setFilter(status)}
-                  className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${
-                    filter === status
+                  className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${filter === status
                       ? 'bg-[#38BDF2] text-white shadow-lg'
                       : 'bg-white text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10'
-                  }`}
+                    }`}
                 >
                   {status}
                 </button>
@@ -190,8 +232,8 @@ export const OrganizerReports: React.FC = () => {
                 </tr>
               ) : (
                 transactions.map((transaction, index) => (
-                  <tr 
-                    key={transaction.orderId || index} 
+                  <tr
+                    key={transaction.orderId || index}
                     className="border-b border-[#2E2E2F]/5 hover:bg-[#38BDF2]/5 transition-colors"
                   >
                     <td className="p-4">

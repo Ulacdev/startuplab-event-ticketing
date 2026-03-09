@@ -499,6 +499,7 @@ export const apiService = {
     items: { ticketTypeId: string; quantity: number; price: number }[];
     totalAmount: number;
     currency: string;
+    promoCode?: string | null;
   }): Promise<{ orderId: string }> => {
     const res = await fetch(`${API_BASE}/api/orders`, {
       method: 'POST',
@@ -1010,5 +1011,50 @@ export const apiService = {
       throw new Error(text || `Failed to mark all notifications as read: ${res.status}`);
     }
     return res.json();
+  },
+  // --- Promotion APIs ---
+  validatePromotion: async (eventId: string, code: string): Promise<any> => {
+    const res = await fetch(`${API_BASE}/api/promotions/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId, code })
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.error || `Promotion validation failed: ${res.status}`);
+    }
+    return await res.json();
+  },
+
+  listPromotions: async (eventId: string): Promise<any[]> => {
+    const res = await fetch(`${API_BASE}/api/promotions/events/${encodeURIComponent(eventId)}`, {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    });
+    if (!res.ok) throw new Error(`Failed to load promotions: ${res.status}`);
+    return await res.json();
+  },
+
+  upsertPromotion: async (payload: any): Promise<any> => {
+    const res = await fetch(`${API_BASE}/api/promotions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.error || `Failed to save promotion: ${res.status}`);
+    }
+    return await res.json();
+  },
+
+  deletePromotion: async (promotionId: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/api/promotions/${encodeURIComponent(promotionId)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    });
+    if (!res.ok) throw new Error(`Failed to delete promotion: ${res.status}`);
   }
 };

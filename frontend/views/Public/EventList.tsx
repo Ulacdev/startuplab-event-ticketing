@@ -218,6 +218,9 @@ export const EventCard: React.FC<{
       : `You and ${formatCompactCount(likeCount - 1)} others`)
     : `${formatCompactCount(likeCount)} likes`;
 
+  // Brand Color fallback
+  const brandColor = event.organizer?.brandColor || '#38BDF2';
+
   return (
     <Card className="group flex flex-col h-full border border-[#2E2E2F]/10 rounded-[1.35rem] overflow-hidden bg-[#F2F2F2] hover:border-[#38BDF2]/40 transition-colors cursor-pointer" onClick={() => navigate(`/events/${event.slug}`)}>
       {/* Image Section */}
@@ -228,7 +231,10 @@ export const EventCard: React.FC<{
           className="w-full h-full object-cover"
         />
         {trendingRank ? (
-          <div className="absolute top-3 left-3 rounded-full px-2.5 py-1 bg-[#38BDF2] text-white text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-[#38BDF2]/30 z-10">
+          <div
+            className="absolute top-3 left-3 rounded-full px-2.5 py-1 text-white text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-black/10 z-10"
+            style={{ backgroundColor: brandColor }}
+          >
             #{trendingRank} Trending
           </div>
         ) : null}
@@ -330,7 +336,7 @@ export const EventCard: React.FC<{
           <span>{likeLabel}</span>
         </div>
         <div className="flex flex-wrap gap-1.5 text-[11px] font-medium text-[#2E2E2F]/70 mb-2.5">
-          <span className="text-[#38BDF2]">{(event as any).registrationCount ?? 0} registered / {(event.ticketTypes || []).reduce((sum, t) => sum + (t.quantityTotal || 0), 0)} slots</span>
+          <span style={{ color: brandColor }}>{(event as any).registrationCount ?? 0} registered / {(event.ticketTypes || []).reduce((sum, t) => sum + (t.quantityTotal || 0), 0)} slots</span>
           <span className="text-[#2E2E2F]/60">•</span>
           <span>{event.locationText}</span>
           <span className="text-[#2E2E2F]/60">•</span>

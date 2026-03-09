@@ -225,7 +225,7 @@ export const createUserEvent = async (req, res) => {
     });
   }
 
-  // 1. Check Max Events Limit
+  // 1. Check Max Events Limit (Active)
   const eventLimit = await checkPlanLimits(organizerCheck.organizer.organizerId, 'max_events');
   if (!eventLimit.allowed) {
     return res.status(403).json({
@@ -233,6 +233,17 @@ export const createUserEvent = async (req, res) => {
       code: 'PLAN_LIMIT_REACHED',
       limit: eventLimit.limit,
       current: eventLimit.current
+    });
+  }
+
+  // 1b. Check Max Total Events Limit (Lifetime)
+  const totalEventLimit = await checkPlanLimits(organizerCheck.organizer.organizerId, 'max_total_events');
+  if (!totalEventLimit.allowed) {
+    return res.status(403).json({
+      error: totalEventLimit.message,
+      code: 'PLAN_LIMIT_REACHED',
+      limit: totalEventLimit.limit,
+      current: totalEventLimit.current
     });
   }
 
@@ -284,6 +295,20 @@ export const updateUserEvent = async (req, res) => {
     const requestedStatus = toUpperStatus(req.body?.status);
     const currentStatus = toUpperStatus(ownership.event?.status);
     const isPublishTransition = requestedStatus === 'PUBLISHED' && currentStatus !== 'PUBLISHED';
+
+    // 4. Check Discount Codes Limit
+    if (req.body?.enableDiscountCodes === true) {
+      const organizerCheck = await resolveOrganizerReadinessForUser(userId);
+      if (organizerCheck.ok) {
+        const discountLimit = await checkPlanLimits(organizerCheck.organizer.organizerId, 'discount_codes');
+        if (!discountLimit.allowed) {
+          return res.status(403).json({
+            error: discountLimit.message,
+            code: 'PLAN_LIMIT_REACHED'
+          });
+        }
+      }
+    }
 
     if (isPublishTransition) {
       const organizerCheck = await resolveOrganizerReadinessForUser(userId);
@@ -425,7 +450,9 @@ export const createEvent = async (req, res) => {
       status = 'DRAFT',
       imageUrl,
       streamingPlatform,
-      streaming_url
+      streaming_url,
+      enableDiscountCodes,
+      brandColor
     } = req.body || {};
 
     if (!eventName) return res.status(400).json({ error: 'eventName is required' });
@@ -465,6 +492,8 @@ export const createEvent = async (req, res) => {
       imageUrl: imageUrl || null,
       streamingPlatform: streamingPlatform || null,
       streaming_url: streaming_url || null,
+      enableDiscountCodes: !!enableDiscountCodes,
+      brandColor: brandColor || null,
       organizerId,
       createdBy: req.user?.id || null,
       updated_at: new Date().toISOString()

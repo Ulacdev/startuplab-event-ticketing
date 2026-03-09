@@ -511,31 +511,31 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                 <img
                   src={organizerSidebarLogoUrl}
                   alt={organizerSidebarName || 'Organizer logo'}
-                  className={`object-contain transition-all duration-700 drop-shadow-2xl group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
+                  className={`object-contain transition-all duration-700 group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
                 />
               ) : (
                 <img
                   src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
                   alt="StartupLab Logo"
-                  className={`object-contain transition-all duration-700 drop-shadow-2xl group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
+                  className={`object-contain transition-all duration-700 group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
                 />
               )
             ) : desktopSidebarOpen ? (
               <img
                 src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
                 alt="StartupLab Business Center Logo"
-                className="h-[120px] w-full max-w-[280px] object-contain animate-in fade-in zoom-in duration-700 drop-shadow-2xl group-hover:brightness-110 transition-all relative z-10"
+                className="h-[120px] w-full max-w-[280px] object-contain animate-in fade-in zoom-in duration-700 group-hover:brightness-110 transition-all relative z-10"
               />
             ) : (
               <img
                 src="/lgo.webp"
                 alt="SL Logo"
-                className="h-14 w-14 object-contain animate-in fade-in zoom-in duration-300 group-hover:rotate-12 transition-transform shadow-sm"
+                className="h-14 w-14 object-contain animate-in fade-in zoom-in duration-300 group-hover:rotate-12 transition-transform"
               />
             )}
           </Link>
         </div>
-        <nav className={`flex-1 ${desktopSidebarOpen ? 'px-4' : 'px-2'} py-4 space-y-1`}>
+        <nav className={`flex-1 ${desktopSidebarOpen ? 'px-4' : 'px-2'} py-4 space-y-1 overflow-y-auto scrollbar-thin`}>
           {menuItems.map((item) => {
             const isActive = checkIsActiveAdmin(item.path);
 
@@ -1801,20 +1801,46 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     } catch { clearUser(); navigate('/'); }
   };
 
-  const menuItems = [
-    { label: 'Home', path: '/user-home', icon: <ICONS.Home className="w-5 h-5" /> },
-    { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-5 h-5" /> },
-    { label: 'Events', path: '/my-events', icon: <ICONS.Calendar className="w-5 h-5" /> },
-    { label: 'Archive', path: '/user/archive', icon: <ICONS.Archive className="w-5 h-5" /> },
-    { label: 'Reports', path: '/user/reports', icon: <ICONS.BarChart className="w-5 h-5" /> },
-    { label: 'Attendees', path: '/user/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
-    { label: 'Check-In', path: '/user/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> },
-    { label: 'Org Profile', path: '/user-settings?tab=organizer', icon: <ICONS.Users className="w-5 h-5" /> },
-    { label: 'Teams & Access', path: '/user-settings?tab=team', icon: <ICONS.Shield className="w-5 h-5" /> },
-    { label: 'Email Setup', path: '/user-settings?tab=email', icon: <ICONS.Mail className="w-5 h-5" /> },
-    { label: 'Payment Gateway', path: '/user-settings?tab=payments', icon: <ICONS.CreditCard className="w-5 h-5" /> },
-    { label: 'Subscription', path: '/subscription', icon: <ICONS.CreditCard className="w-5 h-5" /> },
-    { label: 'Account', path: '/user-settings?tab=account', icon: <ICONS.Settings className="w-5 h-5" /> },
+  const [expandedSections, setExpandedSections] = React.useState<string[]>(['Main', 'Events Records', 'Settings']);
+
+  const toggleSection = (title: string) => {
+    setExpandedSections(prev =>
+      prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title]
+    );
+  };
+
+  const menuGroups = [
+    {
+      title: 'Main',
+      icon: <ICONS.Layout className="w-5 h-5" />,
+      items: [
+        { label: 'Home', path: '/user-home', icon: <ICONS.Home className="w-5 h-5" /> },
+        { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-5 h-5" /> },
+      ]
+    },
+    {
+      title: 'Events Records',
+      icon: <ICONS.Database className="w-5 h-5" />,
+      items: [
+        { label: 'Events', path: '/my-events', icon: <ICONS.Calendar className="w-5 h-5" /> },
+        { label: 'Archive', path: '/user/archive', icon: <ICONS.Archive className="w-5 h-5" /> },
+        { label: 'Reports', path: '/user/reports', icon: <ICONS.BarChart className="w-5 h-5" /> },
+        { label: 'Attendees', path: '/user/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
+        { label: 'Check-In', path: '/user/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> },
+      ]
+    },
+    {
+      title: 'Settings',
+      icon: <ICONS.Settings className="w-5 h-5" />,
+      items: [
+        { label: 'Org Profile', path: '/user-settings?tab=organizer', icon: <ICONS.Users className="w-5 h-5" /> },
+        { label: 'Teams & Access', path: '/user-settings?tab=team', icon: <ICONS.Shield className="w-5 h-5" /> },
+        { label: 'Email Setup', path: '/user-settings?tab=email', icon: <ICONS.Mail className="w-5 h-5" /> },
+        { label: 'Payment Gateway', path: '/user-settings?tab=payments', icon: <ICONS.CreditCard className="w-5 h-5" /> },
+        { label: 'Subscription', path: '/subscription', icon: <ICONS.CreditCard className="w-5 h-5" /> },
+        { label: 'Account', path: '/user-settings?tab=account', icon: <ICONS.Settings className="w-5 h-5" /> },
+      ]
+    }
   ];
 
   const checkIsActive = (itemPath: string) => {
@@ -1855,36 +1881,65 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
               <img
                 src={organizerSidebarLogoUrl}
                 alt={organizerSidebarLogoAlt}
-                className={`object-contain transition-all duration-700 drop-shadow-2xl group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
+                className={`object-contain transition-all duration-700 group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
               />
             ) : (
               <img
                 src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
                 alt="StartupLab Logo"
-                className={`object-contain transition-all duration-700 drop-shadow-2xl group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
+                className={`object-contain transition-all duration-700 group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
               />
             )}
           </Link>
         </div>
-        <nav className={`flex-1 ${desktopSidebarOpen ? 'px-4' : 'px-2'} py-4 space-y-1`}>
-          {menuItems.map((item) => {
-            const isActive = checkIsActive(item.path);
+        <nav className={`flex-1 ${desktopSidebarOpen ? 'px-4' : 'px-2'} py-4 space-y-2 overflow-y-auto scrollbar-thin`}>
+          {menuGroups.map((group) => (
+            <div key={group.title} className="space-y-1">
+              {desktopSidebarOpen ? (
+                <button
+                  onClick={() => toggleSection(group.title)}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-[#2E2E2F]/60 hover:text-[#2E2E2F] transition-colors group/header"
+                >
+                  <div className="transition-opacity duration-200">
+                    {group.icon}
+                  </div>
+                  <span className="flex-1 text-left font-semibold text-sm tracking-tight">{group.title}</span>
+                  <svg
+                    className={`w-3.5 h-3.5 transition-all duration-300 ${expandedSections.includes(group.title) ? 'rotate-180 opacity-60' : 'opacity-20'}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="h-px bg-[#2E2E2F]/5 my-2 mx-2" />
+              )}
 
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-colors group ${isActive
-                  ? 'bg-[#38BDF2] text-[#F2F2F2]'
-                  : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
-                  } ${!desktopSidebarOpen ? 'justify-center border-none' : ''}`}
-                title={!desktopSidebarOpen ? item.label : undefined}
-              >
-                {item.icon}
-                {desktopSidebarOpen && <span className="font-bold text-sm tracking-tight">{item.label}</span>}
-              </Link>
-            );
-          })}
+              {(expandedSections.includes(group.title) || !desktopSidebarOpen) && (
+                <div className="space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {group.items.map((item) => {
+                    const isActive = checkIsActive(item.path);
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${isActive
+                          ? 'bg-[#38BDF2] text-[#F2F2F2] shadow-sm'
+                          : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
+                          } ${!desktopSidebarOpen ? 'justify-center' : 'ml-8'}`}
+                        title={!desktopSidebarOpen ? item.label : undefined}
+                      >
+                        <div className={`${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform duration-200`}>
+                          {item.icon}
+                        </div>
+                        {desktopSidebarOpen && <span className="font-semibold text-sm tracking-tight">{item.label}</span>}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
         </nav>
       </aside>
 
@@ -1892,7 +1947,7 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'md:pl-72' : 'md:pl-20'
           }`}
       >
-        <header className="h-20 bg-[#F2F2F2] border-b border-[#2E2E2F]/10 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-40 w-full">
+        <header className="h-20 bg-[#F2F2F2] border-b border-[#2E2E2F]/10 px-4 sm:px-8 flex items-center justify-between gap-4 sm:gap-6 sticky top-0 z-40 w-full">
           <div className="flex items-center gap-3">
             <button
               className="hidden md:flex w-10 h-10 items-center justify-center rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 transition-colors"
@@ -1920,7 +1975,7 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-6">
             {(!(role === UserRole.STAFF && canReceiveNotifications === false)) && (
               <div className="relative group">
                 <button
@@ -2174,24 +2229,33 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
               </div>
-              <nav className="flex-1 px-4 py-4 space-y-1">
-                {menuItems.map((item) => {
-                  const isActive = checkIsActive(item.path);
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${isActive
-                        ? 'bg-white text-[#38BDF2] shadow-lg shadow-black/5'
-                        : 'text-white/60 hover:bg-[#2E2E2F] hover:text-white'
-                        }`}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      {item.icon}
-                      <span className="font-bold text-sm tracking-tight">{item.label}</span>
-                    </Link>
-                  );
-                })}
+              <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+                {menuGroups.map((group) => (
+                  <div key={group.title} className="space-y-2">
+                    <p className="px-4 text-[10px] font-black text-white/40 uppercase tracking-widest">
+                      {group.title}
+                    </p>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const isActive = checkIsActive(item.path);
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${isActive
+                              ? 'bg-white text-[#38BDF2] shadow-lg shadow-black/5'
+                              : 'text-white/60 hover:bg-[#2E2E2F] hover:text-white'
+                              }`}
+                            onClick={() => setSidebarOpen(false)}
+                          >
+                            {item.icon}
+                            <span className="font-bold text-sm tracking-tight">{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </nav>
             </aside>
           </div>
@@ -2298,6 +2362,7 @@ const App: React.FC = () => (
       <Route path="/user/attendees" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><RegistrationsList /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/user/checkin" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><CheckIn /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/user/archive" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><ArchiveEvents /></UserPortalLayout></RequireRoleRoute>} />
+      <Route path="/user/reports" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerReports /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/subscription" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerSubscription /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/subscription/success" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><SubscriptionSuccess /></UserPortalLayout></RequireRoleRoute>} />
 

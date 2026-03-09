@@ -23,10 +23,12 @@ export const Badge: React.FC<{
 export const Card: React.FC<{
   children: React.ReactNode,
   className?: string,
+  style?: React.CSSProperties,
   onClick?: () => void
-}> = ({ children, className = '', onClick }) => (
+}> = ({ children, className = '', style, onClick }) => (
   <div
     onClick={onClick}
+    style={style}
     className={`bg-[#F2F2F2] rounded-xl border border-[#2E2E2F]/10 overflow-hidden ${className} shadow-none`}
   >
     {children}
@@ -40,6 +42,7 @@ export const Button: React.FC<{
   className?: string,
   disabled?: boolean,
   type?: 'button' | 'submit',
+  style?: React.CSSProperties,
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>
 }> = ({
   children,
@@ -48,6 +51,7 @@ export const Button: React.FC<{
   className = '',
   disabled = false,
   type = 'button',
+  style,
   onClick
 }) => {
     const base = 'inline-flex items-center justify-center font-semibold uppercase tracking-wide rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[32px]';
@@ -71,6 +75,7 @@ export const Button: React.FC<{
         type={type}
         disabled={disabled}
         onClick={onClick}
+        style={style}
         className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
       >
         {children}

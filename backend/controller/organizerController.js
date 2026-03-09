@@ -188,8 +188,16 @@ export const upsertOrganizer = async (req, res) => {
       facebookId: normalizeFacebookId(req.body?.facebookId),
       twitterHandle: normalizeTwitterHandle(req.body?.twitterHandle),
       emailOptIn: normalizeBoolean(req.body?.emailOptIn, false),
+      brandColor: req.body?.brandColor || null,
       updated_at: new Date().toISOString(),
     };
+
+    // --- CHECK BRANDING LIMIT ---
+    const canCustomBrand = !!(existing?.plan?.features?.enable_custom_branding || existing?.plan?.features?.custom_branding);
+    if (req.body?.brandColor && !canCustomBrand) {
+      // If they try to set a color but don't have the feature, we just ignore it or set to default
+      delete payload.brandColor;
+    }
 
     if (req.body?.profileImageUrl !== undefined) {
       payload.profileImageUrl = normalizeTrimmed(req.body?.profileImageUrl);

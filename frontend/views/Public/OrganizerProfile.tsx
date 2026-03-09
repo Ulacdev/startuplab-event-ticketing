@@ -123,7 +123,8 @@ export const OrganizerProfilePage: React.FC = () => {
             <div className="mb-12">
                 <button
                     onClick={() => navigate(-1)}
-                    className="text-[#2E2E2F] hover:text-[#38BDF2] text-[11px] font-black tracking-widest uppercase flex items-center mb-8 gap-2 transition-colors"
+                    className="hover:opacity-75 text-[11px] font-black tracking-widest uppercase flex items-center mb-8 gap-2 transition-colors"
+                    style={{ color: organizer.brandColor || '#38BDF2' }}
                 >
                     <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
                     BACK
@@ -162,7 +163,8 @@ export const OrganizerProfilePage: React.FC = () => {
                                     {organizer.bio.length > 150 && (
                                         <button
                                             onClick={() => setBioExpanded(!bioExpanded)}
-                                            className="text-[#38BDF2] text-sm font-bold hover:underline mb-6"
+                                            className="text-sm font-bold hover:underline mb-6"
+                                            style={{ color: organizer.brandColor || '#38BDF2' }}
                                         >
                                             {bioExpanded ? 'See less' : 'See more'}
                                         </button>
@@ -173,10 +175,11 @@ export const OrganizerProfilePage: React.FC = () => {
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
                                 <button
                                     onClick={handleFollow}
-                                    className={`px-8 py-3 rounded-xl font-black text-sm transition-all hover:scale-[1.02] active:scale-[0.98] ${following
-                                        ? 'bg-[#00E6FF] text-white shadow-lg'
-                                        : 'bg-[#00D4FF] text-white hover:bg-[#00E6FF] shadow-lg shadow-[#00D4FF]/20'
-                                        }`}
+                                    style={{
+                                        backgroundColor: following ? '#00D4FF' : (organizer.brandColor || '#38BDF2'),
+                                        boxShadow: `0 8px 16px -4px ${(organizer.brandColor || '#38BDF2')}40`
+                                    }}
+                                    className="px-8 py-3 rounded-xl font-black text-sm text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     {following ? 'Following' : 'Follow'}
                                 </button>
@@ -186,7 +189,8 @@ export const OrganizerProfilePage: React.FC = () => {
                                             href={organizer.websiteUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="p-3 rounded-xl bg-[#2E2E2F] text-white hover:bg-[#38BDF2] transition-colors"
+                                            className="p-3 rounded-xl bg-[#2E2E2F] text-white hover:opacity-90 transition-colors"
+                                            style={{ backgroundColor: organizer.brandColor || '#2E2E2F' }}
                                             title="Visit Website"
                                         >
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,7 +215,10 @@ export const OrganizerProfilePage: React.FC = () => {
                         </div>
                     </div>
                     {interactionNotice && (
-                        <div className="mt-8 rounded-2xl border border-[#38BDF2]/30 bg-[#38BDF2]/10 px-4 py-3 text-sm font-semibold text-[#2E2E2F]">
+                        <div
+                            className="mt-8 rounded-2xl border px-4 py-3 text-sm font-semibold text-[#2E2E2F]"
+                            style={{ backgroundColor: `${organizer.brandColor || '#38BDF2'}10`, borderColor: `${organizer.brandColor || '#38BDF2'}30` }}
+                        >
                             {interactionNotice}
                         </div>
                     )}
@@ -227,7 +234,7 @@ export const OrganizerProfilePage: React.FC = () => {
                 {events.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {events.map(event => (
-                            <EventMiniCard key={event.eventId} event={event} />
+                            <EventMiniCard key={event.eventId} event={event} brandColor={organizer.brandColor || '#38BDF2'} />
                         ))}
                     </div>
                 ) : (
@@ -240,7 +247,7 @@ export const OrganizerProfilePage: React.FC = () => {
     );
 };
 
-const EventMiniCard: React.FC<{ event: Event }> = ({ event }) => {
+const EventMiniCard: React.FC<{ event: Event; brandColor: string }> = ({ event, brandColor }) => {
     const navigate = useNavigate();
     const { isAuthenticated } = useUser();
     const { isLiked, toggleLike, canLikeFollow } = useEngagement();
@@ -257,7 +264,8 @@ const EventMiniCard: React.FC<{ event: Event }> = ({ event }) => {
 
     return (
         <Card
-            className="group overflow-hidden border border-[#2E2E2F]/10 rounded-3xl bg-[#F2F2F2] hover:border-[#38BDF2]/40 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:scale-[1.01]"
+            className="group overflow-hidden border border-[#2E2E2F]/10 rounded-3xl bg-[#F2F2F2] transition-all cursor-pointer shadow-sm hover:shadow-xl hover:scale-[1.01]"
+            style={{ borderColor: brandColor ? `${brandColor}40` : '#2E2E2F1A' }}
             onClick={() => navigate(`/events/${event.slug}`)}
         >
             <div className="relative h-48">
@@ -280,7 +288,7 @@ const EventMiniCard: React.FC<{ event: Event }> = ({ event }) => {
                 </p>
                 <div className="flex items-center justify-between mt-auto">
                     <span className="text-[9px] font-black text-[#2E2E2F]/40 uppercase tracking-widest truncate max-w-[150px]">{event.locationText}</span>
-                    <span className="text-[#38BDF2] font-black text-[10px] uppercase tracking-widest group-hover:underline">View Details</span>
+                    <span className="font-black text-[10px] uppercase tracking-widest group-hover:underline" style={{ color: brandColor }}>View Details</span>
                 </div>
             </div>
         </Card>

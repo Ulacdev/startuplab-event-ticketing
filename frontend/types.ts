@@ -42,6 +42,11 @@ export interface OrganizerProfile {
   profileImageUrl?: string | null;
   followersCount: number;
   eventsHostedCount?: number;
+  currentPlanId?: string | null;
+  subscriptionStatus?: string | null;
+  planExpiresAt?: string | null;
+  plan?: AdminPlan | null;
+  brandColor?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -77,15 +82,23 @@ export interface AdminPlan {
   isActive: boolean;
   features: {
     enable_custom_branding: boolean;
+    custom_branding?: boolean;
     enable_discount_codes: boolean;
+    discount_codes?: boolean;
     enable_advanced_reports: boolean;
+    advanced_reports?: boolean;
     enable_priority_support: boolean;
+    priority_support?: boolean;
   };
   limits: {
     max_events: number | string;
-    max_active_events: number | string;
+    max_active_events?: number | string;
+    max_total_events?: number | string;
     max_staff_accounts: number | string;
-    max_attendees_per_month: number | string;
+    monthly_attendees?: number | string;
+    max_attendees_per_month?: number | string;
+    max_tickets_per_event?: number | string;
+    max_attendees_per_event?: number | string;
   };
   created_at?: string;
   updated_at?: string;
