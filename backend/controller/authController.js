@@ -34,48 +34,52 @@ export const register = async (req, res) => {
     // --- GET DEFAULT PLAN ---
     const { data: defaultPlan } = await db
       .from('plans')
-      .select('planId, trialDays')
+      .select('planId, trialDays, monthlyPrice, currency')
       .eq('isDefault', true)
+      .eq('isActive', true)
       .maybeSingle();
 
-    // Create user in Supabase Auth using admin API (service role key)
-    let authData, authError;
-    ({ data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // Create signup verification link in Supabase Auth
+    const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'signup',
       email: email.toLowerCase().trim(),
       password,
-      email_confirm: true,
-    }));
+      options: {
+        redirectTo: `${frontendUrl}/#/login`
+      }
+    });
 
-    // Handle case where auth user exists but users table row was deleted (orphaned auth user)
-    if (authError && (authError.message?.includes('already been registered') || authError.code === 'email_exists')) {
-      console.log("Auth user exists but no users row — cleaning up orphaned auth user for:", email);
-      // Find and delete the orphaned auth user, then recreate
-      try {
+    if (linkError) {
+      // Check for orphan auth user again if first check missed it
+      if (linkError.message?.includes('already registered') || linkError.code === 'email_exists') {
         const { data: listData } = await supabase.auth.admin.listUsers();
         const orphanedUser = listData?.users?.find(u => u.email === email.toLowerCase().trim());
         if (orphanedUser) {
           await supabase.auth.admin.deleteUser(orphanedUser.id);
-          // Recreate fresh
-          ({ data: authData, error: authError } = await supabase.auth.admin.createUser({
+          // Retry generateLink
+          const retry = await supabase.auth.admin.generateLink({
+            type: 'signup',
             email: email.toLowerCase().trim(),
             password,
-            email_confirm: true,
-          }));
+            options: { redirectTo: `${frontendUrl}/#/login` }
+          });
+          if (retry.error) return res.status(400).json({ message: retry.error.message });
+          // Link data from retry
+          linkData.properties = retry.data.properties;
+          linkData.user = retry.data.user;
         }
-      } catch (cleanupErr) {
-        console.error("Orphan cleanup error:", cleanupErr);
+      } else {
+        return res.status(400).json({ message: linkError.message || "Failed to create account" });
       }
     }
 
-    if (authError) {
-      console.error("Supabase auth error:", authError);
-      return res.status(400).json({ message: authError.message || "Failed to create account" });
+    const userId = linkData.user?.id;
+    if (!userId) {
+      return res.status(500).json({ message: "Failed to create auth user or generate verification link" });
     }
 
-    const userId = authData.user?.id;
-    if (!userId) {
-      return res.status(500).json({ message: "Failed to create auth user" });
-    }
+    const verificationLink = linkData.properties?.action_link;
 
     // Insert into users table with role ORGANIZER
     let { data: userData, error: dbError } = await db
@@ -98,26 +102,69 @@ export const register = async (req, res) => {
       return res.status(500).json({ message: "Failed to create user record" });
     }
 
-    // --- CREATE ORGANIZER PROFILE WITH DEFAULT PLAN ---
-    const trialDays = defaultPlan?.trialDays || 0;
-    const planExpiresAt = trialDays > 0
-      ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString()
-      : null;
+    // --- CREATE ORGANIZER PROFILE & AUTO-ASSIGN DEFAULT PLAN ---
+    // If a default plan exists (e.g., 'Starter' with $0 price), assign it immediately.
+    let currentPlanId = null;
+    let subscriptionStatus = 'pending';
+    let planExpiresAt = null;
 
-    const { error: orgError } = await db
+    if (defaultPlan) {
+      currentPlanId = defaultPlan.planId;
+      const trialDays = Number(defaultPlan.trialDays || 0);
+      const monthlyPrice = Number(defaultPlan.monthlyPrice || 0);
+
+      // If its a trial plan, mark as trial
+      if (trialDays > 0) {
+        subscriptionStatus = 'trial';
+        planExpiresAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+      }
+      // If its a 0-price plan, mark as active
+      else if (monthlyPrice === 0) {
+        subscriptionStatus = 'active';
+        // Permanent free plans have no natural expiry, or we can set it to 10 years out.
+        const longFuture = new Date();
+        longFuture.setFullYear(longFuture.getFullYear() + 10);
+        planExpiresAt = longFuture.toISOString();
+      }
+    }
+
+    const { data: orgData, error: orgError } = await db
       .from('organizers')
       .insert({
         ownerUserId: userId,
         organizerName: name.trim() || 'My Organization',
-        currentPlanId: defaultPlan?.planId || null,
-        subscriptionStatus: trialDays > 0 ? 'trial' : 'active',
-        planExpiresAt
-      });
+        currentPlanId,
+        subscriptionStatus,
+        planExpiresAt,
+        isOnboarded: false
+      })
+      .select()
+      .single();
 
     if (orgError) {
-      console.error("Failed to create default organizer profile:", orgError);
-    }
+      console.log("❌ Failed to create organizer profile:", orgError.message);
+    } else if (orgData && currentPlanId && subscriptionStatus !== 'pending') {
+      // ✅ Also create a formal subscription record for documentation/history
+      const { error: subErr } = await db
+        .from('organizersubscriptions')
+        .insert({
+          organizerId: orgData.organizerId,
+          planId: currentPlanId,
+          billingInterval: 'monthly',
+          status: subscriptionStatus,
+          priceAmount: Number(defaultPlan.monthlyPrice || 0),
+          currency: defaultPlan.currency || 'PHP',
+          startDate: new Date().toISOString(),
+          endDate: planExpiresAt,
+          trialEndDate: subscriptionStatus === 'trial' ? planExpiresAt : null,
+        });
 
+      if (subErr) {
+        console.log("❌ Failed to create auto-subscription record:", subErr.message);
+      } else {
+        console.log(`✅ [Auth] Auto-assigned '${subscriptionStatus}' subscription to plan '${currentPlanId}' for user ${userId}`);
+      }
+    }
 
     // Safety net: if any DB default/trigger rewrote role to USER, force ORGANIZER.
     const persistedRole = String(userData?.role || '').toUpperCase();
@@ -134,7 +181,6 @@ export const register = async (req, res) => {
     }
 
     // Notify User via the Admin's Professional SMTP settings (Fallback mechanism)
-    // Check if admin SMTP is configured - if not, show error
     const adminSmtpConfig = await getAdminSmtpConfig();
 
     if (!adminSmtpConfig) {
@@ -142,34 +188,31 @@ export const register = async (req, res) => {
       console.warn('[Auth] Admin SMTP not configured - welcome email will not be sent.');
     } else {
       try {
-        const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-        const loginUrl = `${frontendUrl}/#/login`;
-
         await notifyUserByPreference({
           recipientUserId: userId,
           recipientFallbackEmail: email.toLowerCase().trim(),
           type: 'ADMIN_ALERT', // Using system template
-          title: 'Welcome to StartupLab!',
-          message: `Hello ${name.trim()}, your account for StartupLab has been created as an ${ORGANIZER_ROLE}. You can now sign in using your credentials.`,
+          title: 'Welcome to StartupLab! Please Verify Your Email',
+          message: `Hello ${name.trim()}, your account for StartupLab has been created. Before you can start organizing events, please verify your email using the link below.`,
           metadata: {
-            tag: 'WELCOME',
-            typeIcon: '🚀',
-            actionLabel: 'SIGN IN TO DASHBOARD',
-            actionUrl: loginUrl,
+            tag: 'VERIFICATION',
+            typeIcon: '📬',
+            actionLabel: 'VERIFY EMAIL & SIGN IN',
+            actionUrl: verificationLink,
           },
           // Force use of admin SMTP config for system emails
           smtpConfigOverride: adminSmtpConfig
         });
-        console.log(`✅ [Auth] Welcome email queued for ${email} via Admin SMTP.`);
+        console.log(`✅ [Auth] Verification email queued for ${email} via Admin SMTP.`);
       } catch (notifyErr) {
-        console.warn("[Auth] SMTP Welcome notification failed:", notifyErr?.message);
+        console.warn("[Auth] SMTP Verification notification failed:", notifyErr?.message);
         // Fallback to Make.com as a secondary if SMTP is not configured
         try {
           await sendMakeNotification({
             type: 'invite',
             email: email.toLowerCase().trim(),
             name: name.trim(),
-            meta: { inviteLink: `${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/#/login`, role: ORGANIZER_ROLE }
+            meta: { inviteLink: verificationLink, role: ORGANIZER_ROLE }
           });
         } catch (webhookErr) {
           console.warn("Make.com fallback also failed:", webhookErr?.message);
@@ -178,7 +221,7 @@ export const register = async (req, res) => {
     }
 
     return res.status(201).json({
-      message: "Account created successfully! A confirmation email has been sent to your inbox.",
+      message: "Registration successful! A verification link has been sent to your email. You must click it before you can sign in.",
       user: userData
     });
   } catch (err) {

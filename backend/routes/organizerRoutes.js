@@ -6,6 +6,7 @@ import {
   getOrganizerById,
   upsertOrganizer,
   uploadOrganizerImage,
+  uploadOrganizerCoverImage,
   followOrganizer,
   unfollowOrganizer,
   getMyFollowings,
@@ -41,5 +42,8 @@ router.delete('/organizer/:id/follow', authMiddleware, unfollowOrganizer);
 
 // POST /api/organizer/image
 router.post('/organizer/image', authMiddleware, upload.single('image'), uploadOrganizerImage);
+
+// POST /api/organizer/cover
+router.post('/organizer/cover', authMiddleware, upload.single('image'), uploadOrganizerCoverImage);
 
 export default router;

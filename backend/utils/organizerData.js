@@ -291,6 +291,8 @@ export async function getOrCreateOrganizerForUser(ownerUserId) {
     organizerName: fallbackName,
     emailOptIn: false,
     followersCount: 0,
+    subscriptionStatus: 'pending',
+    currentPlanId: null,
     updated_at: new Date().toISOString(),
   };
 

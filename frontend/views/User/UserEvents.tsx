@@ -18,7 +18,9 @@ const BRAND_LOGO_URL = 'https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/obje
 
 const CommentNoticeIcon: React.FC<any> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H7l-4 3v-5.5A8.5 8.5 0 1 1 21 11.5z" />
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12.01" y2="8" />
     </svg>
 );
 
@@ -134,17 +136,18 @@ export const UserEvents: React.FC = () => {
         enableDiscountCodes: false,
         ticketTypes: [] as TicketType[],
     };
-
     const [formData, setFormData] = useState(initialFormData);
     const isPersonalProfileReady = !!name?.trim();
     const isOrganizerProfileReady = !!organizerProfile?.organizerId && !!organizerProfile?.organizerName?.trim();
-    const canStartCreation = isPersonalProfileReady && isOrganizerProfileReady;
+    const isSubscriptionReady = !!organizerProfile?.currentPlanId && organizerProfile?.subscriptionStatus !== 'pending';
+    const canStartCreation = isPersonalProfileReady && isOrganizerProfileReady && isSubscriptionReady;
     const canPublishByTicketRule = initialEventStatus === 'PUBLISHED' || activeEventTicketCount > 0;
     const hasExistingEvents = events.length > 0;
     const hasPublishedEvent = events.some((event) => event.status === 'PUBLISHED');
     const workflowCompletedCount = [
         isPersonalProfileReady,
         isOrganizerProfileReady,
+        isSubscriptionReady,
         hasExistingEvents,
         hasPublishedEvent,
     ].filter(Boolean).length;
@@ -323,6 +326,11 @@ export const UserEvents: React.FC = () => {
         if (!isOrganizerProfileReady) {
             setNotification({ message: 'Set up your organization profile first before creating events.', type: 'error' });
             navigate('/user-settings?tab=organizer');
+            return;
+        }
+        if (!isSubscriptionReady) {
+            setNotification({ message: 'You need to choose a plan (free or paid) before you can start creating events.', type: 'error' });
+            navigate('/subscription');
             return;
         }
 
@@ -709,7 +717,7 @@ export const UserEvents: React.FC = () => {
                             title="Show Organizer Event Workflow guide"
                             className="h-[38px] w-[38px] shrink-0 rounded-xl border border-[#2E2E2F]/20 bg-[#F2F2F2] text-[#2E2E2F]/70 hover:text-[#2E2E2F] hover:border-[#38BDF2]/40 hover:bg-[#38BDF2]/10 transition-colors flex items-center justify-center"
                         >
-                            <CommentNoticeIcon className="w-4 h-4" />
+                            <ICONS.Info className="w-4 h-4" />
                         </button>
                         {organizerProfile && (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#2E2E2F]/10 rounded-xl shadow-sm ml-2">

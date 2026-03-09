@@ -39,6 +39,7 @@ import { UserSettings } from './views/User/UserSettings';
 import { UserEvents } from './views/User/UserEvents';
 import { UserHome } from './views/User/UserHome';
 import { OrganizerSubscription } from './views/User/OrganizerSubscription';
+import WelcomeView from './views/User/WelcomeView';
 import { SubscriptionSuccess } from './views/User/SubscriptionSuccess';
 import { ONLINE_LOCATION_VALUE } from './components/BrowseEventsNavigator';
 import { ICONS } from './constants';
@@ -140,12 +141,16 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       const data = await apiService.getMyNotifications(25);
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch notifications:', err);
+      if (err?.message?.includes('401')) {
+        clearUser();
+        navigate('/login', { replace: true });
+      }
     } finally {
       setNotificationsLoading(false);
     }
-  }, [isAuthenticated, role, canReceiveNotifications]);
+  }, [isAuthenticated, role, canReceiveNotifications, clearUser, navigate]);
 
   // Mark a single notification as read
   const handleMarkNotificationRead = async (notificationId: string) => {
@@ -961,6 +966,21 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [headerLocating, setHeaderLocating] = React.useState(false);
   const [headerLocationError, setHeaderLocationError] = React.useState('');
   const headerLocationMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const [hasLiveEvents, setHasLiveEvents] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkLive = async () => {
+      try {
+        const live = await apiService.getLiveEvents();
+        setHasLiveEvents(live && live.length > 0);
+      } catch (err) {
+        console.error('Failed to check live status:', err);
+      }
+    };
+    checkLive();
+    const interval = setInterval(checkLive, 60000);
+    return () => clearInterval(interval);
+  }, []);
   const isOrganizer = isAuthenticated && role === UserRole.ORGANIZER;
   const publicMenuMode = isOrganizer ? publicMode : 'attending';
   const showHeaderSearchBar = !isAuthenticated || !isOrganizer || isAttendingView;
@@ -1365,10 +1385,12 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
               className="hidden sm:flex items-center gap-2 px-4 py-2 bg-[#38BDF2] hover:bg-[#38BDF2]/90 text-[#F2F2F2] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(56,189,242,0.4)] transition-all"
             >
               Watch Live
-              <span className="relative flex h-2 w-2 ml-0.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F2F2F2] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F2F2F2]"></span>
-              </span>
+              {hasLiveEvents && (
+                <span className="relative flex h-2 w-2 ml-0.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                </span>
+              )}
             </Link>
 
             {isAuthenticated ? (
@@ -1673,12 +1695,16 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       const data = await apiService.getMyNotifications(25);
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch notifications:', err);
+      if (err?.message?.includes('401')) {
+        clearUser();
+        navigate('/login', { replace: true });
+      }
     } finally {
       setNotificationsLoading(false);
     }
-  }, [email, role, canReceiveNotifications]);
+  }, [email, role, canReceiveNotifications, clearUser, navigate]);
 
   // Mark a single notification as read
   const handleMarkNotificationRead = async (notificationId: string) => {
@@ -1739,28 +1765,44 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
   React.useEffect(() => {
     const syncSession = async () => {
+      const isUserPortalRoute = [
+        '/user-home', '/my-events', '/user-settings', '/organizer-settings',
+        '/account-settings', '/user/attendees', '/user/checkin', '/user/archive',
+        '/user/reports', '/dashboard', '/subscription'
+      ].includes(location.pathname);
+      if (!isUserPortalRoute) return;
+
       try {
         const res = await fetch(`${API}/api/whoAmI`, { credentials: 'include', cache: 'no-store' });
-        if (res.ok) {
-          const me = await res.json().catch(() => null);
-          const normalizedRole = normalizeUserRole(me?.role);
-          if (normalizedRole && me?.email) {
-            setUser({
-              role: normalizedRole,
-              email: me.email,
-              name: me.name ?? null,
-              imageUrl: me.imageUrl ?? null,
-              canViewEvents: me.canViewEvents ?? true,
-              canEditEvents: me.canEditEvents ?? true,
-              canManualCheckIn: me.canManualCheckIn ?? true,
-              canReceiveNotifications: me.canReceiveNotifications ?? true
-            });
-          }
+        if (!res.ok) {
+          clearUser();
+          navigate('/login', { replace: true });
+          return;
         }
-      } catch { }
+        const me = await res.json().catch(() => null);
+        const normalizedRole = normalizeUserRole(me?.role);
+        if (!normalizedRole || !me?.email) {
+          clearUser();
+          navigate('/login', { replace: true });
+          return;
+        }
+        setUser({
+          role: normalizedRole,
+          email: me.email,
+          name: me.name ?? null,
+          imageUrl: me.imageUrl ?? null,
+          canViewEvents: me.canViewEvents ?? true,
+          canEditEvents: me.canEditEvents ?? true,
+          canManualCheckIn: me.canManualCheckIn ?? true,
+          canReceiveNotifications: me.canReceiveNotifications ?? true
+        });
+      } catch {
+        clearUser();
+        navigate('/login', { replace: true });
+      }
     };
     syncSession();
-  }, []);
+  }, [clearUser, location.pathname, navigate, setUser]);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -1792,6 +1834,34 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       isMounted = false;
     };
   }, [role, location.pathname]);
+
+  // NEW: Onboarding Redirect Logic
+  React.useEffect(() => {
+    const checkOnboarding = async () => {
+      // Only check if they are trying to access organizer-specific routes
+      const isOrganizerRoute = [
+        '/user-home', '/my-events', '/user-settings', '/organizer-settings',
+        '/account-settings', '/user/attendees', '/user/checkin', '/user/archive',
+        '/user/reports', '/dashboard', '/subscription'
+      ].includes(location.pathname);
+
+      if (!isOrganizerRoute) return;
+      if (role !== UserRole.ORGANIZER && role !== UserRole.STAFF) return;
+      if (location.pathname === '/onboarding') return;
+
+      try {
+        const organizer = await apiService.getMyOrganizer();
+        // If they haven't finished the welcome page, send them there
+        if (organizer && !organizer.isOnboarded) {
+          navigate('/onboarding', { replace: true });
+        }
+      } catch (err) {
+        console.error('Onboarding check failed:', err);
+      }
+    };
+
+    checkOnboarding();
+  }, [role, location.pathname, navigate]);
 
   const handleLogout = async () => {
     try {
@@ -2369,6 +2439,7 @@ const App: React.FC = () => (
       <Route path="/pricing" element={<PublicLayout><PricingPage /></PublicLayout>} />
       <Route path="/faq" element={<PublicLayout><FaqPage /></PublicLayout>} />
       <Route path="/refund-policy" element={<PublicLayout><RefundPolicyPage /></PublicLayout>} />
+      <Route path="/onboarding" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><WelcomeView /></RequireRoleRoute>} />
 
       {/* User Portal Routes */}
       <Route path="/user-home" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserHome /></UserPortalLayout></RequireRoleRoute>} />

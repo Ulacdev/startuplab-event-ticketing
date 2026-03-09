@@ -7,6 +7,7 @@ import { Button, Card, PageLoader } from '../../components/Shared';
 import { ICONS } from '../../constants';
 import { useUser } from '../../context/UserContext';
 import { useEngagement } from '../../context/EngagementContext';
+import { getEventCategoryKeys } from '../../utils/eventCategories';
 
 // Helper to handle JSONB image format
 const getImageUrl = (img: any): string => {
@@ -52,7 +53,7 @@ const StreamStatusBanner: React.FC<{ event: Event; isOwner?: boolean }> = ({ eve
   const startAt = event.startAt ? new Date(event.startAt) : null;
   const endAt = event.endAt ? new Date(event.endAt) : null;
   const isLiveByTime = startAt && now >= startAt && (!endAt || now <= endAt);
-  const isLiveStatus = isLiveByTime;
+  const isLiveStatus = isLiveByTime || event.status === 'LIVE';
   const isOnline = event.locationType === 'ONLINE' || event.locationType === 'HYBRID' || isLiveStatus;
   const url = event.streaming_url || event.locationText || '';
   const normalizedUrl = url && !url.startsWith('http') ? `https://${url}` : url;
@@ -177,6 +178,55 @@ const StreamStatusBanner: React.FC<{ event: Event; isOwner?: boolean }> = ({ eve
   );
 };
 
+const CompactEventRow: React.FC<{ event: Event; brandColor: string }> = ({ event, brandColor }) => {
+  const navigate = useNavigate();
+  const minPrice = event.ticketTypes?.length
+    ? Math.min(...event.ticketTypes.map(t => t.priceAmount))
+    : 0;
+
+  return (
+    <div
+      className="group flex items-center justify-between py-6 border-b border-[#2E2E2F]/10 cursor-pointer hover:bg-black/[0.02] active:scale-[0.99] transition-all px-2 -mx-2 rounded-xl"
+      onClick={() => {
+        navigate(`/events/${event.slug}`);
+        window.scrollTo(0, 0);
+      }}
+    >
+      <div className="flex-1 pr-6">
+        <h4 className="text-[17px] font-black text-[#2E2E2F] mb-1 leading-tight group-hover:text-[#38BDF2] transition-colors line-clamp-1">
+          {event.eventName}
+        </h4>
+        <p className="text-[13px] font-bold text-[#2E2E2F]/60 mb-0.5">
+          {formatDate(event.startAt, event.timezone, { weekday: 'short', day: 'numeric', month: 'long' })} • {formatDate(event.startAt, event.timezone, { timeStyle: 'short' })}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {event.locationText && (
+            <p className="text-[12px] font-medium text-[#2E2E2F]/40 line-clamp-1">
+              {event.locationText}
+            </p>
+          )}
+          <p className="text-[12px] font-bold text-[#2E2E2F]/60">
+            {minPrice > 0 ? `Starts at ${minPrice.toFixed(2)} PHP` : 'Free'}
+          </p>
+        </div>
+        {(event as any).trendingRank && (
+          <div className="mt-2 flex items-center gap-1.5 opacity-60">
+            <span className="text-[9px] font-black uppercase tracking-widest text-[#2E2E2F]/40">Promoted</span>
+            <ICONS.Info className="w-2.5 h-2.5 text-[#2E2E2F]/30" />
+          </div>
+        )}
+      </div>
+      <div className="w-24 h-16 sm:w-32 sm:h-20 shrink-0 rounded-xl overflow-hidden border border-[#2E2E2F]/5 shadow-sm">
+        <img
+          src={getImageUrl(event.imageUrl)}
+          alt={event.eventName}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+        />
+      </div>
+    </div>
+  );
+};
+
 export const EventDetails: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -193,6 +243,8 @@ export const EventDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [interactionNotice, setInteractionNotice] = useState('');
   const [isOwnEvent, setIsOwnEvent] = useState(false);
+  const [organizerEvents, setOrganizerEvents] = useState<Event[]>([]);
+  const [recommendedEvents, setRecommendedEvents] = useState<Event[]>([]);
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
@@ -228,6 +280,24 @@ export const EventDetails: React.FC = () => {
         } else {
           setIsOwnEvent(false);
         }
+
+        // Fetch related events
+        if (data) {
+          // More from this organizer
+          if (data.organizerId) {
+            apiService.getEvents(1, 4, '', '', data.organizerId).then(res => {
+              setOrganizerEvents((res.events || []).filter(e => e.eventId !== data.eventId).slice(0, 3));
+            });
+          }
+
+          // Recommended events (Discovery / Random) - Always show broad discovery content
+          apiService.getEvents(1, 50, '', '').then(res => {
+            const allEvents = (res.events || []).filter(e => e.eventId !== data.eventId);
+            // Shuffle to ensure true randomness
+            const shuffled = [...allEvents].sort(() => 0.5 - Math.random());
+            setRecommendedEvents(shuffled.slice(0, 12));
+          });
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -240,20 +310,26 @@ export const EventDetails: React.FC = () => {
   }, [slug, isAuthenticated, role]);
 
   useEffect(() => {
-    if (!event?.organizerId) return;
+    if (!slug) return;
 
-    // Lightweight polling keeps organizer changes visible without manual page refresh.
+    // Refresh event data periodically to capture status changes (e.g. going LIVE)
     const intervalId = window.setInterval(async () => {
       try {
-        const organizer = await apiService.getOrganizerById(event.organizerId as string);
-        setEvent((prev) => (prev ? { ...prev, organizer: organizer || null } : prev));
+        const updated = await apiService.getEventBySlug(slug);
+        if (updated) {
+          setEvent(prev => {
+            if (!prev) return updated;
+            // Preserve local states if needed, but here we just want the latest from server
+            return updated;
+          });
+        }
       } catch {
         // Keep UI stable on transient network errors.
       }
-    }, 15000);
+    }, 30000);
 
     return () => window.clearInterval(intervalId);
-  }, [event?.organizerId]);
+  }, [slug]);
 
   useEffect(() => {
     if (!interactionNotice) return;
@@ -442,10 +518,7 @@ export const EventDetails: React.FC = () => {
 
         <div className="flex flex-col lg:flex-row gap-16 items-start">
           <div className="flex-1 space-y-10">
-
-            {/* Visual Header */}
-
-            {/* Event Profile */}
+            {/* Event Profile Body */}
             <div>
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
                 <h1 className="text-4xl lg:text-5xl font-black text-[#2E2E2F] tracking-tighter leading-tight">
@@ -475,6 +548,7 @@ export const EventDetails: React.FC = () => {
                   </button>
                 </div>
               </div>
+
               {/* Visual Header */}
               <div className="overflow-hidden rounded-[2.5rem] border border-[#2E2E2F]/10">
                 <img
@@ -483,15 +557,17 @@ export const EventDetails: React.FC = () => {
                   className="w-full aspect-video object-cover"
                 />
               </div>
+
               {interactionNotice && (
                 <div
-                  className="mb-4 rounded-xl border px-3 py-2 text-xs font-semibold text-[#2E2E2F]"
+                  className="mt-6 rounded-xl border px-3 py-2 text-xs font-semibold text-[#2E2E2F]"
                   style={{ backgroundColor: `${brandColor}15`, borderColor: `${brandColor}30` }}
                 >
                   {interactionNotice}
                 </div>
               )}
-              <div id="event-schedule-info" className="flex flex-wrap gap-4 mb-12">
+
+              <div id="event-schedule-info" className="flex flex-wrap gap-4 mt-10 mb-12">
                 <div className="flex items-center text-[#2E2E2F]/80 bg-[#F2F2F2] px-4 py-2 rounded-2xl border border-[#2E2E2F]/10 text-[12px]">
                   <ICONS.Calendar className="w-4 h-4 mr-3" style={{ color: brandColor }} />
                   {formatRange(event.startAt, event.endAt, event.timezone)}{event.timezone ? ` TZ: ${event.timezone}` : ''}
@@ -518,15 +594,16 @@ export const EventDetails: React.FC = () => {
                 )}
               </div>
 
-
-              <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#2E2E2F]/10">
+              {/* Event Description */}
+              <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#2E2E2F]/10 mb-10">
                 <h3 className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.4em] mb-6">EVENT DETAILS</h3>
                 <p className="text-[#2E2E2F]/70 leading-relaxed text-base font-medium whitespace-pre-wrap">
                   {event.description}
                 </p>
               </div>
 
-              <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#2E2E2F]/10">
+              {/* Organizer Card */}
+              <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#2E2E2F]/10 mb-10">
                 <h3 className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.4em] mb-6">ORGANIZED BY</h3>
                 <div className="rounded-[1.5rem] border border-[#2E2E2F]/10 bg-[#F2F2F2] p-5 flex flex-col md:flex-row md:items-center gap-5">
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-[#2E2E2F] text-[#F2F2F2] flex items-center justify-center text-xl font-bold shrink-0">
@@ -617,7 +694,7 @@ export const EventDetails: React.FC = () => {
                   </div>
                 )}
 
-                {/* Live Stream Section - Consolidated at bottom of Organized By card */}
+                {/* Live Stream Section */}
                 {(() => {
                   const now = new Date();
                   const startAt = event.startAt ? new Date(event.startAt) : null;
@@ -635,8 +712,9 @@ export const EventDetails: React.FC = () => {
                   )}
               </div>
 
+              {/* Location Card */}
               {hasPhysicalLocation && (
-                <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#2E2E2F]/10">
+                <div className="p-8 bg-[#F2F2F2] rounded-[2rem] border border-[#2E2E2F]/10 mb-10">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <h3 className="text-[10px] font-black text-[#2E2E2F]/60 uppercase tracking-[0.4em]">EXACT LOCATION</h3>
                     <a
@@ -765,37 +843,82 @@ export const EventDetails: React.FC = () => {
             </Card>
           </div>
         </div>
-      </div>
 
-      {
-        !isOwnEvent && (
-          <div
-            className="fixed inset-x-0 z-[60] px-3 sm:px-4 lg:hidden pointer-events-none"
-            style={{ bottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
-          >
-            <div className="pointer-events-auto mx-auto w-full max-w-xl max-h-[calc(100dvh-7.5rem)] overflow-y-auto overscroll-contain rounded-[2rem] border border-[#2E2E2F]/15 bg-[#F2F2F2]/98 backdrop-blur px-6 py-6 shadow-[0_18px_38px_-18px_rgba(46,46,47,0.35)]">
-              <p className="text-xl font-black text-[#2E2E2F] tracking-tight">
-                Get Tickets
-              </p>
-              <div className="mt-5 border-t border-[#2E2E2F]/10" />
-              <Button
-                className="w-full mt-5"
-                disabled={totalQuantity === 0}
-                onClick={handleRegister}
-                style={{ backgroundColor: brandColor }}
-              >
-                {ctaLabel}
-              </Button>
-              <div className="mt-4 flex items-center justify-center gap-2 opacity-40">
-                <ICONS.CreditCard className="w-4 h-4" />
-                <p className="text-[9px] text-center font-black uppercase tracking-[0.3em] text-[#2E2E2F]">
-                  SECURE HITPAY CHECKOUT
-                </p>
+        {/* Global Related Content Sections - Span Full Width Below Main Content */}
+        <div className="mt-32 space-y-24">
+          {organizerEvents.length > 0 && (
+            <div>
+              <h2 className="text-3xl font-black text-[#2E2E2F] tracking-tighter mb-10 flex items-center gap-4">
+                More events from this organizer
+                <div className="h-px flex-1 bg-[#2E2E2F]/10" />
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12">
+                {organizerEvents.map(e => (
+                  <CompactEventRow key={e.eventId} event={e} brandColor={brandColor} />
+                ))}
               </div>
             </div>
+          )}
+
+          {/* Recommended Events - Always Visible */}
+          <div>
+            <h2 className="text-3xl font-black text-[#2E2E2F] tracking-tighter mb-10 flex items-center gap-4">
+              You might also like...
+              <div className="h-px flex-1 bg-[#2E2E2F]/10" />
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12">
+              {recommendedEvents.length > 0 ? (
+                recommendedEvents.map(e => (
+                  <CompactEventRow key={e.eventId} event={e} brandColor={brandColor} />
+                ))
+              ) : (
+                <div className="col-span-full py-12 text-center bg-[#F2F2F2] rounded-[2rem] border border-dashed border-[#2E2E2F]/20">
+                  <p className="text-[#2E2E2F]/40 font-bold uppercase tracking-widest text-[11px]">Searching for more interesting sessions...</p>
+                </div>
+              )}
+            </div>
+            {recommendedEvents.length > 0 && (
+              <div className="mt-12 flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/browse-events')}
+                  className="rounded-full px-10 border-[#2E2E2F]/10 text-[#2E2E2F] font-black uppercase tracking-widest text-[11px] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]"
+                >
+                  Explore All Events
+                </Button>
+              </div>
+            )}
           </div>
-        )
-      }
-    </div >
+        </div>
+      </div>
+
+      {!isOwnEvent && (
+        <div
+          className="fixed inset-x-0 z-[60] px-3 sm:px-4 lg:hidden pointer-events-none"
+          style={{ bottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        >
+          <div className="pointer-events-auto mx-auto w-full max-w-xl max-h-[calc(100dvh-7.5rem)] overflow-y-auto overscroll-contain rounded-[2rem] border border-[#2E2E2F]/15 bg-[#F2F2F2]/98 backdrop-blur px-6 py-6 shadow-[0_18px_38px_-18px_rgba(46,46,47,0.35)]">
+            <p className="text-xl font-black text-[#2E2E2F] tracking-tight">
+              Get Tickets
+            </p>
+            <div className="mt-5 border-t border-[#2E2E2F]/10" />
+            <Button
+              className="w-full mt-5"
+              disabled={totalQuantity === 0}
+              onClick={handleRegister}
+              style={{ backgroundColor: brandColor }}
+            >
+              {ctaLabel}
+            </Button>
+            <div className="mt-4 flex items-center justify-center gap-2 opacity-40">
+              <ICONS.CreditCard className="w-4 h-4" />
+              <p className="text-[9px] text-center font-black uppercase tracking-[0.3em] text-[#2E2E2F]">
+                SECURE HITPAY CHECKOUT
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };

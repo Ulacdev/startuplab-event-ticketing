@@ -1,6 +1,5 @@
 import express from 'express';
 import {
-  listTickets,
   getTicketsByOrder,
   getTicketById,
   createTicket,
@@ -16,7 +15,7 @@ import { authMiddleware } from '../middleware/auth.js';
 const router = express.Router();
 
 // GET /api/tickets
-router.get('/', authMiddleware, listTickets);
+// router.get('/', authMiddleware, listTickets); // Security: disabled
 
 // GET /api/tickets/order/:orderId
 router.get('/order/:orderId', getTicketsByOrder);

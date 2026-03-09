@@ -251,6 +251,23 @@ export const apiService = {
     return { publicUrl: data.publicUrl, organizer: data.organizer || null };
   },
 
+  uploadOrganizerCoverImage: async (file: File): Promise<{ publicUrl: string; organizer?: OrganizerProfile | null }> => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const res = await fetch(`${API_BASE}/api/organizer/cover`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    });
+    if (!res.ok) {
+      const errorPayload = await res.json().catch(() => ({}));
+      throw new Error(errorPayload?.error || `Failed to upload organizer cover image: ${res.status}`);
+    }
+    const data = await res.json();
+    return { publicUrl: data.publicUrl, organizer: data.organizer || null };
+  },
+
   getMyFollowingOrganizerIds: async (): Promise<string[]> => {
     const res = await fetch(`${API_BASE}/api/organizer/followings`, {
       credentials: 'include',

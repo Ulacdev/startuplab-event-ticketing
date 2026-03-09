@@ -40,6 +40,7 @@ export interface OrganizerProfile {
   twitterHandle?: string | null;
   emailOptIn: boolean;
   profileImageUrl?: string | null;
+  coverImageUrl?: string | null;
   followersCount: number;
   eventsHostedCount?: number;
   currentPlanId?: string | null;
@@ -47,6 +48,8 @@ export interface OrganizerProfile {
   planExpiresAt?: string | null;
   plan?: AdminPlan | null;
   brandColor?: string | null;
+  isOnboarded: boolean;
+  isVerified?: boolean;
   created_at?: string;
   updated_at?: string;
 }

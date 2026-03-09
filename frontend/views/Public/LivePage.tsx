@@ -43,8 +43,10 @@ export const LivePage: React.FC = () => {
             try {
                 const data = await apiService.getLiveEvents();
                 setEvents(data);
-                if (data.length > 0) {
+                if (data.length > 0 && !currentEvent) {
                     setCurrentEvent(data[0]);
+                } else if (data.length === 0) {
+                    setCurrentEvent(null);
                 }
             } catch (err) {
                 console.error('Failed to fetch live events:', err);
@@ -53,7 +55,9 @@ export const LivePage: React.FC = () => {
             }
         };
         fetchLive();
-    }, []);
+        const interval = setInterval(fetchLive, 60000);
+        return () => clearInterval(interval);
+    }, [currentEvent]);
 
     if (loading) return <PageLoader label="Loading Live Broadcasts..." variant="page" />;
 

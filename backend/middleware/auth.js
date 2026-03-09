@@ -26,11 +26,15 @@ function setSessionCookies(res, { access_token, refresh_token }) {
 async function resolveUserFromAccess(accessToken) {
   const authClient = createAuthClient(accessToken);
   const { data, error } = await authClient.auth.getUser(accessToken);
-  if (error || !data?.user) throw new Error(error?.message || "User not found");
+  if (error || !data?.user) {
+    const msg = error?.message || "User not found";
+    const err = new Error(msg);
+    err.status = 401;
+    err.isAuthError = true;
+    throw err;
+  }
   return data.user;
 }
-
-
 
 export const authMiddleware = async (req, res, next) => {
   try {
@@ -40,25 +44,22 @@ export const authMiddleware = async (req, res, next) => {
     // Check for Bearer token first (React Native)
     const authHeader = req.headers.authorization;
     const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    
+
     if (bearerToken) {
-      // Mobile request with Bearer token - validate directly
       try {
         const user = await resolveUserFromAccess(bearerToken);
         req.user = user;
-        req.isMobileRequest = true; // Flag to identify mobile requests
-        console.log("📱 Auth: Bearer token valid; user:", user.id);
+        req.isMobileRequest = true;
         return next();
       } catch (err) {
-        return res.status(401).json({ error: "Invalid access token" });
+        return res.status(401).json({ error: err.message || "Invalid access token" });
       }
     }
 
     // Fall back to cookie-based auth (React web)
-    const accessToken = req.cookies?.access_token; // 1h
-    const refreshToken = req.cookies?.refresh_token; // 14d
+    const accessToken = req.cookies?.access_token;
+    const refreshToken = req.cookies?.refresh_token;
 
-    // No access token
     if (!accessToken) {
       if (!refreshToken) {
         return res.status(401).json({ error: "No tokens provided" });
@@ -73,7 +74,6 @@ export const authMiddleware = async (req, res, next) => {
       setSessionCookies(res, session);
       const user = await resolveUserFromAccess(session.access_token);
       req.user = user;
-      console.log("🌐 Auth: refreshed via missing access token; user:", user.id);
       return next();
     }
 
@@ -82,7 +82,7 @@ export const authMiddleware = async (req, res, next) => {
     try {
       decoded = jwtDecode(accessToken);
     } catch (e) {
-      console.warn("Auth: decode failed; will attempt refresh");
+      console.warn("Auth: decode failed; checking via refresh");
     }
     const now = Math.floor(Date.now() / 1000);
     const buffer = 60;
@@ -101,17 +101,38 @@ export const authMiddleware = async (req, res, next) => {
       setSessionCookies(res, session);
       const user = await resolveUserFromAccess(session.access_token);
       req.user = user;
-      console.log("♻️ Auth: token auto-refreshed; user:", user.id);
       return next();
     }
 
-    // Access token valid; verify user
-    const user = await resolveUserFromAccess(accessToken);
-    req.user = user;
-    console.log("🌐 Auth: valid access; user:", user.id);
-    return next();
+    // Access token valid locally; verify user in Supabase
+    try {
+      const user = await resolveUserFromAccess(accessToken);
+      req.user = user;
+      return next();
+    } catch (err) {
+      // If session is missing/invalid but we have a refresh token, try one last time to refresh
+      if (err.message?.includes('session') || err.message?.includes('missing')) {
+        if (refreshToken) {
+          console.log("♻️ Auth: Session missing but refresh token exists; attempting auto-repair");
+          const authClient = createAuthClient();
+          const { data, error: refreshErr } = await authClient.auth.refreshSession({ refresh_token: refreshToken });
+          if (!refreshErr && data?.session) {
+            setSessionCookies(res, data.session);
+            req.user = await resolveUserFromAccess(data.session.access_token);
+            return next();
+          } else {
+            console.warn("❌ Auth: auto-repair failed:", refreshErr?.message || "No session returned");
+          }
+        }
+      }
+      console.warn("❌ Auth: resolveUser failed:", err.message);
+      return res.status(401).json({ error: err.message || "Authentication failed" });
+    }
 
   } catch (err) {
+    if (err.isAuthError) {
+      return res.status(401).json({ error: err.message });
+    }
     console.error("❌ Auth middleware error:", err);
     return res.status(500).json({ error: "Server error during authentication" });
   }

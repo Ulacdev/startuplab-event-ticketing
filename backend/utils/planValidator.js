@@ -60,10 +60,21 @@ export const checkPlanLimits = async (organizerId, featureKey, requestedValue = 
 
         const { plan, subscriptionStatus, planExpiresAt } = organizer;
 
+        // 1.8. Strict block for new users without a plan selection
+        if (subscriptionStatus === 'pending' || !organizer.currentPlanId) {
+            return {
+                allowed: false,
+                message: "You must choose a plan (free or paid) before you can perform this action. Redirecting to plans page...",
+                code: 'SUBSCRIPTION_REQUIRED',
+                requiresSubscription: true
+            };
+        }
+
         // 2. Determine if the subscription is currently valid
         const isNotExpired = !planExpiresAt || new Date(planExpiresAt) > new Date();
         const isSubscriptionLive = (subscriptionStatus === 'active' || subscriptionStatus === 'trial' || subscriptionStatus === 'free');
         const isActive = isSubscriptionLive && isNotExpired;
+
 
         // Base defaults
         const defaultLimits = {

@@ -1,18 +1,8 @@
 import supabase from '../database/db.js';
 import { logAudit } from '../utils/auditLogger.js';
 
-export const listTickets = async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('tickets')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json(data || []);
-  } catch (err) {
-    return res.status(500).json({ error: err?.message || 'Unexpected error' });
-  }
-};
+// listTickets removed for security as it was exposing entire database
+
 
 // GET /api/tickets/registrations?eventId=...
 export const getRegistrationsByEvent = async (req, res) => {

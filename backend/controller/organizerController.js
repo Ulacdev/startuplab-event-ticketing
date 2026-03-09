@@ -189,6 +189,8 @@ export const upsertOrganizer = async (req, res) => {
       twitterHandle: normalizeTwitterHandle(req.body?.twitterHandle),
       emailOptIn: normalizeBoolean(req.body?.emailOptIn, false),
       brandColor: req.body?.brandColor || null,
+      isOnboarded: normalizeBoolean(req.body?.isOnboarded, existing?.isOnboarded || false),
+      coverImageUrl: normalizeTrimmed(req.body?.coverImageUrl) || existing?.coverImageUrl || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -404,6 +406,64 @@ export const uploadOrganizerImage = async (req, res) => {
         error: 'Organizer feature is not initialized. Run backend/database/organizers.sql first.',
       });
     }
+    return res.status(500).json({ error: err?.message || 'Unexpected error' });
+  }
+};
+
+export const uploadOrganizerCoverImage = async (req, res) => {
+  try {
+    const ownerUserId = req.user?.id;
+    const file = req.file;
+
+    if (!ownerUserId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!file) return res.status(400).json({ error: 'Image file is required' });
+    if (!ALLOWED_IMAGE_TYPES.has(file.mimetype || '')) {
+      return res.status(400).json({ error: 'Only JPEG and PNG images are allowed' });
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      return res.status(400).json({ error: 'Image must be 10MB or smaller' });
+    }
+
+    const extFromName = path.extname(file.originalname || '').toLowerCase();
+    const ext = extFromName === '.png' ? '.png' : '.jpg';
+    const fileName = `${ownerUserId}/cover_${crypto.randomUUID()}${ext}`;
+    const filePath = `organizers/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) return res.status(500).json({ error: uploadError.message });
+
+    const { data: publicData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
+    const publicUrl = publicData?.publicUrl;
+    if (!publicUrl) return res.status(500).json({ error: 'Failed to generate public URL' });
+
+    const existing = await getOrganizerByOwnerUserId(ownerUserId);
+    let organizer = existing;
+
+    if (existing?.organizerId) {
+      const { data, error } = await supabase
+        .from('organizers')
+        .update({ coverImageUrl: publicUrl, updated_at: new Date().toISOString() })
+        .eq('organizerId', existing.organizerId)
+        .select('*')
+        .single();
+
+      if (error) return res.status(500).json({ error: error.message });
+      const counts = await getEventsHostedCounts([data.organizerId]);
+      organizer = serializeOrganizerRecord(data, counts.get(data.organizerId) || 0);
+    }
+
+    return res.json({
+      publicUrl,
+      path: filePath,
+      organizer,
+    });
+  } catch (err) {
     return res.status(500).json({ error: err?.message || 'Unexpected error' });
   }
 };

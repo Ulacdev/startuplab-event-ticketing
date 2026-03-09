@@ -18,6 +18,7 @@ type FormState = {
   twitterHandle: string;
   emailOptIn: boolean;
   profileImageUrl: string;
+  coverImageUrl: string;
   brandColor: string;
 };
 
@@ -37,6 +38,7 @@ const toFormState = (profile: OrganizerProfile | null, fallbackName: string): Fo
   twitterHandle: profile?.twitterHandle || '',
   emailOptIn: !!profile?.emailOptIn,
   profileImageUrl: profile?.profileImageUrl || '',
+  coverImageUrl: profile?.coverImageUrl || '',
   brandColor: profile?.brandColor || '#38BDF2',
 });
 
@@ -52,6 +54,7 @@ export const OrganizerSettings: React.FC = () => {
   const [profile, setProfile] = React.useState<OrganizerProfile | null>(null);
   const [formData, setFormData] = React.useState<FormState>(toFormState(null, name || ''));
   const [localPreviewUrl, setLocalPreviewUrl] = React.useState('');
+  const [localCoverPreviewUrl, setLocalCoverPreviewUrl] = React.useState('');
   const [notification, setNotification] = React.useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const canCustomBrand = !!(profile?.plan?.features?.enable_custom_branding || profile?.plan?.features?.custom_branding);
@@ -84,18 +87,11 @@ export const OrganizerSettings: React.FC = () => {
   }, [name]);
 
   React.useEffect(() => {
-    if (!notification) return;
-    const timer = window.setTimeout(() => setNotification(null), 4000);
-    return () => window.clearTimeout(timer);
-  }, [notification]);
-
-  React.useEffect(() => {
     return () => {
-      if (localPreviewUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(localPreviewUrl);
-      }
+      if (localPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(localPreviewUrl);
+      if (localCoverPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(localCoverPreviewUrl);
     };
-  }, [localPreviewUrl]);
+  }, [localPreviewUrl, localCoverPreviewUrl]);
 
   const handleFormChange = (field: keyof FormState, value: string | boolean) => {
     setFormData((prev) => ({
@@ -143,7 +139,36 @@ export const OrganizerSettings: React.FC = () => {
     await handleFileUpload(file);
   };
 
-  const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+  const handleCoverFileUpload = async (file: File) => {
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      setNotification({ message: 'Only JPEG and PNG images are allowed.', type: 'error' });
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      setNotification({ message: 'Image must be 10MB or smaller.', type: 'error' });
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setLocalCoverPreviewUrl(previewUrl);
+    setUploading(true);
+
+    try {
+      const { publicUrl, organizer } = await apiService.uploadOrganizerCoverImage(file);
+      setFormData((prev) => ({ ...prev, coverImageUrl: publicUrl }));
+      if (organizer) setProfile(organizer);
+      setNotification({ message: 'Cover image uploaded successfully.', type: 'success' });
+    } catch (error) {
+      setNotification({
+        message: extractErrorMessage(error, 'Cover image upload failed.'),
+        type: 'error',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = async (event: React.DragEvent<HTMLDivElement>, isCover = false) => {
     if (!canCustomBrand) {
       event.preventDefault();
       event.stopPropagation();
@@ -157,7 +182,12 @@ export const OrganizerSettings: React.FC = () => {
 
     const file = event.dataTransfer.files?.[0];
     if (!file) return;
-    await handleFileUpload(file);
+
+    if (isCover) {
+      await handleCoverFileUpload(file);
+    } else {
+      await handleFileUpload(file);
+    }
   };
 
   const handleSave = async (event: React.FormEvent) => {
@@ -176,6 +206,7 @@ export const OrganizerSettings: React.FC = () => {
         twitterHandle: formData.twitterHandle.trim() || null,
         emailOptIn: formData.emailOptIn,
         profileImageUrl: formData.profileImageUrl || null,
+        coverImageUrl: formData.coverImageUrl || null,
         brandColor: formData.brandColor || null,
       };
 
@@ -214,58 +245,77 @@ export const OrganizerSettings: React.FC = () => {
       <form onSubmit={handleSave} className="space-y-6">
         <Card className="p-8 rounded-[2rem] border-[#2E2E2F]/10 bg-[#F2F2F2]">
           <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8 items-start">
-            <div className="space-y-3">
-              <label className="text-[11px] font-semibold text-[#2E2E2F]/60 uppercase tracking-wide">Profile Image</label>
-              <div
-                className={`relative rounded-[1.5rem] border-2 border-dashed ${dragActive ? 'border-[#38BDF2] bg-[#38BDF2]/10' : 'border-[#2E2E2F]/20 bg-[#F2F2F2]'
-                  } p-4 transition-colors`}
-                onDragEnter={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setDragActive(true);
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setDragActive(true);
-                }}
-                onDragLeave={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setDragActive(false);
-                }}
-                onDrop={handleDrop}
-              >
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-[11px] font-semibold text-[#2E2E2F]/60 uppercase tracking-wide">Cover Photo</label>
                 <div
-                  className="aspect-square rounded-2xl overflow-hidden bg-[#F2F2F2] border border-[#2E2E2F]/10 flex items-center justify-center cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
+                  className={`relative rounded-[1.5rem] border-2 border-dashed ${dragActive ? 'border-[#38BDF2] bg-[#38BDF2]/10' : 'border-[#2E2E2F]/20 bg-[#F2F2F2]'
+                    } p-4 transition-colors group cursor-pointer`}
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/jpeg,image/png';
+                    input.onchange = (e: any) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleCoverFileUpload(file);
+                    };
+                    input.click();
+                  }}
+                  onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                  onDragLeave={() => setDragActive(false)}
+                  onDrop={(e) => handleDrop(e, true)}
                 >
-                  {displayImageUrl ? (
-                    <img src={displayImageUrl} alt="Organizer profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-4xl font-black text-[#2E2E2F]/25">{fallbackInitial}</span>
+                  <div className="aspect-[3/1] rounded-2xl overflow-hidden bg-[#F2F2F2] border border-[#2E2E2F]/10 flex items-center justify-center">
+                    {formData.coverImageUrl || localCoverPreviewUrl ? (
+                      <img src={formData.coverImageUrl || localCoverPreviewUrl} alt="Cover" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center">
+                        <ICONS.Camera className="w-8 h-8 mx-auto text-[#2E2E2F]/20 mb-2" />
+                        <p className="text-[10px] font-black text-[#2E2E2F]/30 uppercase tracking-widest">Add Cover Photo</p>
+                      </div>
+                    )}
+                  </div>
+                  {!canCustomBrand && (
+                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-[1.5rem]">
+                      <Badge type="info" className="mb-2 bg-[#2E2E2F] text-white">PRO ONLY</Badge>
+                    </div>
                   )}
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png"
-                  className="hidden"
-                  onChange={handleFileInputChange}
-                />
-                <p className="text-[11px] text-[#2E2E2F]/60 font-medium mt-3">
-                  Drag and drop JPEG/PNG
-                  <br />
-                  Max 10MB
-                </p>
-                {uploading && <p className="text-[11px] font-bold text-[#38BDF2] mt-2">Uploading image...</p>}
+              </div>
 
-                {!canCustomBrand && (
-                  <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Badge type="info" className="mb-2 bg-[#2E2E2F] text-white">PRO ONLY</Badge>
-                    <Button variant="outline" className="text-[9px] py-1 px-3 border-[#2E2E2F]/20 bg-white" onClick={() => navigate('/subscription')}>Upgrade</Button>
+              <div className="space-y-3">
+                <label className="text-[11px] font-semibold text-[#2E2E2F]/60 uppercase tracking-wide">Brand Logo / Avatar</label>
+                <div
+                  className={`w-32 relative rounded-[1.5rem] border-2 border-dashed ${dragActive ? 'border-[#38BDF2] bg-[#38BDF2]/10' : 'border-[#2E2E2F]/20 bg-[#F2F2F2]'
+                    } p-3 transition-colors`}
+                  onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                  onDragLeave={() => setDragActive(false)}
+                  onDrop={(e) => handleDrop(e, false)}
+                >
+                  <div
+                    className="aspect-square rounded-2xl overflow-hidden bg-[#F2F2F2] border border-[#2E2E2F]/10 flex items-center justify-center cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {displayImageUrl ? (
+                      <img src={displayImageUrl} alt="Organizer profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-4xl font-black text-[#2E2E2F]/25">{fallbackInitial}</span>
+                    )}
                   </div>
-                )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    className="hidden"
+                    onChange={handleFileInputChange}
+                  />
+                  {!canCustomBrand && (
+                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-[1.5rem]">
+                      <Badge type="info" className="mb-2 bg-[#2E2E2F] text-white text-[8px]">PRO</Badge>
+                    </div>
+                  )}
+                </div>
+                <p className="text-[10px] text-[#2E2E2F]/40 font-bold uppercase tracking-widest">Recommended: 400x400</p>
               </div>
             </div>
 

@@ -35,7 +35,7 @@ export const UserHome: React.FC = () => {
         location: '',
         capacityTotal: 100,
         imageUrl: 'https://images.unsplash.com/photo-1540575861501-7ad0582373f3?auto=format&fit=crop&q=80&w=800',
-        status: 'PUBLISHED' as EventStatus,
+        status: 'DRAFT' as EventStatus,
         regOpenDate: new Date().toISOString().split('T')[0],
         regCloseDate: '',
         regCloseTime: '',
@@ -46,26 +46,29 @@ export const UserHome: React.FC = () => {
     const [formData, setFormData] = useState(initialFormData);
     const [stats, setStats] = useState({ liveEventsCount: 0, ticketsSold: 0 });
     const [loadingStats, setLoadingStats] = useState(true);
+    const [organizerProfile, setOrganizerProfile] = useState<any>(null);
 
     React.useEffect(() => {
-        const fetchStats = async () => {
+        const fetchData = async () => {
             try {
-                const [events, analytics] = await Promise.all([
+                const [events, analytics, organizer] = await Promise.all([
                     apiService.getUserEvents(),
-                    apiService.getAnalytics()
+                    apiService.getAnalytics(),
+                    apiService.getMyOrganizer()
                 ]);
                 const liveCount = events.filter(e => e.status === 'PUBLISHED').length;
                 setStats({
                     liveEventsCount: liveCount,
                     ticketsSold: analytics.totalRegistrations || 0
                 });
+                setOrganizerProfile(organizer);
             } catch (err) {
                 console.error('Failed to fetch stats:', err);
             } finally {
                 setLoadingStats(false);
             }
         };
-        fetchStats();
+        fetchData();
     }, []);
 
     React.useEffect(() => {
@@ -89,8 +92,17 @@ export const UserHome: React.FC = () => {
         }
     };
 
+    const isSubscriptionReady = !!organizerProfile?.currentPlanId && organizerProfile?.subscriptionStatus !== 'pending';
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!isSubscriptionReady) {
+            setNotification({ message: 'Select a plan (free or paid) before initializing events.', type: 'error' });
+            setTimeout(() => navigate('/subscription'), 1500);
+            return;
+        }
+
         setSubmitting(true);
         try {
             const mergeDateTime = (date: string, time: string) => {
@@ -116,8 +128,8 @@ export const UserHome: React.FC = () => {
             setIsModalOpen(false);
             setFormData(initialFormData);
             setTimeout(() => navigate('/my-events'), 1200);
-        } catch {
-            setNotification({ message: 'Failed to create event.', type: 'error' });
+        } catch (err: any) {
+            setNotification({ message: err.message || 'Failed to create event.', type: 'error' });
         } finally {
             setSubmitting(false);
         }
@@ -193,10 +205,10 @@ export const UserHome: React.FC = () => {
                     </div>
                     <h2 className="text-2xl font-black text-[#2E2E2F] tracking-tight mb-3">Create First Event</h2>
                     <p className="text-[#2E2E2F]/60 font-medium leading-relaxed mb-8 flex-1">
-                        Follow the organizer workflow: complete profile, set organization profile, save draft, then add tickets before publishing.
+                        Follow the organizer workflow: complete your identity, set up your organization profile, pick a subscription plan, save your event as a draft, then add tickets before finally publishing.
                     </p>
                     <div className="flex items-center gap-2 text-[10px] font-black text-[#38BDF2] uppercase tracking-[0.2em]">
-                        Get Started <ICONS.ChevronRight className="w-4 h-4" />
+                        Start Wizard <ICONS.ChevronRight className="w-4 h-4" />
                     </div>
                 </div>
 

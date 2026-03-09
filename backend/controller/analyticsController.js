@@ -277,7 +277,10 @@ export const getSummary = async (req, res) => {
     res.set('x-analytics-build', ANALYTICS_BUILD);
     console.log(`[Analytics] getSummary build=${ANALYTICS_BUILD} user=${req.user?.id || 'unknown'}`);
     const filteredEventIds = await getFilteredEventIds(req);
-    if (Array.isArray(filteredEventIds) && filteredEventIds.length === 0) {
+
+    // If no events allowed, return zero stats immediately to avoid global leak
+    if (!Array.isArray(filteredEventIds) || filteredEventIds.length === 0) {
+      console.log(`[Analytics] No authorized events for user ${req.user?.id || 'unknown'}, returning empty summary`);
       return res.json({
         totalRegistrations: 0,
         ticketsSoldToday: 0,
@@ -289,11 +292,11 @@ export const getSummary = async (req, res) => {
     }
 
     // Tickets and attendance
-    let ticketsQuery = supabase.from('tickets').select('ticketId, status, issuedAt, eventId');
-    if (Array.isArray(filteredEventIds) && filteredEventIds.length > 0) {
-      ticketsQuery = ticketsQuery.in('eventId', filteredEventIds);
-    }
-    const { data: tickets, error: ticketErr } = await ticketsQuery;
+    const { data: tickets, error: ticketErr } = await supabase
+      .from('tickets')
+      .select('ticketId, status, issuedAt, eventId')
+      .in('eventId', filteredEventIds);
+
     if (ticketErr) {
       logAnalyticsError('getSummary.tickets', ticketErr, { requesterId: req.user?.id });
       return res.status(500).json({ error: ticketErr.message, build: ANALYTICS_BUILD });
@@ -304,11 +307,11 @@ export const getSummary = async (req, res) => {
     const attendanceRate = totalRegistrations ? (usedCount / totalRegistrations) * 100 : 0;
 
     // Orders and revenue
-    let ordersQuery = supabase.from('orders').select('orderId, totalAmount, status, created_at, eventId');
-    if (Array.isArray(filteredEventIds) && filteredEventIds.length > 0) {
-      ordersQuery = ordersQuery.in('eventId', filteredEventIds);
-    }
-    const { data: orders, error: orderErr } = await ordersQuery;
+    const { data: orders, error: orderErr } = await supabase
+      .from('orders')
+      .select('orderId, totalAmount, status, created_at, eventId')
+      .in('eventId', filteredEventIds);
+
     if (orderErr) {
       logAnalyticsError('getSummary.orders', orderErr, { requesterId: req.user?.id });
       return res.status(500).json({ error: orderErr.message, build: ANALYTICS_BUILD });
@@ -350,24 +353,21 @@ export const getRecentTransactions = async (req, res) => {
     console.log(`[Analytics] getRecentTransactions build=${ANALYTICS_BUILD} user=${req.user?.id || 'unknown'} page=${req.query?.page || 1}`);
     const { page, limit, from, to } = resolvePagination(req);
     const filteredEventIds = await getFilteredEventIds(req);
-    if (Array.isArray(filteredEventIds) && filteredEventIds.length === 0) {
+
+    if (!Array.isArray(filteredEventIds) || filteredEventIds.length === 0) {
       return res.json({
         items: [],
         pagination: buildPagination(page, limit, 0)
       });
     }
 
-    let query = supabase
+    const { data, error, count } = await supabase
       .from('orders')
-      .select('orderId, eventId, buyerName, totalAmount, currency, status, created_at', { count: 'exact' });
-
-    if (Array.isArray(filteredEventIds) && filteredEventIds.length > 0) {
-      query = query.in('eventId', filteredEventIds);
-    }
-
-    const { data, error, count } = await query
+      .select('orderId, eventId, buyerName, totalAmount, currency, status, created_at', { count: 'exact' })
+      .in('eventId', filteredEventIds)
       .order('created_at', { ascending: false })
       .range(from, to);
+
     if (error) {
       logAnalyticsError('getRecentTransactions.query', error, { requesterId: req.user?.id, page, limit });
       return res.status(500).json({ error: error.message, build: ANALYTICS_BUILD });
@@ -403,6 +403,7 @@ export const getRecentTransactions = async (req, res) => {
     return res.status(500).json({ error: err?.message || 'Unexpected error', build: ANALYTICS_BUILD });
   }
 };
+
 
 export const getTransactionDetail = async (req, res) => {
   const { orderId } = req.params;
@@ -509,24 +510,21 @@ export const getRecentOrders = async (req, res) => {
     console.log(`[Analytics] getRecentOrders build=${ANALYTICS_BUILD} user=${req.user?.id || 'unknown'} page=${req.query?.page || 1}`);
     const { page, limit, from, to } = resolvePagination(req);
     const filteredEventIds = await getFilteredEventIds(req);
-    if (Array.isArray(filteredEventIds) && filteredEventIds.length === 0) {
+
+    if (!Array.isArray(filteredEventIds) || filteredEventIds.length === 0) {
       return res.json({
         items: [],
         pagination: buildPagination(page, limit, 0)
       });
     }
 
-    let query = supabase
+    const { data, error, count } = await supabase
       .from('orders')
-      .select('orderId, eventId, buyerName, buyerEmail, totalAmount, currency, status, created_at', { count: 'exact' });
-
-    if (Array.isArray(filteredEventIds) && filteredEventIds.length > 0) {
-      query = query.in('eventId', filteredEventIds);
-    }
-
-    const { data, error, count } = await query
+      .select('orderId, eventId, buyerName, buyerEmail, totalAmount, currency, status, created_at', { count: 'exact' })
+      .in('eventId', filteredEventIds)
       .order('created_at', { ascending: false })
       .range(from, to);
+
     if (error) {
       logAnalyticsError('getRecentOrders.query', error, { requesterId: req.user?.id, page, limit });
       return res.status(500).json({ error: error.message, build: ANALYTICS_BUILD });
@@ -562,11 +560,12 @@ export const getRecentOrders = async (req, res) => {
   }
 };
 
+
 export const getAuditLogs = async (req, res) => {
   try {
     console.log('[getAuditLogs] req.user:', req.user);
     console.log('[getAuditLogs] req.user?.role:', req.user?.role);
-    
+
     const { page, limit, from, to } = resolvePagination(req);
     const filteredEventIds = await getFilteredEventIds(req);
     console.log('[getAuditLogs] filteredEventIds:', filteredEventIds);
