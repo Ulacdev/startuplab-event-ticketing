@@ -69,7 +69,7 @@ const sendSubscriptionConfirmationEmail = async (subscription, plan, organizer) 
 };
 
 // Helper to get HitPay payment URL using Admin's configuration from DB
-const createHitPayPayment = async (amount, currency, organizerName, planName, subscriptionId) => {
+const createHitPayPayment = async (req, amount, currency, organizerName, planName, subscriptionId) => {
   // 1. Get the admin's user ID
   const { data: adminUser, error: adminError } = await supabase
     .from('users')
@@ -327,6 +327,7 @@ export const createSubscription = async (req, res) => {
 
     // Create HitPay payment
     const payment = await createHitPayPayment(
+      req,
       priceAmount,
       plan.currency || 'PHP',
       organizer.organizerName,
