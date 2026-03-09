@@ -115,7 +115,10 @@ const createHitPayPayment = async (amount, currency, organizerName, planName, su
   const baseUrl = process.env.BACKEND_URL || process.env.SERVER_BASE_URL || 'http://localhost:5000';
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   const webhookUrl = `${cleanBaseUrl}/api/subscriptions/webhook`;
-  const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/#/subscription/success`;
+
+  // Use a cleaner redirect URL without the hash for HitPay (we will handle routing in the frontend)
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const redirectUrl = `${frontendUrl}/subscription/success`;
 
   console.log('📍 [Subscription] Webhook URL for HitPay dashboard:', webhookUrl);
 

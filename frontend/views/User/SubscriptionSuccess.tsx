@@ -83,11 +83,11 @@ export const SubscriptionSuccess: React.FC = () => {
                         setMessage('Your payment is being processed. Please check back in a few minutes.');
                     } else {
                         setStatus('error');
-                        setMessage('Could not verify subscription. Please contact support.');
+                        setMessage('Could not verify subscription. Please sign in and check your billing page.');
                     }
                 } catch (subErr) {
                     setStatus('error');
-                    setMessage('Could not verify subscription. Please contact support.');
+                    setMessage('Please sign in to view your updated subscription status.');
                 }
             }
         };
