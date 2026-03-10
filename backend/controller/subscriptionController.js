@@ -178,6 +178,11 @@ const activateSubscription = async (subscription) => {
     planData,
     organizer
   );
+  await sendAdminSubscriptionNotification(
+    { ...subscription, status: 'active', endDate: endDate.toISOString() },
+    planData,
+    organizer
+  );
 
   await logAudit({
     actionType: 'SUBSCRIPTION_ACTIVATED',
@@ -253,6 +258,71 @@ const sendSubscriptionConfirmationEmail = async (subscription, plan, organizer) 
     }
   } catch (error) {
     console.error('[Subscription] Error sending confirmation email:', error.message);
+  }
+};
+
+// Helper to notify platform admin when an organizer purchases a plan
+const sendAdminSubscriptionNotification = async (subscription, plan, organizer) => {
+  try {
+    // Get platform admin user
+    const { data: adminUser } = await supabase
+      .from('users')
+      .select('userId, email, name')
+      .eq('role', 'ADMIN')
+      .limit(1)
+      .maybeSingle();
+
+    if (!adminUser?.userId) return;
+
+    // Try to use admin email_from settings if present
+    const { data: emailSettings } = await supabase
+      .from('settings')
+      .select('key, value')
+      .eq('user_id', adminUser.userId)
+      .in('key', ['email_from_address', 'email_from_name'])
+      .maybeSingle();
+
+    let toEmail = adminUser.email;
+    let fromName = 'StartupLab';
+
+    if (emailSettings) {
+      const map = {};
+      (Array.isArray(emailSettings) ? emailSettings : [emailSettings]).forEach(item => map[item.key] = item.value);
+      toEmail = map['email_from_address'] || toEmail;
+      fromName = map['email_from_name'] || fromName;
+    }
+
+    if (!toEmail) return;
+
+    const planName = plan?.name || 'Unknown Plan';
+    const amount = subscription.billingInterval === 'yearly'
+      ? plan?.yearlyPrice
+      : plan?.monthlyPrice;
+
+    const subject = `Organizer purchased ${planName}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px;">
+        <h2 style="margin: 0 0 12px; color: #111;">New subscription purchase</h2>
+        <p style="margin: 0 0 16px; color: #444;">An organizer just completed a plan purchase.</p>
+        <ul style="padding-left: 16px; color: #333; line-height: 1.5;">
+          <li><strong>Organizer:</strong> ${organizer?.organizerName || organizer?.organizerId}</li>
+          <li><strong>Plan:</strong> ${planName}</li>
+          <li><strong>Billing:</strong> ${subscription.billingInterval}</li>
+          <li><strong>Amount:</strong> ₱${Number(amount || 0).toLocaleString()} ${subscription.currency || 'PHP'}</li>
+          <li><strong>Subscription ID:</strong> ${subscription.subscriptionId}</li>
+          <li><strong>Status:</strong> ${subscription.status}</li>
+        </ul>
+      </div>
+    `;
+
+    await sendSmtpEmail({
+      to: toEmail,
+      subject,
+      html,
+      fromName
+    });
+  } catch (error) {
+    console.error('[Subscription] Error sending admin notification email:', error.message);
   }
 };
 
@@ -669,6 +739,27 @@ export const cancelSubscription = async (req, res) => {
 
     if (!organizer) {
       return res.status(404).json({ error: 'Organizer not found' });
+    }
+
+    // Fetch subscription to validate current status
+    const { data: subscription } = await supabase
+      .from('organizersubscriptions')
+      .select('status, cancelAtPeriodEnd')
+      .eq('subscriptionId', subscriptionId)
+      .eq('organizerId', organizer.organizerId)
+      .maybeSingle();
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+
+    if (subscription.status === 'cancelled') {
+      return res.json({ success: true, message: 'Subscription already cancelled.' });
+    }
+
+    // Prevent accidental cancellation of unpaid/pending/trial subscriptions
+    if (!['active', 'trial'].includes(subscription.status)) {
+      return res.status(400).json({ error: `Cannot cancel subscription while status is '${subscription.status}'.` });
     }
 
     // 1. Update subscription status

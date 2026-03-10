@@ -122,14 +122,14 @@ export const SubscriptionSuccess: React.FC = () => {
 
                         <div className="pt-4 space-y-3">
                             <Button
-                                onClick={() => navigate('/user-home')}
+                                onClick={() => { window.location.href = '#/user-home'; }}
                                 className="w-full py-4 rounded-2xl font-black tracking-widest text-xs"
                             >
                                 GO TO DASHBOARD
                             </Button>
                             <Button
                                 variant="outline"
-                                onClick={() => navigate('/subscription')}
+                                onClick={() => { window.location.href = '#/subscription'; }}
                                 className="w-full py-4 rounded-2xl font-black tracking-widest text-xs border-[#2E2E2F]/10"
                             >
                                 VIEW BILLING
@@ -148,7 +148,7 @@ export const SubscriptionSuccess: React.FC = () => {
 
                         <div className="pt-4 space-y-3">
                             <Button
-                                onClick={() => navigate('/subscription')}
+                                onClick={() => { window.location.href = '#/subscription'; }}
                                 className="w-full py-4 rounded-2xl font-black tracking-widest text-xs"
                             >
                                 CHECK STATUS
@@ -167,14 +167,14 @@ export const SubscriptionSuccess: React.FC = () => {
 
                         <div className="pt-4 space-y-3">
                             <Button
-                                onClick={() => navigate('/subscription')}
+                                onClick={() => { window.location.href = '#/subscription'; }}
                                 className="w-full py-4 rounded-2xl font-black tracking-widest text-xs"
                             >
                                 GO TO SUBSCRIPTION
                             </Button>
                             <Button
                                 variant="outline"
-                                onClick={() => navigate('/user-home')}
+                                onClick={() => { window.location.href = '#/user-home'; }}
                                 className="w-full py-4 rounded-2xl font-black tracking-widest text-xs border-[#2E2E2F]/10"
                             >
                                 GO TO DASHBOARD
