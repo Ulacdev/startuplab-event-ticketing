@@ -128,6 +128,7 @@ export const UserEvents: React.FC = () => {
         imageUrl: 'https://images.unsplash.com/photo-1540575861501-7ad0582373f3?auto=format&fit=crop&q=80&w=800',
         status: 'DRAFT' as EventStatus,
         regOpenDate: new Date().toISOString().split('T')[0],
+        regOpenTime: '00:01',
         regCloseDate: '',
         regCloseTime: '',
         streamingPlatform: '',
@@ -451,6 +452,7 @@ export const UserEvents: React.FC = () => {
             imageUrl: getImageUrl(event.imageUrl),
             status: event.status,
             regOpenDate: formatDateForInput(event.regOpenAt || '').date,
+            regOpenTime: formatDateForInput(event.regOpenAt || '').time || '00:01',
             regCloseDate: formatDateForInput(event.regCloseAt || '').date,
             regCloseTime: formatDateForInput(event.regCloseAt || '').time,
             streamingPlatform: event.streamingPlatform || '',
@@ -576,6 +578,7 @@ export const UserEvents: React.FC = () => {
             capacityTotal: formData.capacityTotal,
             imageUrl: formData.imageUrl,
             status: statusOverride || formData.status,
+            regOpenAt: formData.regOpenDate ? mergeDateTime(formData.regOpenDate, formData.regOpenTime || '00:01') : null,
             regCloseAt: formData.regCloseDate ? mergeDateTime(formData.regCloseDate, formData.regCloseTime || '23:59') : null,
             brandColor: formData.brandColor || null,
             enableDiscountCodes: formData.enableDiscountCodes || false,
@@ -1352,6 +1355,12 @@ export const UserEvents: React.FC = () => {
                                         type="date"
                                         value={formData.regOpenDate}
                                         onChange={(e: any) => setFormData({ ...formData, regOpenDate: e.target.value })}
+                                    />
+                                    <Input
+                                        label="Registration Open Time"
+                                        type="time"
+                                        value={formData.regOpenTime}
+                                        onChange={(e: any) => setFormData({ ...formData, regOpenTime: e.target.value })}
                                     />
                                     <Input
                                         label="Registration Close Date"
