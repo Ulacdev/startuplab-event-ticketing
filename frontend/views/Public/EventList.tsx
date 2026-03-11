@@ -232,8 +232,7 @@ export const EventCard: React.FC<{
         />
         {trendingRank ? (
           <div
-            className="absolute top-3 left-3 rounded-full px-2.5 py-1 text-white text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-black/10 z-10"
-            style={{ backgroundColor: brandColor }}
+            className="absolute top-3 left-3 rounded-full px-2.5 py-1 bg-[var(--color-primary)] text-white text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-black/10 z-10"
           >
             #{trendingRank} Trending
           </div>
