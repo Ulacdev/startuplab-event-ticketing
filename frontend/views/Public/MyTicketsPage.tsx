@@ -12,6 +12,7 @@ const MyTicketsPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState<any[]>([]);
+    const [ticketLoadingId, setTicketLoadingId] = useState<string | null>(null);
 
     // Real counts
     const [ordersCount, setOrdersCount] = useState(0);
@@ -67,11 +68,40 @@ const MyTicketsPage: React.FC = () => {
         }
     };
 
+    const handleViewTicket = async (order: any, e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        // Prefer ticketId embedded in the order payload
+        const directTicketId = order.firstTicketId || order.ticketIds?.[0] || order.tickets?.[0]?.ticketId;
+        if (directTicketId) {
+            navigate(`/tickets/${directTicketId}`);
+            return;
+        }
+
+        // Fallback: fetch tickets for this order
+        try {
+            setTicketLoadingId(order.orderId);
+            const tickets = await apiService.getTicketsByOrder(order.orderId);
+            const firstTicketId = tickets?.[0]?.ticketId;
+            if (firstTicketId) {
+                navigate(`/tickets/${firstTicketId}`);
+            } else {
+                window.alert('No ticket is available for this order yet.');
+            }
+        } catch (err) {
+            console.error('Failed to fetch tickets for order', order.orderId, err);
+            window.alert('Could not open your ticket. Please try again.');
+        } finally {
+            setTicketLoadingId(null);
+        }
+    };
+
     return (
-        <div className="min-h-[70vh] max-w-3xl mx-auto px-4 sm:px-6 py-10">
+        <div className="min-h-screen bg-[#EAEAEA]">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
             {/* Profile Header */}
             <div className="flex items-center gap-5 mb-10">
-                <div className="w-20 h-20 rounded-full bg-[#F2F2F2] border-2 border-[#2E2E2F]/10 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-20 h-20 rounded-full bg-[#EAEAEA] border-2 border-[#2E2E2F]/10 flex items-center justify-center overflow-hidden shrink-0">
                     {imageUrl ? (
                         <img src={imageUrl} alt={displayName} className="w-full h-full object-cover" />
                     ) : (
@@ -131,16 +161,16 @@ const MyTicketsPage: React.FC = () => {
             <div className="mb-8">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-black text-[#2E2E2F] tracking-tight">Orders</h2>
-                    <div className="flex gap-2 p-1.5 bg-[#F2F2F2] rounded-2xl border border-[#2E2E2F]/5">
+                    <div className="flex gap-2 p-1.5 bg-[#EAEAEA] rounded-2xl border border-[#2E2E2F]/5">
                         <button
                             onClick={() => setActiveTab('upcoming')}
-                            className={`px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all duration-300 ${activeTab === 'upcoming' ? 'bg-white text-[#38BDF2] shadow-sm scale-105' : 'text-[#2E2E2F]/40 hover:text-[#2E2E2F]'}`}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all duration-300 ${activeTab === 'upcoming' ? 'bg-[#EAEAEA] text-[#38BDF2] shadow-sm scale-105' : 'text-[#2E2E2F]/40 hover:text-[#2E2E2F]'}`}
                         >
                             UPCOMING
                         </button>
                         <button
                             onClick={() => setActiveTab('past')}
-                            className={`px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all duration-300 ${activeTab === 'past' ? 'bg-white text-[#38BDF2] shadow-sm scale-105' : 'text-[#2E2E2F]/40 hover:text-[#2E2E2F]'}`}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all duration-300 ${activeTab === 'past' ? 'bg-[#EAEAEA] text-[#38BDF2] shadow-sm scale-105' : 'text-[#2E2E2F]/40 hover:text-[#2E2E2F]'}`}
                         >
                             PAST
                         </button>
@@ -150,7 +180,7 @@ const MyTicketsPage: React.FC = () => {
                 {loading && orders.length === 0 ? (
                     <div className="flex flex-col gap-5">
                         {[1, 2, 3].map(i => (
-                            <div key={i} className="h-32 rounded-[2rem] bg-[#F2F2F2] animate-pulse" />
+                            <div key={i} className="h-32 rounded-[2rem] bg-[#EAEAEA] animate-pulse" />
                         ))}
                     </div>
                 ) : filteredOrders.length > 0 ? (
@@ -159,12 +189,12 @@ const MyTicketsPage: React.FC = () => {
                             <div
                                 key={order.orderId}
                                 onClick={() => navigate(`/payment-status?sessionId=${order.orderId}`)}
-                                className="group cursor-pointer p-8 rounded-[2rem] bg-[#F2F2F2] border border-[#2E2E2F]/5 hover:border-[#38BDF2]/30 transition-all duration-500 hover:shadow-2xl hover:shadow-[#38BDF2]/10 hover:bg-white hover:scale-[1.02]"
+                                className="group cursor-pointer p-8 rounded-[2rem] bg-[#EAEAEA] border border-[#2E2E2F]/5 hover:border-[#38BDF2]/30 transition-all duration-500 hover:shadow-2xl hover:shadow-[#38BDF2]/10 hover:scale-[1.02]"
                             >
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-4">
-                                            <div className="px-3 py-1 bg-white rounded-lg shadow-sm border border-[#2E2E2F]/5">
+                                            <div className="px-3 py-1 bg-[#EAEAEA] rounded-lg shadow-sm border border-[#2E2E2F]/5">
                                                 <p className="text-[9px] font-black text-[#38BDF2] uppercase tracking-widest leading-none">
                                                     {order.status === 'PAID' ? 'Confirmed' : order.status}
                                                 </p>
@@ -200,15 +230,32 @@ const MyTicketsPage: React.FC = () => {
                                                 if (slug) navigate(`/events/${slug}`);
                                                 else navigate('/');
                                             }}
-                                            className="px-4 py-2.5 rounded-xl bg-white border border-[#2E2E2F]/5 text-[10px] font-black uppercase tracking-widest text-[#2E2E2F]/60 hover:text-[#38BDF2] hover:border-[#38BDF2]/30 transition-all shadow-sm"
+                                            className="px-4 py-2.5 rounded-xl bg-[#EAEAEA] border border-[#2E2E2F]/5 text-[10px] font-black uppercase tracking-widest text-[#2E2E2F]/60 hover:text-[#38BDF2] hover:border-[#38BDF2]/30 transition-all shadow-sm"
                                         >
                                             EVENT PAGE
                                         </button>
-                                        <div className="w-12 h-12 rounded-2xl bg-white border border-[#2E2E2F]/5 flex items-center justify-center group-hover:bg-[#38BDF2] group-hover:border-[#38BDF2] transition-all duration-500 shadow-sm">
-                                            <svg className="w-6 h-6 text-[#2E2E2F]/20 group-hover:text-white transition-all transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleViewTicket(order, e)}
+                                            title="View ticket"
+                                            disabled={ticketLoadingId === order.orderId}
+                                            className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition-all duration-500 shadow-sm ${
+                                                ticketLoadingId === order.orderId
+                                                    ? 'bg-[#38BDF2]/20 border-[#38BDF2]/30 opacity-80 cursor-wait'
+                                                    : 'bg-[#38BDF2]/10 border-[#38BDF2]/20 group-hover:bg-[#38BDF2] group-hover:border-[#38BDF2]'
+                                            }`}
+                                        >
+                                            {ticketLoadingId === order.orderId ? (
+                                                <svg className="w-6 h-6 text-[#38BDF2] animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" strokeWidth="4" />
+                                                    <path className="opacity-75" d="M4 12a8 8 0 018-8" strokeWidth="4" />
+                                                </svg>
+                                            ) : (
+                                                <svg className="w-8 h-8 text-[#38BDF2] group-hover:text-white transition-all transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -216,7 +263,7 @@ const MyTicketsPage: React.FC = () => {
                     </div>
                 ) : (
                     /* Empty State */
-                    <div className="flex flex-col items-center justify-center py-20 bg-[#F2F2F2]/50 rounded-[2.5rem] border border-dashed border-[#2E2E2F]/10">
+                    <div className="flex flex-col items-center justify-center py-20 bg-[#EAEAEA]/50 rounded-[2.5rem] border border-dashed border-[#2E2E2F]/10">
                         <div className="w-16 h-16 rounded-[2rem] bg-[#38BDF2]/10 border border-[#38BDF2]/20 flex items-center justify-center mb-6">
                             <ICONS.Ticket className="w-9 h-9 text-[#38BDF2]" />
                         </div>
@@ -232,7 +279,7 @@ const MyTicketsPage: React.FC = () => {
                             </button>
                         ) : (
                             <button
-                                onClick={() => navigate('/')}
+                                onClick={() => navigate('/browse-events')}
                                 className="text-sm font-bold text-[#38BDF2] hover:text-[#38BDF2]/80 transition-colors mt-1"
                             >
                                 Browse sessions
@@ -240,6 +287,7 @@ const MyTicketsPage: React.FC = () => {
                         )}
                     </div>
                 )}
+            </div>
             </div>
         </div>
     );

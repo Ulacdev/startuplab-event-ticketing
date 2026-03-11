@@ -478,7 +478,7 @@ export const getMyOrders = async (req, res) => {
     // Fetch orders with events (slug, name, date) and ticket statuses
     const { data: rawOrders, error: ordersErr } = await supabase
       .from('orders')
-      .select('*, events(eventName, startAt, slug), tickets(status)')
+      .select('*, events(eventName, startAt, slug), tickets(ticketId, status)')
       .ilike('buyerEmail', email)
       .order('created_at', { ascending: false });
 
@@ -492,12 +492,15 @@ export const getMyOrders = async (req, res) => {
       const tickets = order.tickets || [];
       const totalTickets = tickets.length;
       const usedTickets = tickets.filter(t => t.status === 'USED').length;
+      const ticketIds = tickets.map(t => t.ticketId).filter(Boolean);
 
       return {
         ...order,
         eventName: order.events?.eventName || 'Untitled Event',
         eventStartAt: order.events?.startAt,
         eventSlug: order.events?.slug,
+        ticketIds,
+        firstTicketId: ticketIds[0] || null,
         ticketStats: {
           total: totalTickets,
           used: usedTickets,
