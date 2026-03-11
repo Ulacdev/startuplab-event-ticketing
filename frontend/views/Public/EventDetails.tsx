@@ -40,6 +40,17 @@ const formatRange = (startAt?: string, endAt?: string, timezone?: string) => {
   return `${startStr} → ${endStr}`;
 };
 
+const getYouTubeId = (url: string) => {
+  try {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/|live\/)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    const id = (match && match[2].length === 11) ? match[2] : null;
+    return id;
+  } catch (e) {
+    return null;
+  }
+};
+
 const formatCompactCount = (value: number) => (
   new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(
     Math.max(0, Number(value || 0))
@@ -48,54 +59,39 @@ const formatCompactCount = (value: number) => (
 
 
 const StreamStatusBanner: React.FC<{ event: Event; isOwner?: boolean }> = ({ event, isOwner }) => {
-  // Check if event is LIVE either by status or by time (event is happening now)
   const now = new Date();
   const startAt = event.startAt ? new Date(event.startAt) : null;
-  const endAt = event.endAt ? new Date(event.endAt) : null;
-  const isLiveByTime = startAt && now >= startAt && (!endAt || now <= endAt);
+  const endAt = event.endAt ? new Date(event.endAt) : (startAt ? new Date(startAt.getTime() + 2 * 60 * 60 * 1000) : null);
+  const isLiveByTime = startAt && endAt && now >= startAt && now <= endAt;
   const isLiveStatus = isLiveByTime || event.status === 'LIVE';
-  const isOnline = event.locationType === 'ONLINE' || event.locationType === 'HYBRID' || isLiveStatus;
-  const url = event.streaming_url || event.locationText || '';
+
+  const streamingUrl = event.streaming_url || '';
+  const hasStreamingUrl = !!streamingUrl.trim();
+
+  const url = streamingUrl;
   const normalizedUrl = url && !url.startsWith('http') ? `https://${url}` : url;
   const isYouTube = /youtube\.com|youtu\.be/.test(normalizedUrl);
   const isFacebook = /facebook\.com|fb\.watch|fb\.com/.test(normalizedUrl);
-
-  const getYouTubeId = (url: string) => {
-    try {
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/|live\/)([^#\&\?]*).*/;
-      const match = url.match(regExp);
-      const id = (match && match[2].length === 11) ? match[2] : null;
-      console.log('YouTube ID extraction:', { url, id });
-      return id;
-    } catch (e) {
-      console.error('YouTube extraction error:', e);
-      return null;
-    }
-  };
-
   const videoId = isYouTube ? getYouTubeId(normalizedUrl) : null;
   const hasLink = !!(normalizedUrl && normalizedUrl.startsWith('http'));
 
-  // Logic: if it has a link AND is a valid YouTube/Facebook URL, we show it IF it's either explicitly LIVE status OR set as Online/Hybrid
-  const hasValidStreamingUrl = hasLink && (isYouTube || isFacebook);
-  const showingLive = hasValidStreamingUrl && (isLiveStatus || isOnline);
+  const showingLive = hasStreamingUrl && isLiveByTime;
 
-  // Hide entire banner if not online or no valid YouTube/Facebook streaming URL
-  if (!isOnline || !hasValidStreamingUrl) return null;
+  if (!showingLive) return null;
 
   return (
     <div className={`overflow-hidden rounded-[2.5rem] border border-[#2E2E2F]/10 mb-10 shadow-2xl ${isOwner && hasLink ? 'ring-2 ring-[#2E2E2F]/30' : ''}`}>
       {/* Header */}
       <div className="bg-[#00AEEF] p-6 text-white text-left flex justify-between items-center border-b border-[#00AEEF]/20 shadow-[0_4px_20px_rgba(0,174,239,0.3)]">
         <div>
-          <h2 className="text-xl font-black tracking-tight leading-tight">{event.eventName} {isLiveStatus && <span className="ml-2 px-2 py-0.5 bg-red-600 rounded text-[9px] animate-pulse text-white">LIVE</span>}</h2>
+          <h2 className="text-xl font-black tracking-tight leading-tight">{event.eventName} <span className="ml-2 px-2 py-0.5 bg-red-600 rounded text-[9px] animate-pulse text-white">LIVE</span></h2>
           <p className="text-[11px] font-bold opacity-90 mt-1 uppercase tracking-widest text-[#F2F2F2]">
             {formatDate(event.startAt, event.timezone, { weekday: 'long' })} AT {formatDate(event.startAt, event.timezone, { timeStyle: 'short' })}
           </p>
         </div>
         <div className="flex items-center gap-2 z-10 bg-red-600 px-4 py-1.5 rounded-full border border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)] animate-pulse">
           <div className="w-2 h-2 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-          <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">{isLiveStatus ? 'BROADCASTING' : 'LIVE NOW'}</span>
+          <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">BROADCASTING</span>
         </div>
       </div>
 
@@ -746,23 +742,16 @@ export const EventDetails: React.FC = () => {
           <div className="w-full lg:w-[380px] shrink-0 lg:sticky lg:top-24 self-start">
             <Card className="p-8 rounded-[2.5rem] bg-[#F2F2F2] border border-[#2E2E2F]/10 lg:max-h-[calc(100vh-7rem)] lg:flex lg:flex-col">
               {isOwnEvent ? (
-                <div className="flex flex-col items-center text-center py-6">
-                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ backgroundColor: `${brandColor}15` }}>
-                    <ICONS.Calendar className="w-8 h-8" style={{ color: brandColor }} />
+                <div className="flex flex-col items-center text-center py-6 border-b border-[#2E2E2F]/10 mb-6">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: `${brandColor}15` }}>
+                    <ICONS.Monitor className="w-6 h-6" style={{ color: brandColor }} />
                   </div>
-                  <h2 className="text-xl font-black text-[#2E2E2F] mb-2 tracking-tight">
-                    This is your event
+                  <h2 className="text-lg font-black text-[#2E2E2F] mb-1 tracking-tight">
+                    Organizer Preview
                   </h2>
-                  <p className="text-sm text-[#2E2E2F]/50 font-medium mb-6 leading-relaxed">
-                    You can't purchase tickets for your own event. Browse other events to discover sessions from other organizers.
+                  <p className="text-[10px] text-[#2E2E2F]/50 font-bold uppercase tracking-widest px-4">
+                    Previewing how attendees see your tickets
                   </p>
-                  <Button
-                    className="w-full"
-                    onClick={() => navigate('/browse-events')}
-                    style={{ backgroundColor: brandColor }}
-                  >
-                    Browse Events
-                  </Button>
                 </div>
               ) : (
                 <>
@@ -825,11 +814,11 @@ export const EventDetails: React.FC = () => {
                   <div className="space-y-6 lg:pt-6 lg:border-t lg:border-[#2E2E2F]/10 lg:shrink-0">
                     <Button
                       className="w-full"
-                      disabled={totalQuantity === 0}
+                      disabled={totalQuantity === 0 || isOwnEvent}
                       onClick={handleRegister}
-                      style={{ backgroundColor: brandColor }}
+                      style={{ backgroundColor: isOwnEvent ? '#2E2E2F20' : brandColor }}
                     >
-                      {ctaLabel}
+                      {isOwnEvent ? 'Checkout Disabled' : ctaLabel}
                     </Button>
                     <div className="flex items-center justify-center gap-3 opacity-30">
                       <ICONS.CreditCard className="w-4 h-4" />

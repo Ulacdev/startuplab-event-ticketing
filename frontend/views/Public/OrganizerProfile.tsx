@@ -194,83 +194,93 @@ export const OrganizerProfilePage: React.FC = () => {
                 </div>
 
                 {/* Profile Header section */}
-                <div className="px-6 md:px-12 pb-8">
-                    <div className="flex flex-col md:flex-row md:items-end -mt-12 md:-mt-20 gap-6 md:gap-8 border-b border-[#2E2E2F]/5 pb-8">
-                        {/* Profile Pic overlap */}
-                        <div className="relative">
-                            <div className="w-32 h-32 md:w-48 md:h-48 rounded-[2rem] border-[6px] border-white overflow-hidden bg-[#2E2E2F] shadow-2xl flex-shrink-0">
+                <div className="px-6 md:px-12">
+                    <div className="relative flex flex-col md:flex-row gap-6 md:gap-10 pb-10">
+                        {/* Profile Pic overlap - positioned relatively to clear cover */}
+                        <div className="relative -mt-16 md:-mt-24 shrink-0 z-10">
+                            <div className="w-32 h-32 md:w-56 md:h-56 rounded-[2.5rem] border-[8px] border-[#F2F2F2] overflow-hidden bg-[#2E2E2F] shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
                                 {organizer.profileImageUrl ? (
                                     <img src={organizerImage} alt={organizer.organizerName} className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-6xl font-black text-white flex h-full w-full items-center justify-center">{organizerInitial}</span>
+                                    <span className="text-7xl font-black text-white flex h-full w-full items-center justify-center">{organizerInitial}</span>
                                 )}
                             </div>
                             {liveEvent && (
-                                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full border-2 border-white shadow-lg">
-                                    Live
+                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border-2 border-[#F2F2F2] shadow-xl animate-pulse">
+                                    Live Now
                                 </div>
                             )}
                         </div>
 
-                        {/* Name and Stats */}
-                        <div className="flex-1 mb-2">
-                            <h1 className="text-3xl md:text-[3rem] font-black text-[#2E2E2F] tracking-tighter mb-2">
-                                {organizer.organizerName}
-                            </h1>
-                            <div className="flex items-center gap-2 text-[#2E2E2F]/60 font-black text-xs uppercase tracking-widest">
-                                <span>{formatCompactCount(organizer.followersCount)} followers</span>
-                                <span className="opacity-30">|</span>
-                                <span>{organizer.eventsHostedCount || 0} events hosted</span>
+                        {/* Name, Stats and Actions - Aligned better */}
+                        <div className="flex-1 flex flex-col md:flex-row md:items-end justify-between pt-4 md:pt-6 gap-6">
+                            <div className="space-y-3">
+                                <h1 className="text-4xl md:text-[3.5rem] font-black text-[#2E2E2F] tracking-tight leading-[1.1]">
+                                    {organizer.organizerName}
+                                </h1>
+                                <div className="flex flex-wrap items-center gap-4 text-[#2E2E2F]/50 font-black text-[10px] uppercase tracking-[0.2em]">
+                                    <div className="flex items-center gap-2 bg-[#2E2E2F]/5 px-3 py-1.5 rounded-lg">
+                                        <ICONS.Users className="w-3.5 h-3.5" />
+                                        <span>{formatCompactCount(organizer.followersCount)} followers</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-[#2E2E2F]/5 px-3 py-1.5 rounded-lg">
+                                        <ICONS.Calendar className="w-3.5 h-3.5" />
+                                        <span>{organizer.eventsHostedCount || 0} events hosted</span>
+                                    </div>
+                                    {organizer.websiteUrl && (
+                                        <div className="flex items-center gap-2 bg-[#2E2E2F]/5 px-3 py-1.5 rounded-lg">
+                                            <ICONS.Globe className="w-3.5 h-3.5" />
+                                            <a href={organizer.websiteUrl} target="_blank" rel="noopener noreferrer" className="hover:text-[#38BDF2] transition-colors">Website</a>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Social Connectivity */}
+                                <div className="flex items-center gap-3 pt-4">
+                                    {organizer.facebookId && (
+                                        <a href={`https://facebook.com/${organizer.facebookId}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-[#2E2E2F]/5 text-[#2E2E2F] flex items-center justify-center hover:bg-[#38BDF2] hover:text-white transition-all">
+                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+                                        </a>
+                                    )}
+                                    {organizer.twitterHandle && (
+                                        <a href={`https://twitter.com/${organizer.twitterHandle}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-[#2E2E2F]/5 text-[#2E2E2F] flex items-center justify-center hover:bg-[#38BDF2] hover:text-white transition-all">
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                                        </a>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Social Icons Row */}
-                            <div className="flex items-center gap-3 mt-6">
-                                {organizer.websiteUrl && (
-                                    <a href={organizer.websiteUrl} target="_blank" rel="noopener noreferrer" className="p-3 rounded-2xl bg-[#F2F2F2] text-[#2E2E2F] hover:bg-[#38BDF2] hover:text-white transition-all shadow-sm" title="Website">
-                                        <ICONS.Globe className="w-5 h-5" />
-                                    </a>
-                                )}
-                                {organizer.facebookId && (
-                                    <a href={`https://facebook.com/${organizer.facebookId}`} target="_blank" rel="noopener noreferrer" className="p-3 rounded-2xl bg-[#F2F2F2] text-[#2E2E2F] hover:bg-[#38BDF2] hover:text-white transition-all shadow-sm" title="Facebook">
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
-                                    </a>
-                                )}
-                                {organizer.twitterHandle && (
-                                    <a href={`https://twitter.com/${organizer.twitterHandle}`} target="_blank" rel="noopener noreferrer" className="p-3 rounded-2xl bg-[#F2F2F2] text-[#2E2E2F] hover:bg-[#38BDF2] hover:text-white transition-all shadow-sm" title="X (Twitter)">
-                                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                                    </a>
-                                )}
+                            {/* CTAs */}
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={handleFollow}
+                                    className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 shadow-xl ${following
+                                        ? 'bg-[#2E2E2F] text-white opacity-40 cursor-default border-none shadow-none'
+                                        : 'bg-[#38BDF2] text-white hover:bg-black hover:shadow-2xl hover:shadow-[#38BDF2]/20 border-none'
+                                        }`}
+                                >
+                                    {following ? <ICONS.CheckCircle className="w-4 h-4" /> : <ICONS.Users className="w-4 h-4" />}
+                                    {following ? 'Following' : 'Follow Organizer'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (organizer.websiteUrl) window.open(organizer.websiteUrl, '_blank');
+                                        else setInteractionNotice('No contact method specified.');
+                                    }}
+                                    className="flex items-center gap-2 px-8 py-4 rounded-2xl bg-[#F2F2F2] border border-[#2E2E2F]/10 text-[#2E2E2F] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-[#2E2E2F] hover:text-white transition-all shadow-md active:scale-95"
+                                >
+                                    <ICONS.Mail className="w-4 h-4" />
+                                    Contact
+                                </button>
                             </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 mb-2">
-                            <button
-                                onClick={handleFollow}
-                                className={`flex items-center gap-2 px-10 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 shadow-xl ${following
-                                    ? '!bg-[#2E2E2F] !text-white opacity-30 cursor-default border-none'
-                                    : 'bg-[#38BDF2] text-white hover:bg-[#2E2E2F] shadow-[#38BDF2]/20 hover:shadow-[#2E2E2F]/20 border-none'
-                                    }`}
-                            >
-                                <ICONS.CheckCircle className={`w-4 h-4 ${following ? '' : 'hidden'}`} />
-                                {following ? 'Following' : 'Follow Organizer'}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (organizer.websiteUrl) window.open(organizer.websiteUrl, '_blank');
-                                    else setInteractionNotice('No contact method specified.');
-                                }}
-                                className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-[#2E2E2F] text-white font-black text-xs uppercase tracking-widest hover:bg-[#38BDF2] shadow-xl shadow-[#2E2E2F]/10 hover:shadow-[#38BDF2]/30 transition-all duration-300 border-none"
-                            >
-                                <ICONS.Mail className="w-4 h-4" />
-                                Contact
-                            </button>
                         </div>
                     </div>
 
                     {/* Navigation Bar */}
-                    <div className="flex items-center gap-1 mt-2">
-                        <div className="px-6 py-4 text-[#38BDF2] border-b-4 border-[#38BDF2] font-black text-xs uppercase tracking-widest cursor-pointer">
-                            Hosted Events
+                    <div className="flex items-center gap-2 border-t border-[#2E2E2F]/5">
+                        <div className="relative pt-6 pb-4 px-2">
+                            <span className="text-[#38BDF2] font-black text-[10px] uppercase tracking-[0.3em]">Hosted Events</span>
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#38BDF2] rounded-full" />
                         </div>
                     </div>
                 </div>

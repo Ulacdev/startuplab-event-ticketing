@@ -323,11 +323,26 @@ export const EventCard: React.FC<{
       </div>
       {/* Content Section */}
       <div className="p-5 flex-1 flex flex-col">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#2E2E2F]/5 border border-[#2E2E2F]/10">
+            {event.organizer?.profileImageUrl ? (
+              <img src={getImageUrl(event.organizer.profileImageUrl)} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-[#2E2E2F] text-white text-[10px] font-black">
+                {(event.organizer?.organizerName || 'O').charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <span className="text-[10px] font-black text-[#2E2E2F]/40 uppercase tracking-[0.2em] line-clamp-1">
+            {event.organizer?.organizerName || 'Organization'}
+          </span>
+        </div>
+
         <h4 className="text-[#2E2E2F] text-lg font-bold tracking-tight leading-tight mb-2 line-clamp-2">
           {event.eventName}
         </h4>
-        <div className="text-[#2E2E2F]/70 text-[12px] font-medium mb-2.5 line-clamp-2">
-          {(event as any).summaryLine || 'Explore our latest projects, network with StartupLab founders and learn about future initiatives.'}
+        <div className="text-[#2E2E2F]/70 text-[12px] font-medium mb-3 line-clamp-2">
+          {event.description?.slice(0, 100)}...
         </div>
         <div className="flex items-center gap-2 text-[11px] font-semibold text-[#2E2E2F]/70 mb-2">
           <span className={`w-5 h-5 rounded-full flex items-center justify-center ${liked ? 'bg-red-500 text-white' : 'bg-[#2E2E2F]/10 text-[#2E2E2F]/65'}`}>
@@ -408,14 +423,14 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
 
     const nextSearch = (params.get('search') || '').trim();
     const locationFromQuery = (params.get('location') || '').trim();
-    const nextLocation = locationFromQuery || DEFAULT_LOCATION;
+    const nextLocation = locationFromQuery || (isLanding ? getInitialBrowseLocation() : DEFAULT_LOCATION);
 
     setSearchTerm(nextSearch);
     setDebouncedSearch(nextSearch);
     setSelectedLocation(nextLocation);
     setActiveBrowseTab('ALL');
     setCurrentPage(1);
-  }, [location.search]);
+  }, [location.search, isLanding]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -432,7 +447,7 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
           category: selectedCategory,
           price: selectedPrice,
           format: selectedFormat,
-          sortBy
+          sortBy: isLandingAllListing ? 'trending' : sortBy
         };
 
         if (selectedDate !== 'all') {
@@ -588,9 +603,15 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
   const orderedEvents = useMemo(() => {
     const ranked = [...filteredEvents];
     ranked.sort((a, b) => {
-      const likeDiff = Number(b.likesCount || 0) - Number(a.likesCount || 0);
-      if (likeDiff !== 0) return likeDiff;
-      return new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
+      // 1. Prioritize likes
+      const likesA = Number(a.likesCount || 0);
+      const likesB = Number(b.likesCount || 0);
+      if (likesB !== likesA) return likesB - likesA;
+      
+      // 2. Fallback to most recently created
+      const bTime = new Date(b.created_at || b.startAt || 0).getTime();
+      const aTime = new Date(a.created_at || a.startAt || 0).getTime();
+      return bTime - aTime;
     });
     return ranked;
   }, [filteredEvents]);
@@ -598,7 +619,11 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
   const trendingRankByEventId = useMemo(() => {
     const map = new Map<string, number>();
     if (listing !== 'all') return map;
+    // On landing we always show top 3 ranks even if likes are 0 (as long as they are the top 3 returned)
+    // Actually, user wants "trending" so maybe only if > 0 likes? 
+    // Usually trending implies > 0. Let's keep it to > 0 to match screenshot.
     if (!isLanding && currentPage !== 1) return map;
+    
     orderedEvents
       .filter((event) => Number(event.likesCount || 0) > 0)
       .slice(0, 3)
@@ -609,7 +634,10 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
   }, [listing, orderedEvents, isLanding, currentPage]);
 
   const displayEvents = useMemo(() => {
-    if (isLandingAllListing) return orderedEvents.slice(0, 3);
+    if (isLandingAllListing) {
+      // Show top 3 events. Sorted by trending (likes then newest) by backend/orderedEvents
+      return orderedEvents.slice(0, 3);
+    }
     return orderedEvents;
   }, [isLandingAllListing, orderedEvents]);
 
@@ -617,12 +645,21 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
   const showPagination = !isLanding && !isSpecialListing && activeBrowseTab === 'ALL' && orderedEvents.length > 0 && totalPages > 1;
   const showViewAllButton = isLandingAllListing && Number(pagination.total || 0) > displayEvents.length;
   const marqueeCategories = useMemo(() => [...EVENT_CATEGORIES, ...EVENT_CATEGORIES], []);
-  const sectionTitle = listing === 'liked' ? 'Liked Events' : listing === 'followings' ? 'Followed Organizations' : 'Available Events';
-  const sectionSubtitle = listing === 'liked'
-    ? 'Events you marked with a like.'
-    : listing === 'followings'
-      ? 'Latest events from organizations you follow.'
-      : 'Browse and register for upcoming business seminars and workshops.';
+  const sectionTitle = isLandingAllListing
+    ? 'Trending Events'
+    : listing === 'liked'
+      ? 'Liked Events'
+      : listing === 'followings'
+        ? 'Followed Organizations'
+        : 'Available Events';
+
+  const sectionSubtitle = isLandingAllListing
+    ? 'The most liked and anticipated sessions happening now.'
+    : listing === 'liked'
+      ? 'Events you marked with a like.'
+      : listing === 'followings'
+        ? 'Latest events from organizations you follow.'
+        : 'Browse and register for upcoming business seminars and workshops.';
 
   if (loading) return (
     <PageLoader label="Loading events..." />
@@ -974,33 +1011,60 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
                 <ICONS.Search className="w-8 h-8 text-[#2E2E2F]/20" />
               </div>
               <h3 className="text-2xl font-black text-[#2E2E2F] tracking-tighter mb-4 uppercase">
-                {listing === 'liked'
-                  ? 'No liked events yet'
-                  : listing === 'followings'
-                    ? 'No events from followed organizations yet'
-                    : activeBrowseTab === 'FOR_YOU'
-                      ? 'No recommended events yet'
-                      : 'No matches found'}
+                {isLandingAllListing
+                  ? 'No Trending Events Yet'
+                  : listing === 'liked'
+                    ? 'No liked events yet'
+                    : listing === 'followings'
+                      ? 'No events from followed organizations yet'
+                      : activeBrowseTab === 'FOR_YOU'
+                        ? 'No recommended events yet'
+                        : 'No matches found'}
               </h3>
               <p className="text-sm font-bold text-[#2E2E2F]/50 mb-10 max-w-[340px] mx-auto leading-relaxed">
-                {listing === 'all'
-                  ? 'Try adjusting your filters or search terms to discover more exciting sessions.'
-                  : 'Like events or follow organizations to build your personalized feed.'}
+                {isLandingAllListing
+                  ? 'Be the first to like a session to see it trending here, or explore our full catalog below.'
+                  : listing === 'all'
+                    ? 'Try adjusting your filters or search terms to discover more exciting sessions.'
+                    : 'Like events or follow organizations to build your personalized feed.'}
               </p>
+              {isLandingAllListing ? (
+                <Button
+                  className="px-8 py-3.5 rounded-2xl bg-[#2E2E2F] text-white font-black uppercase tracking-widest text-[10px] hover:bg-[#38BDF2] transition-colors"
+                  onClick={() => navigate('/browse-events')}
+                >
+                  Discover All Sessions
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="px-8 py-3.5 rounded-2xl border-2 border-[#2E2E2F]/10 text-[#2E2E2F] font-black uppercase tracking-widest text-[10px]"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedLocation(DEFAULT_LOCATION);
+                    setActiveBrowseTab('ALL');
+                    setSelectedCategory('all');
+                    setSelectedDate('all');
+                    setSelectedPrice('all');
+                    setSelectedFormat('all');
+                  }}
+                >
+                  Reset All Filters
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* View All Button for Landing Page */}
+          {isLandingAllListing && displayEvents.length > 0 && (
+            <div className="pt-4 flex justify-center">
               <Button
                 variant="outline"
-                className="px-8 py-3.5 rounded-2xl border-2 border-[#2E2E2F]/10 text-[#2E2E2F] font-black uppercase tracking-widest text-[10px]"
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedLocation(DEFAULT_LOCATION);
-                  setActiveBrowseTab('ALL');
-                  setSelectedCategory('all');
-                  setSelectedDate('all');
-                  setSelectedPrice('all');
-                  setSelectedFormat('all');
-                }}
+                className="px-10 py-4 rounded-2xl border-2 border-[#2E2E2F]/5 text-[#2E2E2F] font-black uppercase tracking-widest text-[11px] hover:bg-[#2E2E2F] hover:text-white transition-all group"
+                onClick={() => navigate('/browse-events')}
               >
-                Reset All Filters
+                <span>Explore Full Catalog</span>
+                <ICONS.ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
           )}

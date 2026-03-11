@@ -197,7 +197,7 @@ export const PaymentStatusView: React.FC = () => {
                     </div>
                     <Button
                       className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-[#38BDF2] text-[#F2F2F2] text-sm font-black tracking-wide"
-                      onClick={() => window.open(meetLink, '_blank')}
+                      onClick={() => { window.open(meetLink, '_blank'); }}
                     >
                       JOIN LIVE SESSION
                     </Button>

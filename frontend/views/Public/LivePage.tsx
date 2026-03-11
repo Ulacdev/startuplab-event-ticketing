@@ -61,7 +61,7 @@ export const LivePage: React.FC = () => {
 
     if (loading) return <PageLoader label="Loading Live Broadcasts..." variant="page" />;
 
-    const embedUrl = currentEvent ? getEmbedUrl(currentEvent.streaming_url || currentEvent.locationText) : null;
+    const embedUrl = currentEvent ? getEmbedUrl(currentEvent.streaming_url || '') : null;
 
     return (
         <div className="min-h-screen bg-[#F2F2F2]">
@@ -131,7 +131,7 @@ export const LivePage: React.FC = () => {
                                                     This broadcast is being hosted on an external platform. Click the button below to join the stream.
                                                 </p>
                                                 <a
-                                                    href={currentEvent.streaming_url || currentEvent.locationText}
+                                                    href={currentEvent.streaming_url || ''}
                                                     target="_blank"
                                                     rel="noreferrer"
                                                     className="bg-[#00AEEF] text-white px-10 py-5 rounded-2xl font-black text-[12px] uppercase tracking-[0.2em] flex items-center gap-3 transition-all hover:scale-105 hover:bg-[#0098D6] active:scale-95 shadow-2xl"

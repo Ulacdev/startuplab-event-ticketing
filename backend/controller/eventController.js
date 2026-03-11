@@ -64,6 +64,7 @@ export const listLiveEvents = async (req, res) => {
       .from('events')
       .select('*')
       .eq('status', 'PUBLISHED')
+      .eq('is_archived', false)
       .order('startAt', { ascending: false });
 
     if (eventsError) return res.status(500).json({ error: eventsError.message });
@@ -73,13 +74,10 @@ export const listLiveEvents = async (req, res) => {
     const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
     const filteredEvents = (events || []).filter(e => {
+      if (!e.streaming_url || e.streaming_url.trim() === '') return false;
       const start = new Date(e.startAt);
-      const end = new Date(e.endAt);
-      const hasContent = (e.locationText && e.locationText.trim() !== '') || (e.streaming_url && e.streaming_url.trim() !== '');
-
-      // Show if the event date overlaps with today and it has broadcast info
-      const isToday = start <= endOfToday && end >= startOfToday;
-      return hasContent && isToday;
+      const end = e.endAt ? new Date(e.endAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000); // default to 2hr duration if no end time
+      return now >= start && now <= end;
     });
 
     const enrichedEvents = await enrichEventsWithOrganizer(filteredEvents);
@@ -109,7 +107,7 @@ export const listEvents = async (req, res) => {
     const sortBy = req.query.sortBy;
 
     // 1) Fetch candidate events
-    let query = supabase.from('events').select('*');
+    let query = supabase.from('events').select('*').eq('is_archived', false);
     if (statuses.length > 0) query = query.in('status', statuses);
     if (organizerId) query = query.eq('organizerId', organizerId);
 
@@ -190,12 +188,20 @@ export const listEvents = async (req, res) => {
     const allLikeCountMap = await getEventLikeCountsMap(filteredEventIds);
 
     let ranked = [...filtered].sort((a, b) => {
+      if (sortBy === 'trending') {
+        const likeDiff = (allLikeCountMap.get(b.eventId) || 0) - (allLikeCountMap.get(a.eventId) || 0);
+        if (likeDiff !== 0) return likeDiff;
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      }
+
       if (sortBy === 'date_soon') return new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
-      if (sortBy === 'newest') return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      if (sortBy === 'newest' || sortBy === 'relevance' || !sortBy) {
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      }
 
       const likeDiff = (allLikeCountMap.get(b.eventId) || 0) - (allLikeCountMap.get(a.eventId) || 0);
       if (likeDiff !== 0) return likeDiff;
-      return new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     });
 
     const total = ranked.length;
@@ -221,7 +227,7 @@ export const listEvents = async (req, res) => {
     });
 
     const withTicketTypes = pagedEvents.map(e => {
-      const usableTTs = (ttMap.get(e.eventId) || []).filter(withinSalesWindow);
+      const usableTTs = ttMap.get(e.eventId) || [];
       return {
         ...e,
         ticketTypes: usableTTs,
@@ -275,8 +281,10 @@ export const getEventBySlug = async (req, res) => {
       return res.status(500).json({ error: ttError.message });
     }
 
-    // 3) Filter by sales window, attach and return
-    const usableTicketTypes = (ticketTypes || []).filter(withinSalesWindow);
+    // 3) Attach tickets and return
+    // Note: we no longer strictly filter by sales window here so they show up in UI
+    // The frontend or registration logic handles the actual validity of the sale.
+    const usableTicketTypes = ticketTypes || [];
     
     console.log(`🔍 [Event Slug] Fetching like counts...`);
     const likeCounts = await getEventLikeCountsMap([event.eventId]);
