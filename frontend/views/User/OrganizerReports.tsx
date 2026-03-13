@@ -127,6 +127,23 @@ export const OrganizerReports: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-20">
+      {/* Create Event Card */}
+      <div 
+        className="group relative bg-[#F2F2F2] border-2 border-[#2E2E2F]/5 rounded-[2rem] p-8 flex flex-col items-start transition-all duration-300 hover:border-[#38BDF2] hover:shadow-lg cursor-pointer"
+        onClick={() => window.location.hash = '/#/my-events?openModal=true'}
+      >
+        <div className="w-14 h-14 rounded-2xl bg-[#38BDF2] text-white flex items-center justify-center mb-8 shadow-lg shadow-[#38BDF2]/30 group-hover:scale-110 transition-transform">
+          <ICONS.Plus className="w-8 h-8 stroke-[3]" />
+        </div>
+        <h2 className="text-2xl font-black text-[#2E2E2F] tracking-tight mb-3">Create New Event</h2>
+        <p className="text-[#2E2E2F]/60 font-medium leading-relaxed mb-8 flex-1">
+          Launch a new event, set up tickets, configure pricing, and start accepting registrations.
+        </p>
+        <div className="flex items-center gap-2 text-[10px] font-black text-[#38BDF2] uppercase tracking-[0.2em]">
+          Start Creating <ICONS.ChevronRight className="w-4 h-4" />
+        </div>
+      </div>
+
       {/* Page Header */}
       <div className="bg-transparent border border-[#2E2E2F]/5 rounded-2xl p-6 md:p-8 mb-4">
         <div className="flex flex-col md:flex-row justify-between gap-6">
@@ -178,7 +195,7 @@ export const OrganizerReports: React.FC = () => {
           </div>
           {!hasAdvancedReports && (
             <div className="absolute inset-0 flex items-center justify-center p-4 text-center z-10">
-              <div className="bg-[#2E2E2F] text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-lg">
+              <div className="bg-[#F2F2F2] border border-[#2E2E2F]/20 text-[#2E2E2F] text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-lg">
                 <ICONS.Shield className="w-3.5 h-3.5 text-[#38BDF2]" />
                 Pro Feature
               </div>
@@ -195,7 +212,7 @@ export const OrganizerReports: React.FC = () => {
               key={status}
               onClick={() => setFilter(status)}
               className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === status
-                  ? 'bg-[#2E2E2F] text-white shadow-lg'
+                  ? 'bg-[#F2F2F2] text-[#2E2E2F] shadow-lg border border-[#2E2E2F]/10'
                   : 'bg-transparent text-[#2E2E2F]/40 hover:text-[#2E2E2F]'
                 }`}
             >

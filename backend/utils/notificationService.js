@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import supabase from '../database/db.js';
+import emailQuotaManager from './emailQuotaManager.js';
 
 export const debugLog = (msg) => {
   const time = new Date().toLocaleString();
@@ -520,6 +521,25 @@ export async function notifyUserByPreference({
       return { inApp: inAppDelivered, email: false };
     }
 
+    // Check email quota before sending
+    if (organizerId) {
+      try {
+        const quotaCheck = await emailQuotaManager.canSendEmails(organizerId, 1);
+        if (!quotaCheck.canSend) {
+          const quotaParts = quotaCheck.quotaStatus.split('/');
+          const sent = quotaParts[0];
+          const limit = quotaParts[1];
+          const errorMessage = `Daily email limit reached (${sent}/${limit}). Upgrade your plan for more emails.`;
+          debugLog(`⚠️ [Notifications] EMAIL QUOTA EXCEEDED: ${errorMessage}`);
+          return { inApp: inAppDelivered, email: false, quotaExceeded: true, message: errorMessage };
+        }
+        debugLog(`✅ [Notifications] Email quota check passed: ${quotaCheck.quotaStatus}`);
+      } catch (quotaError) {
+        console.warn('[Notifications] Email quota check failed:', quotaError.message);
+        // Continue to send if quota check fails (fail open)
+      }
+    }
+
     const to = finalRecipientEmail;
     const subject = String(emailSubject || title || 'Notification');
     const text = String(emailText || message || '');
@@ -541,6 +561,16 @@ export async function notifyUserByPreference({
       config: smtpConfig,
     });
     emailDelivered = !!result?.ok;
+    
+    // Record email sent if successful
+    if (emailDelivered && organizerId) {
+      try {
+        await emailQuotaManager.recordEmailSent(organizerId, 1);
+      } catch (recordError) {
+        console.warn('[Notifications] Failed to record email quota:', recordError.message);
+      }
+    }
+    
     if (emailDelivered) {
       debugLog(`✅ [Notifications] SMTP SUCCESS to ${to}`);
     } else {

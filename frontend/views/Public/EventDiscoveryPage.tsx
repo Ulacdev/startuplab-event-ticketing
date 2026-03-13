@@ -43,6 +43,8 @@ export const EventDiscoveryPage: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [interactionNotice, setInteractionNotice] = useState('');
+    const [promotedEvents, setPromotedEvents] = useState<Event[]>([]);
+    const [loadingPromoted, setLoadingPromoted] = useState(true);
 
     // Sync state with URL params
     useEffect(() => {
@@ -68,6 +70,22 @@ export const EventDiscoveryPage: React.FC = () => {
         };
         fetchData();
     }, [location.search]);
+
+    // Load promoted events on component mount
+    useEffect(() => {
+        const loadPromotedEvents = async () => {
+            setLoadingPromoted(true);
+            try {
+                const result = await apiService.getPromotedEvents(6); // Get top 6 promoted events
+                setPromotedEvents(result.events || []);
+            } catch (err) {
+                console.error('Failed to load promoted events', err);
+            } finally {
+                setLoadingPromoted(false);
+            }
+        };
+        loadPromotedEvents();
+    }, []);
 
     // Filtering logic (Frontend filters on top of backend results)
     const filteredEvents = useMemo(() => {
@@ -132,6 +150,17 @@ export const EventDiscoveryPage: React.FC = () => {
             return 0; // Default relevance
         });
     }, [events, selectedCategories, selectedDate, selectedPrice, selectedFormat, showFollowedOnly, likedEventIds, sortBy]);
+
+    // Combine promoted and filtered events, with promoted first
+    const combinedEvents = useMemo(() => {
+        const promotedIds = new Set(promotedEvents.map(e => e.eventId));
+        const nonPromotedFiltered = filteredEvents.filter(e => !promotedIds.has(e.eventId));
+        
+        // Add promoted flag to each promoted event
+        const markedPromotedEvents = promotedEvents.map(e => ({ ...e, isPromoted: true }));
+        
+        return [...markedPromotedEvents, ...nonPromotedFiltered];
+    }, [promotedEvents, filteredEvents]);
 
     const toggleCategory = (catKey: string) => {
         setSelectedCategories(prev =>
@@ -280,45 +309,71 @@ export const EventDiscoveryPage: React.FC = () => {
                 </section>
 
                 <div className="px-8 sm:px-16 py-12 max-w-[1400px]">
-                    {/* Results Header */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 pb-8 border-b border-[#2E2E2F]/5">
-                        <div className="space-y-2">
+                    {/* Results Header - Aligned with search row */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+                        <div className="flex-1">
                             <h2 className="text-4xl font-black text-[#2E2E2F] tracking-tighter uppercase leading-none">
-                                {locationTerm ? `Events in ${locationTerm}` : 'Explore All Sessions'}
+                                {locationTerm ? `Events in ${locationTerm}` : 'Browse All Sessions'}
                             </h2>
-                            <p className="text-[11px] font-black text-[#2E2E2F]/30 uppercase tracking-[0.2em]">
-                                {filteredEvents.length} Sessions detected based on your criteria
+                            <p className="text-[11px] font-black text-[#2E2E2F]/30 uppercase tracking-[0.2em] mt-3">
+                                {combinedEvents.length} Sessions found
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-2xl border border-[#2E2E2F]/5 shadow-sm">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#2E2E2F]/40">Sort By</span>
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                    className="bg-transparent text-xs font-bold text-[#2E2E2F] outline-none cursor-pointer"
-                                >
-                                    <option value="relevance">Relevance</option>
-                                    <option value="newest">Newest Arrivals</option>
-                                    <option value="date_soon">Soonest Date</option>
-                                    <option value="price_low">Price: Low to High</option>
-                                </select>
-                            </div>
+                        <div className="flex items-center bg-white px-5 py-3 rounded-2xl border border-[#2E2E2F]/5 shadow-sm whitespace-nowrap">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#2E2E2F]/40 mr-3">Sort By</span>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="bg-transparent text-xs font-bold text-[#2E2E2F] outline-none cursor-pointer"
+                            >
+                                <option value="relevance">Relevance</option>
+                                <option value="newest">Newest Arrivals</option>
+                                <option value="date_soon">Soonest Date</option>
+                                <option value="price_low">Price: Low to High</option>
+                            </select>
                         </div>
                     </div>
 
-                    {/* Event Grid */}
-                    {filteredEvents.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
-                            {filteredEvents.map((event, idx) => (
-                                <div key={event.eventId} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: `${idx * 50}ms` }}>
-                                    <EventCard event={event} onActionNotice={setInteractionNotice} />
-                                </div>
-                            ))}
+                    {/* Event Grid - Combined promoted and filtered events */}
+                    {combinedEvents.length > 0 ? (
+                        <div className="mb-12">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
+                                {combinedEvents.map((event, idx) => (
+                                    <div 
+                                        key={event.eventId} 
+                                        className="relative animate-in fade-in slide-in-from-bottom-4 duration-700" 
+                                        style={{ animationDelay: `${idx * 50}ms` }}
+                                    >
+                                        {/* Featured Badge - Show only for promoted events */}
+                                        {event.isPromoted && (
+                                            <div className="absolute -top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-[#38BDF2] rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg border border-white/20">
+                                                <div className="w-5 h-5 rounded-full overflow-hidden bg-white/20 border border-white/10 flex-shrink-0">
+                                                    {event.organizer?.profileImageUrl ? (
+                                                        <img 
+                                                            src={typeof event.organizer.profileImageUrl === 'string' ? event.organizer.profileImageUrl : (event.organizer.profileImageUrl as any).url || (event.organizer.profileImageUrl as any).path} 
+                                                            alt="" 
+                                                            className="w-full h-full object-cover" 
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-[8px]">
+                                                            {(event.organizer?.organizerName || 'O').charAt(0).toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                Featured
+                                            </div>
+                                        )}
+                                        <EventCard event={event} onActionNotice={setInteractionNotice} />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    ) : (
-                        <div className="py-32 flex flex-col items-center text-center">
+                    ) : null}
+
+                    {/* No Events State */}
+                    {combinedEvents.length === 0 && (
+                        <div>
                             <div className="w-24 h-24 bg-[#F2F2F2] rounded-[2rem] border-2 border-[#2E2E2F]/5 flex items-center justify-center mb-8">
                                 <ICONS.Search className="w-10 h-10 text-[#2E2E2F]/10" />
                             </div>

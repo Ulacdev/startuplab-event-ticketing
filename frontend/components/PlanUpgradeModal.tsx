@@ -84,22 +84,19 @@ export const PlanUpgradeModal: React.FC<PlanUpgradeModalProps> = ({
       contentClassName="!p-0 !overflow-hidden flex flex-col"
       footer={
         <div className="flex items-center justify-between w-full">
-          <label className="flex items-center gap-3 cursor-pointer group">
+          <div className="flex items-center gap-3 hover:opacity-70 cursor-pointer transition-opacity" onClick={() => setDontShowAgain(!dontShowAgain)}>
             <div className="relative flex items-center justify-center">
               <input
                 type="checkbox"
                 checked={dontShowAgain}
                 onChange={(e) => setDontShowAgain(e.target.checked)}
-                className="peer sr-only"
+                className="w-5 h-5 rounded-md accent-[#38BDF2] cursor-pointer"
               />
-              <div className="w-5 h-5 rounded-md border-2 border-[#2E2E2F]/30 peer-checked:bg-[#38BDF2] peer-checked:border-[#38BDF2] transition-colors flex items-center justify-center">
-                <ICONS.Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" strokeWidth={3} />
-              </div>
             </div>
-            <span className="text-sm font-semibold text-[#2E2E2F]/70 group-hover:text-[#2E2E2F] transition-colors">
-              Don't show this again
+            <span className="text-sm font-semibold text-[#2E2E2F]/70">
+              {dontShowAgain ? "Won't show again until next login" : 'Don\'t show again'}
             </span>
-          </label>
+          </div>
           <Button variant="outline" onClick={handleClose} className="border-[#2E2E2F]/20 text-[#2E2E2F]/80">
             Cancel / Close
           </Button>

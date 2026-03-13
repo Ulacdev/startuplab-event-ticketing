@@ -94,14 +94,19 @@ export interface AdminPlan {
     priority_support?: boolean;
   };
   limits: {
-    max_events: number | string;
-    max_active_events?: number | string;
-    max_total_events?: number | string;
     max_staff_accounts: number | string;
     monthly_attendees?: number | string;
     max_attendees_per_month?: number | string;
     max_tickets_per_event?: number | string;
     max_attendees_per_event?: number | string;
+    email_quota_per_day?: number | string;
+    max_events?: number | string;
+    max_active_events?: number | string;
+    max_total_events?: number | string;
+  };
+  promotions?: {
+    max_promoted_events: number;
+    promotion_duration_days: number;
   };
   created_at?: string;
   updated_at?: string;
@@ -140,6 +145,10 @@ export interface Event {
 
   // DB is jsonb, so it could be a string URL, or an object { url: '...' }
   imageUrl?: string | { url?: string; path?: string } | any;
+
+  // Promoted flag
+  isPromoted?: boolean;
+  is_promoted?: boolean;
 }
 
 export interface TicketType {

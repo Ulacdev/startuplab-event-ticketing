@@ -143,10 +143,6 @@ const computeSubscriptionEndDate = (billingInterval) => {
   return endDate;
 };
 
-/**
- * Helper to record plan purchase in orders, transactions, and audit logs.
- * This makes it visible to the Admin in their central logs.
- */
 const recordPlanPurchase = async (subscription, plan, organizer, req = null) => {
   try {
     const { data: owner } = await supabase
@@ -158,7 +154,6 @@ const recordPlanPurchase = async (subscription, plan, organizer, req = null) => 
     const orderId = randomUUID();
     const isPaid = subscription.status === 'active';
 
-    // 1. Record in Orders table
     await supabase.from('orders').insert({
       orderId,
       userId: organizer.ownerUserId,
@@ -178,7 +173,6 @@ const recordPlanPurchase = async (subscription, plan, organizer, req = null) => 
       }
     });
 
-    // 2. Record in Transactions table
     await supabase.from('paymentTransactions').insert({
       orderId,
       gateway: { name: 'HITPAY' },
@@ -188,7 +182,6 @@ const recordPlanPurchase = async (subscription, plan, organizer, req = null) => 
       hitpayReferenceId: subscription.hitPayPaymentId || `PLAN-${subscription.subscriptionId}`
     });
 
-    // 3. Add to Audit Logs specifically for Plan Purchase
     await logAudit({
       actionType: 'PLAN_PURCHASE_RECORDED',
       actorUserId: organizer.ownerUserId,
@@ -284,7 +277,6 @@ const activateSubscription = async (subscription, req = null) => {
     organizer
   );
 
-  // In-app notifications
   const ownerUserId = organizer?.ownerUserId;
   if (ownerUserId) {
     await notifyUserByPreference({
@@ -332,16 +324,13 @@ const activateSubscription = async (subscription, req = null) => {
     req
   });
 
-  // Record for Admin central logs (Orders & Transactions)
   await recordPlanPurchase(subscription, planData, organizer, req);
 
   return endDate;
 };
 
-// Helper to send subscription confirmation email
 const sendSubscriptionConfirmationEmail = async (subscription, plan, organizer) => {
   try {
-    // Get organizer's owner email
     const { data: owner } = await supabase
       .from('users')
       .select('email, name')
@@ -364,30 +353,29 @@ const sendSubscriptionConfirmationEmail = async (subscription, plan, organizer) 
 
     const subject = `🎉 Subscription Activated: ${planName} Plan`;
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #38BDF8, #0EA5E9); padding: 30px; border-radius: 12px 12px 0 0;">
-          <h1 style="color: white; margin: 0;">Subscription Activated! ✅</h1>
+      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;\">
+        <div style=\"background: linear-gradient(135deg, #38BDF8, #0EA5E9); padding: 30px; border-radius: 12px 12px 0 0;\">
+          <h1 style=\"color: white; margin: 0;\">Subscription Activated! ✅</h1>
         </div>
-        <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb;">
-          <p>Hi ${owner.name || 'there'},</p>
+        <div style=\"background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb;\">
+          <p>Hi \${owner.name || 'there'},</p>
           <p>Great news! Your subscription has been successfully activated.</p>
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
-            <h3 style="margin-top: 0; color: #374151;">Subscription Details</h3>
-            <p><strong>Plan:</strong> ${planName}</p>
-            <p><strong>Billing:</strong> ${subscription.billingInterval === 'yearly' ? 'Yearly' : 'Monthly'}</p>
-            <p><strong>Amount:</strong> ₱${Number(price).toLocaleString()} ${currency}</p>
-            <p><strong>Status:</strong> <span style="color: green; font-weight: bold;">Active</span></p>
-            <p><strong>Renews On:</strong> ${endDate}</p>
+          <div style=\"background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;\">
+            <h3 style=\"margin-top: 0; color: #374151;\">Subscription Details</h3>
+            <p><strong>Plan:</strong> \${planName}</p>
+            <p><strong>Billing:</strong> \${subscription.billingInterval === 'yearly' ? 'Yearly' : 'Monthly'}</p>
+            <p><strong>Amount:</strong> ₱\${Number(price).toLocaleString()} \${currency}</p>
+            <p><strong>Status:</strong> <span style=\"color: green; font-weight: bold;\">Active</span></p>
+            <p><strong>Renews On:</strong> \${endDate}</p>
           </div>
-          <p>You now have access to all features included in your ${planName} plan.</p>
-          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+          <p>You now have access to all features included in your \${planName} plan.</p>
+          <p style=\"color: #6b7280; font-size: 14px; margin-top: 30px;\">
             If you have any questions, please contact our support team.
           </p>
         </div>
       </div>
     `;
 
-    // Use admin SMTP settings if available
     const { data: adminUser } = await supabase.from('users').select('userId').eq('role', 'ADMIN').limit(1).maybeSingle();
     const emailConfig = adminUser?.userId ? await fetchEmailConfig(adminUser.userId) : null;
     const fromAddress = emailConfig?.fromAddress;
@@ -397,24 +385,22 @@ const sendSubscriptionConfirmationEmail = async (subscription, plan, organizer) 
       to: owner.email,
       subject,
       html,
-      from: fromAddress ? `${fromName} <${fromAddress}>` : undefined,
+      from: fromAddress ? `\${fromName} <\${fromAddress}>` : undefined,
       config: emailConfig || undefined
     });
 
     if (result.ok) {
-      console.log(`[Subscription] Confirmation email sent to ${owner.email}`);
+      console.log(`[Subscription] Confirmation email sent to \${owner.email}`);
     } else {
-      console.log(`[Subscription] Email skipped: ${result.reason}`);
+      console.log(`[Subscription] Email skipped: \${result.reason}`);
     }
   } catch (error) {
     console.error('[Subscription] Error sending confirmation email:', error.message);
   }
 };
 
-// Helper to notify platform admin when an organizer purchases a plan
 const sendAdminSubscriptionNotification = async (subscription, plan, organizer) => {
   try {
-    // Get platform admin user
     const { data: adminUser } = await supabase
       .from('users')
       .select('userId, email, name')
@@ -425,8 +411,6 @@ const sendAdminSubscriptionNotification = async (subscription, plan, organizer) 
     if (!adminUser?.userId) return;
 
     const emailConfig = await fetchEmailConfig(adminUser.userId);
-
-    // Send to admin's primary email; fallback to email_from_address if admin email missing
     const toEmail = adminUser.email || emailConfig?.fromAddress;
     if (!toEmail) return;
 
@@ -438,18 +422,18 @@ const sendAdminSubscriptionNotification = async (subscription, plan, organizer) 
       ? plan?.yearlyPrice
       : plan?.monthlyPrice;
 
-    const subject = `Organizer purchased ${planName}`;
+    const subject = `Organizer purchased \${planName}`;
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px;">
-        <h2 style="margin: 0 0 12px; color: #111;">New subscription purchase</h2>
-        <p style="margin: 0 0 16px; color: #444;">An organizer just completed a plan purchase.</p>
-        <ul style="padding-left: 16px; color: #333; line-height: 1.5;">
-          <li><strong>Organizer:</strong> ${organizer?.organizerName || organizer?.organizerId}</li>
-          <li><strong>Plan:</strong> ${planName}</li>
-          <li><strong>Billing:</strong> ${subscription.billingInterval}</li>
-          <li><strong>Amount:</strong> ₱${Number(amount || 0).toLocaleString()} ${subscription.currency || 'PHP'}</li>
-          <li><strong>Subscription ID:</strong> ${subscription.subscriptionId}</li>
-          <li><strong>Status:</strong> ${subscription.status}</li>
+      <div style=\"font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px;\">
+        <h2 style=\"margin: 0 0 12px; color: #111;\">New subscription purchase</h2>
+        <p style=\"margin: 0 0 16px; color: #444;\">An organizer just completed a plan purchase.</p>
+        <ul style=\"padding-left: 16px; color: #333; line-height: 1.5;\">
+          <li><strong>Organizer:</strong> \${organizer?.organizerName || organizer?.organizerId}</li>
+          <li><strong>Plan:</strong> \${planName}</li>
+          <li><strong>Billing:</strong> \${subscription.billingInterval}</li>
+          <li><strong>Amount:</strong> ₱\${Number(amount || 0).toLocaleString()} \${subscription.currency || 'PHP'}</li>
+          <li><strong>Subscription ID:</strong> \${subscription.subscriptionId}</li>
+          <li><strong>Status:</strong> \${subscription.status}</li>
         </ul>
       </div>
     `;
@@ -458,7 +442,7 @@ const sendAdminSubscriptionNotification = async (subscription, plan, organizer) 
       to: toEmail,
       subject,
       html,
-      from: fromAddress ? `${fromName} <${fromAddress}>` : undefined,
+      from: fromAddress ? `\${fromName} <\${fromAddress}>` : undefined,
       config: emailConfig || undefined
     });
   } catch (error) {
@@ -466,9 +450,7 @@ const sendAdminSubscriptionNotification = async (subscription, plan, organizer) 
   }
 };
 
-// Helper to get HitPay payment URL using Admin's configuration from DB
 const createHitPayPayment = async (req, amount, currency, organizerName, planName, subscriptionId) => {
-  // 1. Get the admin's user ID
   const { data: adminUser, error: adminError } = await supabase
     .from('users')
     .select('userId')
@@ -480,7 +462,6 @@ const createHitPayPayment = async (req, amount, currency, organizerName, planNam
     throw new Error('Platform admin not found. Cannot process payment.');
   }
 
-  // 2. Fetch admin's HitPay settings
   const { data: settings, error: settingsError } = await supabase
     .from('settings')
     .select('key, value')
@@ -510,25 +491,19 @@ const createHitPayPayment = async (req, amount, currency, organizerName, planNam
     ? 'https://api.hit-pay.com/v1'
     : 'https://api.sandbox.hit-pay.com/v1';
 
-  // Determine the base URL dynamically from the request to ensure webhooks return to the right server
   const proto = req.headers['x-forwarded-proto'] || 'http';
   const host = req.get('host');
-  const dynamicBaseUrl = `${proto}://${host}`;
+  const dynamicBaseUrl = `\${proto}://\${host}`;
   const serverBaseUrl = (process.env.SERVER_BASE_URL || dynamicBaseUrl).replace(/\/$/, '');
-  const webhookUrl = `${serverBaseUrl}/api/subscriptions/webhook`;
+  const webhookUrl = `\${serverBaseUrl}/api/subscriptions/webhook`;
 
-  // Use a clean URL and carry reference_id in query so verification always has a stable key.
-  // App.tsx HashBypassBridge will route this into the hash-based SPA path.
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
-  const redirectUrl = `${frontendUrl}/subscription/success?reference_id=${encodeURIComponent(subscriptionId)}`;
-
-  console.log('📍 [Subscription] Dynamic Webhook URL:', webhookUrl);
-  console.log('📍 [Subscription] Redirect URL:', redirectUrl);
+  const redirectUrl = `\${frontendUrl}/subscription/success?reference_id=\${encodeURIComponent(subscriptionId)}`;
 
   const payload = new URLSearchParams();
   payload.set('amount', String(Number(amount || 0)));
   payload.set('currency', currency || 'PHP');
-  payload.set('purpose', `Subscription to ${planName} plan`);
+  payload.set('purpose', `Subscription to \${planName} plan`);
   payload.set('reference_number', subscriptionId);
   payload.set('reference_id', subscriptionId);
   payload.set('redirect_url', redirectUrl);
@@ -543,7 +518,7 @@ const createHitPayPayment = async (req, amount, currency, organizerName, planNam
   );
   if (organizerName) payload.set('name', organizerName);
 
-  const response = await fetch(`${hitPayUrl}/payment-requests`, {
+  const response = await fetch(`\${hitPayUrl}/payment-requests`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -556,21 +531,17 @@ const createHitPayPayment = async (req, amount, currency, organizerName, planNam
   const data = await response.json().catch(() => null);
   if (!response.ok) {
     const errorMessage = data?.error || data?.message || 'Unknown HitPay error';
-    throw new Error(`HitPay payment creation failed: ${errorMessage}`);
+    throw new Error(`HitPay payment creation failed: \${errorMessage}`);
   }
 
   return data || {};
 };
 
-// Get current subscription for organizer
 export const getOrganizerSubscription = async (req, res) => {
   try {
     const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
-    // First find the organizer for this user
     const { data: organizer, error: orgError } = await supabase
       .from('organizers')
       .select('*')
@@ -578,10 +549,7 @@ export const getOrganizerSubscription = async (req, res) => {
       .single();
 
     if (orgError || !organizer) {
-      return res.json({
-        subscription: null,
-        organizer: null
-      });
+      return res.json({ subscription: null, organizer: null });
     }
 
     const { data: subscription, error } = await supabase
@@ -591,7 +559,7 @@ export const getOrganizerSubscription = async (req, res) => {
         plan:plans(
           planId, name, slug, description, 
           monthlyPrice, yearlyPrice, currency,
-          features, limits
+          features, limits, promotions
         )
       `)
       .eq('organizerId', organizer.organizerId)
@@ -612,7 +580,6 @@ export const getOrganizerSubscription = async (req, res) => {
   }
 };
 
-// Get available plans for subscription
 export const getAvailablePlans = async (_req, res) => {
   try {
     const { data: plans, error } = await supabase
@@ -622,7 +589,6 @@ export const getAvailablePlans = async (_req, res) => {
       .order('monthlyPrice', { ascending: true });
 
     if (error) throw error;
-
     return res.json({ plans: plans || [] });
   } catch (error) {
     console.error('getAvailablePlans error:', error);
@@ -630,7 +596,6 @@ export const getAvailablePlans = async (_req, res) => {
   }
 };
 
-// Initiate subscription with payment
 export const createSubscription = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -639,7 +604,6 @@ export const createSubscription = async (req, res) => {
     const { planId, billingInterval } = req.body;
     if (!planId) return res.status(400).json({ error: 'Plan is required' });
 
-    // Get organizer's info
     const { data: organizer, error: orgError } = await supabase
       .from('organizers')
       .select('*')
@@ -650,7 +614,6 @@ export const createSubscription = async (req, res) => {
       return res.status(404).json({ error: 'Organizer profile not found' });
     }
 
-    // Get plan details
     const { data: plan, error: planError } = await supabase
       .from('plans')
       .select('*')
@@ -670,7 +633,6 @@ export const createSubscription = async (req, res) => {
       ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString()
       : null;
 
-    // If price is 0, create free subscription
     if (priceAmount === 0) {
       const now = new Date();
       const endDate = billingInterval === 'yearly'
@@ -695,7 +657,6 @@ export const createSubscription = async (req, res) => {
 
       if (subError) throw subError;
 
-      // Update organizer
       await supabase
         .from('organizers')
         .update({
@@ -705,49 +666,14 @@ export const createSubscription = async (req, res) => {
         })
         .eq('organizerId', organizer.organizerId);
 
-      // --- NEW: Send Notifications for Free Plan ---
-      try {
-        const subForNotify = { ...subscription, plans: plan };
-        await sendSubscriptionConfirmationEmail(subForNotify, plan, organizer);
-        await sendAdminSubscriptionNotification(subForNotify, plan, organizer);
-
-        if (organizer.ownerUserId) {
-          await notifyUserByPreference({
-            recipientUserId: organizer.ownerUserId,
-            actorUserId: organizer.ownerUserId,
-            title: 'Free Plan Activated 🎁',
-            message: `Your ${plan.name} plan is now active. Enjoy your free features!`,
-            metadata: { subscriptionId: subscription.subscriptionId, planId: plan.planId, status: 'active', isFree: true }
-          });
-        }
-
-        const { data: adminUser } = await supabase.from('users').select('userId').eq('role', 'ADMIN').limit(1).maybeSingle();
-        if (adminUser?.userId) {
-          await notifyUserByPreference({
-            recipientUserId: adminUser.userId,
-            actorUserId: organizer.ownerUserId || adminUser.userId,
-            title: 'New Free Subscription',
-            message: `${organizer.organizerName || 'An organizer'} signed up for the ${plan.name} (Free).`,
-            metadata: { subscriptionId: subscription.subscriptionId, planId: plan.planId, organizerId: subscription.organizerId, status: 'active' }
-          });
-        }
-
-        await logAudit({
-          actionType: 'FREE_SUBSCRIPTION_ACTIVATED',
-          details: { subscriptionId: subscription.subscriptionId, planId },
-          req
-        });
-
-        // Record for Admin central logs (Orders & Transactions)
-        await recordPlanPurchase(subscription, plan, organizer, req);
-      } catch (notifyErr) {
-        console.error('⚠️ [Subscription] Error sending free plan notifications:', notifyErr);
-      }
+      const subForNotify = { ...subscription, plans: plan };
+      await sendSubscriptionConfirmationEmail(subForNotify, plan, organizer);
+      await sendAdminSubscriptionNotification(subForNotify, plan, organizer);
+      await recordPlanPurchase(subscription, plan, organizer, req);
 
       return res.status(201).json({ subscription, plan, free: true });
     }
 
-    // Create pending subscription
     const { data: subscription, error: subError } = await supabase
       .from('organizersubscriptions')
       .insert({
@@ -765,17 +691,8 @@ export const createSubscription = async (req, res) => {
 
     if (subError) throw subError;
 
-    // Create HitPay payment
-    const payment = await createHitPayPayment(
-      req,
-      priceAmount,
-      plan.currency || 'PHP',
-      organizer.organizerName,
-      plan.name,
-      subscription.subscriptionId
-    );
+    const payment = await createHitPayPayment(req, priceAmount, plan.currency, organizer.organizerName, plan.name, subscription.subscriptionId);
 
-    // Update subscription with payment reference
     await supabase
       .from('organizersubscriptions')
       .update({
@@ -784,289 +701,86 @@ export const createSubscription = async (req, res) => {
       })
       .eq('subscriptionId', subscription.subscriptionId);
 
-    // If it's a trial, update organizer status now so features are unlocked immediately
-    if (trialDays > 0) {
-      await supabase
-        .from('organizers')
-        .update({
-          currentPlanId: planId,
-          subscriptionStatus: 'trial',
-          planExpiresAt: trialEndDate,
-        })
-        .eq('organizerId', organizer.organizerId);
-    }
-
-    await logAudit({
-      actionType: 'SUBSCRIPTION_INITIATED',
-      details: {
-        subscriptionId: subscription.subscriptionId,
-        planId,
-        billingInterval,
-        organizerId: organizer.organizerId
-      },
-      req
-    });
-
-    return res.status(201).json({
-      subscription,
-      plan,
-      paymentUrl: payment?.url || payment?.payment_url || payment?.checkout_url || payment?.payment_request_url || null,
-    });
+    return res.status(201).json({ subscription, paymentUrl: payment?.url || payment?.payment_url || payment?.checkout_url || payment?.payment_request_url });
   } catch (error) {
     console.error('createSubscription error:', error);
-    return res.status(500).json({ error: error.message || 'Failed to create subscription' });
+    return res.status(500).json({ error: error.message || 'Failed to initiate subscription' });
   }
 };
 
-// Handle HitPay webhook for subscription payments
 export const handleSubscriptionWebhook = async (req, res) => {
   try {
-    const payload = req.body || {};
-    const { referenceId, paymentRequestId, status, eventType } = extractSubscriptionWebhookMeta(payload);
+    const { referenceId, status } = extractSubscriptionWebhookMeta(req.body);
+    if (!referenceId) return res.status(400).json({ error: 'Missing reference ID' });
 
-    console.log('📦 [Subscription Webhook] Received webhook:', {
-      referenceId,
-      paymentRequestId,
-      status,
-      eventType,
-      body: payload
-    });
-
-    if (!referenceId && !paymentRequestId) {
-      return res.status(400).json({ error: 'Missing subscription reference in webhook payload' });
-    }
-
-    let subscription = null;
-    if (referenceId) {
-      subscription = await fetchSubscriptionWithPlan('subscriptionId', referenceId);
-    }
-    if (!subscription && paymentRequestId) {
-      subscription = await fetchSubscriptionWithPlan('hitPayPaymentId', paymentRequestId);
-    }
-    if (!subscription && referenceId) {
-      subscription = await fetchSubscriptionWithPlan('hitPayPaymentId', referenceId);
-    }
-
-    if (!subscription) {
-      console.error('❌ [Subscription Webhook] Subscription not found:', { referenceId, paymentRequestId });
-      return res.status(404).json({ error: 'Subscription not found' });
-    }
-
-    console.log('📋 [Subscription Webhook] Found subscription:', {
-      subscriptionId: subscription.subscriptionId,
-      currentStatus: subscription.status,
-      webhookStatus: status,
-      paymentRequestId: paymentRequestId || subscription.hitPayPaymentId || null,
-    });
-
-    if (paymentRequestId && paymentRequestId !== subscription.hitPayPaymentId) {
-      await supabase
-        .from('organizersubscriptions')
-        .update({
-          hitPayPaymentId: paymentRequestId,
-          updated_at: new Date().toISOString()
-        })
-        .eq('subscriptionId', subscription.subscriptionId);
-    }
+    const subscription = await fetchSubscriptionWithPlan('subscriptionId', referenceId);
+    if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
 
     if (isSuccessfulPaymentStatus(status)) {
-      if (subscription.status !== 'active') {
-        console.log('✅ [Subscription Webhook] Payment completed, activating subscription...');
-        await activateSubscription(subscription, req);
-      }
-      return res.json({ success: true, status: 'active' });
+      await activateSubscription(subscription, req);
+    } else if (isFailedPaymentStatus(status)) {
+      await supabase.from('organizersubscriptions').update({ status: 'failed' }).eq('subscriptionId', referenceId);
     }
 
-    if (isFailedPaymentStatus(status)) {
-      await supabase
-        .from('organizersubscriptions')
-        .update({
-          status: 'failed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('subscriptionId', subscription.subscriptionId)
-        .in('status', ['pending', 'trial']);
-
-      return res.json({ success: true, status: 'failed' });
-    }
-
-    return res.json({ success: true, status: status || 'pending' });
+    return res.json({ success: true });
   } catch (error) {
     console.error('handleSubscriptionWebhook error:', error);
-    return res.status(500).json({ error: error.message || 'Webhook processing failed' });
+    return res.status(500).json({ error: error.message });
   }
 };
 
-// Cancel subscription
 export const cancelSubscription = async (req, res) => {
   try {
     const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+    const { organizerId } = req.params;
 
-    const { subscriptionId } = req.params;
-
-    // Get organizer
-    const { data: organizer } = await supabase
-      .from('organizers')
-      .select('organizerId')
-      .eq('ownerUserId', userId)
-      .single();
-
-    if (!organizer) {
-      return res.status(404).json({ error: 'Organizer not found' });
-    }
-
-    // Fetch subscription to validate current status
-    const { data: subscription } = await supabase
+    const { error } = await supabase
       .from('organizersubscriptions')
-      .select('status, cancelAtPeriodEnd')
-      .eq('subscriptionId', subscriptionId)
-      .eq('organizerId', organizer.organizerId)
-      .maybeSingle();
+      .update({ status: 'cancelled' })
+      .eq('organizerId', organizerId)
+      .eq('status', 'active');
 
-    if (!subscription) {
-      return res.status(404).json({ error: 'Subscription not found' });
-    }
+    if (error) throw error;
 
-    if (subscription.status === 'cancelled') {
-      return res.json({ success: true, message: 'Subscription already cancelled.' });
-    }
+    await supabase.from('organizers').update({ subscriptionStatus: 'cancelled' }).eq('organizerId', organizerId);
 
-    // Prevent accidental cancellation of unpaid/pending/trial subscriptions
-    if (!['active', 'trial'].includes(subscription.status)) {
-      return res.status(400).json({ error: `Cannot cancel subscription while status is '${subscription.status}'.` });
-    }
-
-    // 1. Update subscription status
-    const { error: subError } = await supabase
-      .from('organizersubscriptions')
-      .update({
-        status: 'cancelled',
-        cancelAtPeriodEnd: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq('subscriptionId', subscriptionId)
-      .eq('organizerId', organizer.organizerId);
-
-    if (subError) throw subError;
-
-    // 2. Reset organizer's active plan immediately
-    const { error: orgError } = await supabase
-      .from('organizers')
-      .update({
-        currentPlanId: null,
-        subscriptionStatus: 'cancelled',
-        planExpiresAt: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('organizerId', organizer.organizerId);
-
-    if (orgError) throw orgError;
-
-    await logAudit({
-      actionType: 'SUBSCRIPTION_CANCELLED_IMMEDIATE',
-      details: { subscriptionId },
-      req
-    });
-
-    return res.json({ success: true, message: 'Subscription has been cancelled and features have been revoked.' });
+    return res.json({ success: true });
   } catch (error) {
     console.error('cancelSubscription error:', error);
-    return res.status(500).json({ error: error.message || 'Failed to cancel subscription' });
+    return res.status(500).json({ error: error.message });
   }
 };
 
-// Get subscription history
 export const getSubscriptionHistory = async (req, res) => {
   try {
     const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
-
-    // Get organizer
-    const { data: organizer } = await supabase
-      .from('organizers')
-      .select('organizerId')
-      .eq('ownerUserId', userId)
-      .single();
-
-    if (!organizer) {
-      return res.status(404).json({ error: 'Organizer not found' });
-    }
+    const { data: organizer } = await supabase.from('organizers').select('organizerId').eq('ownerUserId', userId).single();
+    if (!organizer) return res.status(404).json({ error: 'Organizer not found' });
 
     const { data: subscriptions, error } = await supabase
       .from('organizersubscriptions')
-      .select(`
-        *,
-        plan:plans(planId, name, slug, description, monthlyPrice, yearlyPrice)
-      `)
+      .select('*, plan:plans(*)')
       .eq('organizerId', organizer.organizerId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-
-    return res.json({ subscriptions: subscriptions || [] });
+    return res.json({ subscriptions });
   } catch (error) {
     console.error('getSubscriptionHistory error:', error);
-    return res.status(500).json({ error: error.message || 'Failed to load subscription history' });
+    return res.status(500).json({ error: error.message });
   }
 };
-// Verify subscription status (manually check with HitPay if webhook is delayed)
+
 export const verifySubscription = async (req, res) => {
   try {
     const { subscriptionId } = req.params;
-    const userId = req.user?.id;
+    const subscription = await fetchSubscriptionWithPlan('subscriptionId', subscriptionId);
+    if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
 
-    console.log(`🔍 [Subscription] Verifying status for ${subscriptionId}, userId: ${userId || 'none'}`);
+    if (subscription.status === 'active') return res.json({ success: true, status: 'active' });
 
-    // 1. Get the subscription record
-    // Fallback: If join fails due to relationship issues, we'll fetch manually
-    let { data: subscription, error: subError } = await supabase
-      .from('organizersubscriptions')
-      .select('*, plan:plans(*)')
-      .eq('subscriptionId', subscriptionId)
-      .maybeSingle();
-
-    if (subError) {
-      console.error('❌ [Subscription] Primary fetch error:', subError);
-      // Fallback fetch
-      const { data: rawSub, error: rawError } = await supabase
-        .from('organizersubscriptions')
-        .select('*')
-        .eq('subscriptionId', subscriptionId)
-        .maybeSingle();
-
-      if (rawError || !rawSub) {
-        console.error('❌ [Subscription] Fallback fetch failed:', rawError);
-        return res.status(404).json({ error: 'Subscription not found' });
-      }
-
-      const { data: planData } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('planId', rawSub.planId)
-        .maybeSingle();
-
-      subscription = { ...rawSub, plan: planData };
-    }
-
-    if (!subscription) {
-      return res.status(404).json({ error: 'Subscription not found' });
-    }
-
-    // If already active, just return success
-    if (subscription.status === 'active') {
-      return res.json({ success: true, status: 'active', message: 'Subscription is already active' });
-    }
-
-    // 2. Fetch the HitPay payment status
-    if (!subscription.hitPayPaymentId) {
-      return res.json({ success: false, status: subscription.status, message: 'No HitPay ID associated' });
-    }
-
-    // Get Admin config for HitPay
     const { data: adminUser } = await supabase.from('users').select('userId').eq('role', 'ADMIN').limit(1).maybeSingle();
     const { data: settings } = await supabase.from('settings').select('key, value').eq('user_id', adminUser?.userId).in('key', ['hitpay_api_key', 'hitpay_mode']);
-
     const mapped = {};
     settings?.forEach(s => mapped[s.key] = s.value);
 
@@ -1074,52 +788,23 @@ export const verifySubscription = async (req, res) => {
     const mode = mapped['hitpay_mode'] || 'sandbox';
     const hitPayUrl = mode === 'live' ? 'https://api.hit-pay.com/v1' : 'https://api.sandbox.hit-pay.com/v1';
 
-    const response = await fetch(`${hitPayUrl}/payment-requests/${subscription.hitPayPaymentId}`, {
+    const response = await fetch(`\${hitPayUrl}/payment-requests/\${subscription.hitPayPaymentId}`, {
       headers: { 'X-Business-Api-Key': apiKey }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ [Subscription] HitPay verification failed:', errorText);
-      throw new Error(`HitPay verification failed: ${errorText}`);
-    }
+    if (!response.ok) throw new Error('HitPay verification failed');
 
     const hitPayData = await response.json();
-    const hitPayStatus = normalizePaymentStatus(
-      firstDefinedString(
-        hitPayData?.status,
-        hitPayData?.payment_status,
-        hitPayData?.data?.status,
-        hitPayData?.data?.payment_request?.status,
-        hitPayData?.payment_request?.status,
-      )
-    ) || 'pending';
-
-    console.log(`📡 [Subscription] HitPay state for ${subscriptionId}:`, {
-      status: hitPayStatus,
-      paymentId: subscription.hitPayPaymentId
-    });
+    const hitPayStatus = normalizePaymentStatus(hitPayData?.status || hitPayData?.data?.status);
 
     if (isSuccessfulPaymentStatus(hitPayStatus)) {
-      console.log('✅ [Subscription] Valid payment detected, activating...');
       await activateSubscription(subscription, req);
-      return res.json({ success: true, status: 'active', message: 'Subscription activated' });
+      return res.json({ success: true, status: 'active' });
     }
 
-    if (isFailedPaymentStatus(hitPayStatus)) {
-      await supabase
-        .from('organizersubscriptions')
-        .update({
-          status: 'failed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('subscriptionId', subscriptionId)
-        .in('status', ['pending', 'trial']);
-    }
-
-    return res.json({ success: false, status: hitPayStatus, message: `Status is still ${hitPayStatus}` });
+    return res.json({ success: false, status: hitPayStatus });
   } catch (error) {
     console.error('verifySubscription error:', error);
-    return res.status(500).json({ error: error.message || 'Failed to verify subscription' });
+    return res.status(500).json({ error: error.message });
   }
 };

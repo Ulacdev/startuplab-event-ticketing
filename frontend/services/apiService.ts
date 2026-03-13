@@ -210,6 +210,19 @@ export const apiService = {
     return await res.json();
   },
 
+  getEmailQuotaStatus: async (): Promise<{ remaining: number; limit: number; sent: number; canSend: boolean; quotaStatus: string }> => {
+    const res = await fetch(`${API_BASE}/api/organizer/email-quota`, {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      cache: 'no-store'
+    });
+    if (!res.ok) {
+      const errorPayload = await res.json().catch(() => ({}));
+      throw new Error(errorPayload?.error || `Failed to load email quota: ${res.status}`);
+    }
+    return await res.json();
+  },
+
   getOrganizerById: async (id: string): Promise<OrganizerProfile | null> => {
     const res = await fetch(`${API_BASE}/api/organizer/${encodeURIComponent(id)}`, {
       headers: { 'Content-Type': 'application/json' },
@@ -504,6 +517,32 @@ export const apiService = {
     if (!res.ok) throw new Error(`Failed to load event: ${res.status}`);
     const data = await res.json();
     return data as Event;
+  },
+
+  // GET /api/events/feed
+  getEventsFeed: async (page = 1, limit = 12, search = '', location = '', category = ''): Promise<{ events: Event[], pagination: any }> => {
+    const query = new URLSearchParams();
+    query.append('page', String(page));
+    query.append('limit', String(limit));
+    if (search) query.append('search', search);
+    if (location) query.append('location', location);
+    if (category) query.append('category', category);
+
+    const res = await fetch(`${API_BASE}/api/events/feed?${query}`, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) throw new Error(`Failed to load events feed: ${res.status}`);
+    return await res.json();
+  },
+
+  // GET /api/events/:id/details
+  getEventDetails: async (id: string) => {
+    const res = await fetch(`${API_BASE}/api/events/${encodeURIComponent(id)}/details`, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`Failed to load event details: ${res.status}`);
+    return await res.json();
   },
 
   // POST /api/orders (Creates Order -> OrderItems -> Attendees -> Tickets)
@@ -842,6 +881,58 @@ export const apiService = {
     if (!res.ok) throw new Error(`Failed to upload image: ${res.status}`);
     const data = await res.json();
     return { publicUrl: data.publicUrl };
+  },
+
+  // --- Event Promotion APIs ---
+  
+  toggleEventPromotion: async (eventId: string): Promise<{ promoted: boolean; promotionId?: string; expiresAt?: string; message: string }> => {
+    const res = await fetch(`${API_BASE}/api/events/${encodeURIComponent(eventId)}/toggle-promotion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error || `Failed to toggle promotion: ${res.status}`);
+    return data;
+  },
+
+  getEventPromotionStatus: async (eventId: string): Promise<{ promoted: boolean; promotionId?: string; expiresAt?: string; remainingDays?: number }> => {
+    const res = await fetch(`${API_BASE}/api/events/${encodeURIComponent(eventId)}/promotion-status`, {
+      credentials: 'include',
+      cache: 'no-store'
+    });
+    if (!res.ok) return { promoted: false };
+    return await res.json();
+  },
+
+  promoteEvent: async (eventId: string) => {
+    return apiService.toggleEventPromotion(eventId);
+  },
+
+  demoteEvent: async (eventId: string) => {
+    return apiService.toggleEventPromotion(eventId);
+  },
+
+  listMyPromotedEvents: async (): Promise<any[]> => {
+    const data = await apiService.getPromotedEvents();
+    return Array.isArray(data.events) ? data.events : [];
+  },
+
+  getPromotionQuota: async (): Promise<{ limit: number; used: number; remaining: number; durationDays: number; canPromote: boolean }> => {
+    const res = await fetch(`${API_BASE}/api/promotion-quota`, {
+      credentials: 'include',
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error(`Failed to load promotion quota: ${res.status}`);
+    return await res.json();
+  },
+
+  getPromotedEvents: async (limit = 10): Promise<{ events: Event[] }> => {
+    const res = await fetch(`${API_BASE}/api/promoted-events?limit=${limit}`, {
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error(`Failed to load promoted events: ${res.status}`);
+    return await res.json();
   },
 
   getAnalytics: async (): Promise<AnalyticsSummary> => {

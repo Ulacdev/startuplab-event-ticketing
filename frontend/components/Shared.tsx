@@ -24,12 +24,14 @@ export const Card: React.FC<{
   children: React.ReactNode,
   className?: string,
   style?: React.CSSProperties,
-  onClick?: () => void
-}> = ({ children, className = '', style, onClick }) => (
+  onClick?: () => void,
+  [key: string]: any;
+}> = ({ children, className = '', style, onClick, ...props }) => (
   <div
     onClick={onClick}
     style={style}
-    className={`bg-[#F2F2F2] rounded-xl border border-[#2E2E2F]/10 overflow-hidden ${className} shadow-none`}
+    className={`bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-xl overflow-hidden ${className} shadow-none`}
+    {...props}
   >
     {children}
   </div>
@@ -226,3 +228,12 @@ export const PageLoader: React.FC<{
       </div>
     );
   };
+
+export const Branding: React.FC<{ className?: string, light?: boolean }> = ({ className = '', light = false }) => (
+  <img
+    src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
+    alt="StartupLab Business Ticketing Logo"
+    className={`h-20 sm:h-32 w-auto drop-shadow-xl transform transition-all duration-300 hover:scale-[1.03] cursor-pointer ${className}`}
+    style={{ filter: light ? 'invert(1) grayscale(1) brightness(2)' : undefined }}
+  />
+);

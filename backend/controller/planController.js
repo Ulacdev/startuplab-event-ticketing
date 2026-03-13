@@ -14,6 +14,11 @@ const LIMIT_KEYS = {
   max_attendees_per_month: 'max_attendees_per_month',
 };
 
+const PROMOTION_KEYS = {
+  max_promoted_events: 'max_promoted_events',
+  promotion_duration_days: 'promotion_duration_days',
+};
+
 const toBoolean = (value, fallback = false) => {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') {
@@ -46,10 +51,13 @@ const mapPlan = (row, featureRows = []) => {
     enable_priority_support: false,
   };
   const limits = {
-    max_events: 0,
-    max_active_events: 0,
     max_staff_accounts: 0,
     max_attendees_per_month: 0,
+    email_quota_per_day: 500,
+  };
+  const promotions = {
+    max_promoted_events: 0,
+    promotion_duration_days: 7,
   };
 
   featureRows.forEach((item) => {
@@ -58,10 +66,15 @@ const mapPlan = (row, featureRows = []) => {
     if (item.key === FEATURE_KEYS.enable_discount_codes) features.enable_discount_codes = toBoolean(item.value, false);
     if (item.key === FEATURE_KEYS.enable_advanced_reports) features.enable_advanced_reports = toBoolean(item.value, false);
     if (item.key === FEATURE_KEYS.enable_priority_support) features.enable_priority_support = toBoolean(item.value, false);
+    
     if (item.key === LIMIT_KEYS.max_events) limits.max_events = coerceLimitValue(item.value);
     if (item.key === LIMIT_KEYS.max_active_events) limits.max_active_events = coerceLimitValue(item.value);
     if (item.key === LIMIT_KEYS.max_staff_accounts) limits.max_staff_accounts = coerceLimitValue(item.value);
     if (item.key === LIMIT_KEYS.max_attendees_per_month) limits.max_attendees_per_month = coerceLimitValue(item.value);
+    if (item.key === 'email_quota_per_day') limits.email_quota_per_day = coerceLimitValue(item.value);
+
+    if (item.key === PROMOTION_KEYS.max_promoted_events) promotions.max_promoted_events = toNumber(item.value, 0);
+    if (item.key === PROMOTION_KEYS.promotion_duration_days) promotions.promotion_duration_days = toNumber(item.value, 7);
   });
 
   return {
@@ -79,6 +92,7 @@ const mapPlan = (row, featureRows = []) => {
     isActive: !!row.isActive,
     features,
     limits,
+    promotions,
   };
 };
 

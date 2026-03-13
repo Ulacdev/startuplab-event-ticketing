@@ -757,3 +757,35 @@ export const getAllOrganizers = async (req, res) => {
     return res.status(500).json({ error: err?.message || 'Unexpected error' });
   }
 };
+
+export const getEmailQuotaStatus = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Import emailQuotaManager
+    const emailQuotaManager = (await import('../utils/emailQuotaManager.js')).default;
+
+    // Get organizer associated with this user
+    const organizer = await getOrganizerByOwnerUserId(userId);
+    if (!organizer) {
+      return res.status(404).json({ error: 'Organizer not found' });
+    }
+
+    // Get quota status
+    const quotaStatus = await emailQuotaManager.getQuotaStatus(organizer.organizerId);
+
+    return res.json({
+      remaining: quotaStatus.remaining,
+      limit: quotaStatus.limit,
+      sent: quotaStatus.sent,
+      canSend: quotaStatus.canSend,
+      quotaStatus: quotaStatus.quotaStatus,
+    });
+  } catch (err) {
+    console.error('Error fetching email quota status:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to fetch email quota status' });
+  }
+};

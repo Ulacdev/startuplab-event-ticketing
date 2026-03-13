@@ -6,6 +6,8 @@ import { AnalyticsSummary, UserRole } from '../../types';
 import { Badge, Card, Modal, PageLoader } from '../../components/Shared';
 import { ICONS } from '../../constants';
 import QRCode from 'react-qr-code';
+import { useUser } from '../../context/UserContext';
+
 
 type Tx = {
   orderId: string;
@@ -127,28 +129,13 @@ export const AdminDashboard: React.FC = () => {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [role, setRole] = React.useState<UserRole | null>(null);
+  const { role } = useUser();
   const isStaff = role === UserRole.STAFF;
   const isAdmin = role === UserRole.ADMIN;
+  const isOrganizer = role === UserRole.ORGANIZER;
   const basePath = isStaff ? '/staff' : '/admin';
 
 
-  React.useEffect(() => {
-    async function fetchRole() {
-      try {
-        const res = await fetch(`/api/user/role`, { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          setRole(data?.[0]?.role || UserRole.ADMIN);
-        } else {
-          setRole(UserRole.ADMIN);
-        }
-      } catch {
-        setRole(UserRole.ADMIN);
-      }
-    }
-    fetchRole();
-  }, []);
 
   React.useEffect(() => {
     if (role === UserRole.STAFF) {
@@ -929,15 +916,23 @@ export const AdminDashboard: React.FC = () => {
           <div className="w-20 h-20 bg-[#F2F2F2] border border-[#2E2E2F]/20 text-[#2E2E2F] rounded-3xl flex items-center justify-center mb-6">
             {isAdmin ? <ICONS.Layout className="w-10 h-10" /> : <ICONS.Calendar className="w-10 h-10" />}
           </div>
-          <h3 className="text-xl font-black text-[#2E2E2F] mb-2">{isAdmin ? 'New Plan?' : 'New Event?'}</h3>
+          <h3 className="text-xl font-black text-[#2E2E2F] mb-2">{isAdmin ? 'New Plan?' : 'New Events?'}</h3>
           <p className="text-[#2E2E2F] text-sm max-w-xs mb-8 font-medium">
             {isAdmin ? 'Create or update subscription plans for organizers.' : 'Launch a new workshop or conference to drive organization revenue.'}
           </p>
           <button
-            onClick={() => isAdmin ? navigate('/settings?tab=plans&openPlanModal=1') : navigate(`/events?openModal=true`)}
+            onClick={() => {
+              if (isAdmin) {
+                navigate('/settings?tab=plans&openPlanModal=1');
+              } else if (isOrganizer) {
+                navigate('/my-events?openModal=true');
+              } else {
+                navigate('/events?openModal=true');
+              }
+            }}
             className="bg-[#38BDF2] text-[#F2F2F2] px-8 py-3 rounded-2xl font-bold hover:bg-[#38BDF2] transition-colors"
           >
-            {isAdmin ? 'Create Plan' : 'Create Event'}
+            {isAdmin ? 'Create Plan' : 'Create Events'}
           </button>
         </Card>
       </div>

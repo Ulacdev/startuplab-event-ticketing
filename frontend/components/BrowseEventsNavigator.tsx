@@ -145,7 +145,7 @@ export const BrowseEventsNavigator: React.FC<BrowseEventsNavigatorProps> = ({
   };
 
   return (
-    <section className={`mx-1 sm:mx-2 lg:mx-3 ${className}`}>
+    <section className={`px-0 ${className}`}>
       <div>
         <p className="text-2xl lg:text-3xl font-black text-[#2E2E2F] tracking-tight leading-[1.12]">
           Browsing events in{' '}

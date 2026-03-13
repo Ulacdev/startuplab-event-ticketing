@@ -136,19 +136,56 @@ export const OrganizerSubscription: React.FC = () => {
 
             {/* Current Plan Features */}
             <div className="mt-8 pt-8 border-t border-[#2E2E2F]/10">
-              <p className="text-xs font-black text-[#2E2E2F]/40 uppercase tracking-widest mb-4">Your Plan Includes</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: 'Total Events', val: currentSubscription.plan.limits?.max_total_events || currentSubscription.plan.limits?.max_events || 0 },
-                  { label: 'Active Events', val: currentSubscription.plan.limits?.max_active_events || currentSubscription.plan.limits?.max_events || 0 },
-                  { label: 'Staff Accounts', val: currentSubscription.plan.limits?.max_staff_accounts || 0 },
-                  { label: 'Monthly Attendees', val: currentSubscription.plan.limits?.monthly_attendees || currentSubscription.plan.limits?.max_attendees_per_month || 0 },
-                ].map((item, idx) => (
-                  <div key={idx} className="bg-[#F2F2F2] rounded-2xl p-4">
-                    <p className="text-2xl font-black text-[#2E2E2F]">{item.val}</p>
-                    <p className="text-xs text-[#2E2E2F]/50 uppercase tracking-wider">{item.label}</p>
+              <div className="space-y-10">
+                {/* Plan Features */}
+                <div>
+                  <p className="text-xs font-black text-[#2E2E2F]/40 uppercase tracking-[0.2em] mb-4 ml-1">Plan Features</p>
+                  <div className="grid grid-cols-1 gap-3">
+                    {[
+                      { label: 'Custom Branding', enabled: (currentSubscription.plan.features as any)?.enable_custom_branding || (currentSubscription.plan.features as any)?.custom_branding },
+                      { label: 'Discount Codes', enabled: (currentSubscription.plan.features as any)?.enable_discount_codes || (currentSubscription.plan.features as any)?.discount_codes },
+                      { label: 'Advanced Reports', enabled: (currentSubscription.plan.features as any)?.enable_advanced_reports || (currentSubscription.plan.features as any)?.advanced_reports },
+                      { label: 'Priority Support', enabled: (currentSubscription.plan.features as any)?.enable_priority_support || (currentSubscription.plan.features as any)?.priority_support },
+                    ].map((feature, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-[#F2F2F2]/50 border border-[#2E2E2F]/5 group/feat transition-all hover:border-[#38BDF2]/30 hover:shadow-sm">
+                        <span className={`text-[11px] font-black uppercase tracking-widest ${feature.enabled ? 'text-[#2E2E2F]' : 'text-[#2E2E2F]/30'}`}>{feature.label}</span>
+                        {feature.enabled ? (
+                          <div className="w-6 h-6 rounded-lg bg-[#38BDF2]/10 text-[#38BDF2] flex items-center justify-center">
+                            <ICONS.CheckCircle className="w-4 h-4" strokeWidth={3} />
+                          </div>
+                        ) : (
+                          <div className="w-6 h-6 rounded-lg bg-[#2E2E2F]/5 text-[#2E2E2F]/20 flex items-center justify-center">
+                            <ICONS.XCircle className="w-4 h-4" strokeWidth={3} />
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* Plan Limits & Promotion */}
+                <div>
+                  <p className="text-xs font-black text-[#2E2E2F]/40 uppercase tracking-[0.2em] mb-4 ml-1">Plan Limits & Promotion</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: 'Promoted Events', val: (currentSubscription.plan as any)?.promotions?.max_promoted_events || 0, icon: <ICONS.TrendingUp /> },
+                      { label: 'Promo Duration', val: ((currentSubscription.plan as any)?.promotions?.promotion_duration_days || 7) + ' days', icon: <ICONS.Calendar /> },
+                      { label: 'Staff Accounts', val: currentSubscription.plan.limits?.max_staff_accounts || 0, icon: <ICONS.Users /> },
+                      { label: 'Monthly Attendees', val: currentSubscription.plan.limits?.monthly_attendees || currentSubscription.plan.limits?.max_attendees_per_month || 0, icon: <ICONS.Users /> },
+                      { label: 'Daily Email Quota', val: (currentSubscription.plan.limits?.email_quota_per_day || 500) + ' /day', icon: <ICONS.Mail /> },
+                    ].map((limit, idx) => (
+                      <div key={idx} className="p-4 bg-[#F2F2F2]/50 rounded-2xl border border-[#2E2E2F]/5 hover:border-[#38BDF2]/30 transition-all group/limit hover:shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="text-[#38BDF2] w-4 h-4 opacity-70 group-hover/limit:opacity-100 transition-opacity">
+                            {React.cloneElement(limit.icon as React.ReactElement<any>, { className: 'w-full h-full', strokeWidth: 3 })}
+                          </div>
+                          <span className={`font-black text-[#2E2E2F] tracking-tighter leading-none ${typeof limit.val === 'string' && limit.val.includes(' ') ? 'text-sm' : 'text-[16px]'}`}>{limit.val}</span>
+                        </div>
+                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-[#38BDF2]/50">{limit.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </Card>

@@ -28,8 +28,6 @@ import { RegistrationsList } from './views/Admin/RegistrationsList';
 import { CheckIn } from './views/Admin/CheckIn';
 import { ArchiveEvents } from './views/User/ArchiveEvents';
 import { OrganizerReports } from './views/User/OrganizerReports';
-import { OrganizerSupport } from './views/User/OrganizerSupport';
-import { SupportTickets } from './views/Admin/SupportTickets';
 import { SettingsView } from './views/Admin/Settings';
 import { SubscriptionPlans } from './views/Admin/SubscriptionPlans';
 import { LoginPerspective } from './views/Auth/Login';
@@ -41,18 +39,19 @@ import { UserSettings } from './views/User/UserSettings';
 import { UserEvents } from './views/User/UserEvents';
 import { UserHome } from './views/User/UserHome';
 import { OrganizerSubscription } from './views/User/OrganizerSubscription';
+import { OrganizerSupport } from './views/User/OrganizerSupport';
 import WelcomeView from './views/User/WelcomeView';
 import { SubscriptionSuccess } from './views/User/SubscriptionSuccess';
 import { ONLINE_LOCATION_VALUE } from './components/BrowseEventsNavigator';
 import { ICONS } from './constants';
 import { Button, Input, Modal, PageLoader } from './components/Shared';
+import { ToastProvider } from './context/ToastContext';
+import { ToastContainer } from './components/ToastContainer';
 import { apiService } from './services/apiService';
 import { UserRole, normalizeUserRole } from './types';
 import { supabase } from "./supabase/supabaseClient.js";
 import { useUser } from './context/UserContext';
 import { useEngagement } from './context/EngagementContext';
-import { ToastProvider, useToast } from './context/ToastContext';
-import { ToastContainer } from './components/ToastContainer';
 const API = import.meta.env.VITE_API_BASE;
 const DEFAULT_HEADER_LOCATION = 'Your Location';
 const BROWSE_LOCATION_STORAGE_KEY = 'browse_events_location';
@@ -64,6 +63,7 @@ const Branding: React.FC<{ className?: string, light?: boolean }> = ({ className
     style={{ filter: light ? 'invert(1) grayscale(1) brightness(2)' : undefined }}
   />
 );
+
 
 const getRoleLabel = (roleValue: unknown): string => {
   const normalized = String(roleValue || '').toUpperCase();
@@ -113,10 +113,17 @@ const reverseLookupCity = async (lat: number, lon: number): Promise<string | nul
   }
 };
 
+const CrownBadge = () => (
+  <div className="absolute -top-1 -right-2 text-[#F59E0B] drop-shadow-sm">
+    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" />
+    </svg>
+  </div>
+);
+
 const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { showToast } = useToast();
   const { role, email, name, imageUrl, isAuthenticated, clearUser, setUser, canViewEvents, canEditEvents, canManualCheckIn, canReceiveNotifications } = useUser();
   const isStaff = role === UserRole.STAFF;
   const [organizerSidebarLogoUrl, setOrganizerSidebarLogoUrl] = React.useState('');
@@ -134,6 +141,8 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [notifications, setNotifications] = React.useState<any[]>([]);
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [notificationsLoading, setNotificationsLoading] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = React.useState(true);
 
   // Fetch notifications for the notification bell
   const fetchNotifications = React.useCallback(async () => {
@@ -165,7 +174,6 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         n.notificationId === notificationId ? { ...n, isRead: true } : n
       ));
       setUnreadCount(prev => Math.max(0, prev - 1));
-      showToast('success', 'Notification marked as read');
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
     }
@@ -177,7 +185,6 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       await apiService.markAllNotificationsRead();
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      showToast('success', 'All notifications marked as read');
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
     }
@@ -351,7 +358,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     const syncSession = async () => {
-      const isPortalRoute = ['/dashboard', '/events', '/attendees', '/checkin', '/settings', '/admin/support'].includes(location.pathname);
+      const isPortalRoute = ['/dashboard', '/events', '/attendees', '/checkin', '/settings'].includes(location.pathname);
       if (!isPortalRoute) return;
 
       try {
@@ -390,8 +397,8 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     if (!isAuthenticated) return;
     if (!role) return;
     const staffAllowed = ['/events', '/attendees', '/checkin', '/settings'];
-    const adminAllowed = ['/dashboard', '/settings', '/admin/support'];
-    const userAllowed = ['/user-home', '/my-events', '/user-settings', '/organizer-settings', '/account-settings', '/user/attendees', '/user/checkin', '/user/archive', '/user/reports', '/user/support', '/dashboard', '/subscription'];
+    const adminAllowed = ['/dashboard', '/events', '/attendees', '/checkin', '/settings'];
+    const userAllowed = ['/user-home', '/my-events', '/user-settings', '/organizer-settings', '/account-settings', '/user/attendees', '/user/checkin', '/user/archive', '/user/reports', '/dashboard'];
 
     if (role === UserRole.ORGANIZER) {
       if (!userAllowed.includes(location.pathname)) {
@@ -424,23 +431,36 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       ? []
       : role === UserRole.STAFF && canViewEvents === false && canManualCheckIn === false
         ? [
-          { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
+          { label: 'Users', path: '/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
         ]
         : role === UserRole.STAFF
           ? [
-            ...(canViewEvents !== false ? [{ label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-5 h-5" /> }] : []),
-            { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
-            ...(canManualCheckIn !== false ? [{ label: 'Check-In', path: '/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> }] : []),
+            ...(canViewEvents !== false ? [{ label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-6 h-6" /> }] : []),
+            { label: 'Users', path: '/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
+            ...(canManualCheckIn !== false ? [{ label: 'Scan', path: '/checkin', icon: <ICONS.CheckCircle className="w-6 h-6" /> }] : []),
           ]
-          : [
-            { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-5 h-5" /> },
-            { label: 'Teams & Access', path: '/settings?tab=team', icon: <ICONS.Users className="w-5 h-5" /> },
-            { label: 'Subscription Plans', path: '/settings?tab=plans', icon: <ICONS.Layout className="w-5 h-5" /> },
-            { label: 'Email Config', path: '/settings?tab=email', icon: <ICONS.Mail className="w-5 h-5" /> },
-            { label: 'Payment Gateway', path: '/settings?tab=payments', icon: <ICONS.CreditCard className="w-5 h-5" /> },
-            { label: 'Profile & Security', path: '/settings?tab=profile', icon: <ICONS.Settings className="w-5 h-5" /> },
-            { label: 'Support Messages', path: '/admin/support', icon: <ICONS.MessageSquare className="w-5 h-5" /> },
-          ]
+          : role === UserRole.ADMIN
+            ? [
+              { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-6 h-6" /> },
+              { label: 'Plans', path: '/settings?tab=plans', icon: <ICONS.Layout className="w-6 h-6" /> },
+              { label: 'Team and Access', path: '/settings?tab=team', icon: <ICONS.Users className="w-6 h-6" /> },
+              { label: 'Email Settings', path: '/settings?tab=email', icon: <ICONS.Mail className="w-6 h-6" /> },
+              { label: 'Payment Settings', path: '/settings?tab=payments', icon: <ICONS.CreditCard className="w-6 h-6" /> },
+              { label: 'Account Settings', path: '/settings?tab=profile', icon: <ICONS.Settings className="w-6 h-6" />, separator: true },
+            ]
+            : [
+              { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-6 h-6" /> },
+              { label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-6 h-6" /> },
+              { label: 'Users', path: '/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
+              { label: 'Scan', path: '/checkin', icon: <ICONS.CheckCircle className="w-6 h-6" /> },
+              { label: 'Charts', path: '/user/reports', icon: <ICONS.BarChart className="w-6 h-6" /> },
+              { label: 'Archive', path: '/user/archive', icon: <ICONS.Archive className="w-6 h-6" />, separator: true },
+              { label: 'Plans', path: '/settings?tab=plans', icon: <ICONS.Layout className="w-6 h-6" /> },
+              { label: 'Team and Access', path: '/settings?tab=team', icon: <ICONS.Users className="w-6 h-6" /> },
+              { label: 'Email Settings', path: '/settings?tab=email', icon: <ICONS.Mail className="w-6 h-6" /> },
+              { label: 'Payment Settings', path: '/settings?tab=payments', icon: <ICONS.CreditCard className="w-6 h-6" /> },
+              { label: 'Account Settings', path: '/settings?tab=profile', icon: <ICONS.Settings className="w-6 h-6" />, separator: true },
+            ]
   );
 
   const checkIsActiveAdmin = (itemPath: string) => {
@@ -469,18 +489,15 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
       // 3. Clear any local tokens/storage
       localStorage.removeItem('sb-ddkkbtijqrgpitncxylx-auth-token');
-      showToast('success', 'Logged out successfully', 5000);
       clearUser();
+
+      // 4. Navigate to login
       navigate('/');
     } catch {
-      showToast('success', 'Logged out successfully', 5000);
-      clearUser();
+      // Still navigate to login even if there was an error
       navigate('/');
     }
   };
-
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const [desktopSidebarOpen, setDesktopSidebarOpen] = React.useState(true);
 
   // Bottom Navigation Items for Mobile
   const bottomNavItems = (
@@ -510,94 +527,86 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     <div className="min-h-screen flex flex-col md:flex-row bg-[#F2F2F2] font-sans selection:bg-[#38BDF2]/30">
       {/* Sidebar for desktop */}
       <aside
-        className={`bg-[#F2F2F2] border-r border-[#2E2E2F]/10 hidden md:flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'w-72' : 'w-20'
-          }`}
+        className={`bg-[#F2F2F2] border-r border-[#2E2E2F]/10 hidden md:flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'w-64' : 'w-20'}`}
+        style={{ overflow: desktopSidebarOpen ? 'hidden' : 'visible' }}
       >
-        <div className={`min-h-[120px] py-4 flex items-center justify-center transition-all duration-300 border-b border-[#2E2E2F]/5 ${desktopSidebarOpen ? 'px-6' : 'px-2'}`}>
-          <Link to="/dashboard" className="flex items-center justify-center w-full group transition-all duration-500 transform hover:scale-[1.05] active:scale-[0.95] relative">
-            <div className="absolute inset-0 bg-[#38BDF2]/5 rounded-2xl opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-500" />
-            {isStaff ? (
-              organizerSidebarLogoUrl ? (
-                <img
-                  src={organizerSidebarLogoUrl}
-                  alt={organizerSidebarName || 'Organizer logo'}
-                  className={`object-contain transition-all duration-700 group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
-                />
-              ) : (
-                <img
-                  src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
-                  alt="StartupLab Logo"
-                  className={`object-contain transition-all duration-700 group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
-                />
-              )
+        <div className={`py-6 px-4 flex items-center justify-center border-b border-[#2E2E2F]/5 shrink-0 ${desktopSidebarOpen ? 'h-24' : 'h-20'}`}>
+          <Link to="/dashboard" className="flex items-center justify-center group transition-all duration-500 transform hover:scale-[1.05] active:scale-[0.95]">
+            {organizerSidebarLogoUrl ? (
+              <img
+                src={organizerSidebarLogoUrl}
+                alt={organizerSidebarName || 'Logo'}
+                className={desktopSidebarOpen ? "h-14 w-auto max-w-full object-contain" : "h-10 w-10 object-contain rounded-lg shadow-sm border border-[#2E2E2F]/10"}
+              />
             ) : desktopSidebarOpen ? (
-              <img
-                src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
-                alt="StartupLab Business Center Logo"
-                className="h-[120px] w-full max-w-[280px] object-contain animate-in fade-in zoom-in duration-700 group-hover:brightness-110 transition-all relative z-10"
-              />
+              <Branding className="h-14 w-auto" />
             ) : (
-              <img
-                src="/lgo.webp"
-                alt="SL Logo"
-                className="h-14 w-14 object-contain animate-in fade-in zoom-in duration-300 group-hover:rotate-12 transition-transform"
-              />
+              <img src="/lgo.webp" alt="Logo" className="h-10 w-10 object-contain" />
             )}
           </Link>
         </div>
-        <nav className={`flex-1 ${desktopSidebarOpen ? 'px-4' : 'px-2'} py-4 space-y-1 overflow-y-auto scrollbar-thin`}>
-          {menuItems.map((item) => {
+        <nav className={`flex-1 py-6 ${desktopSidebarOpen ? 'px-4' : 'px-2'} flex flex-col gap-1 overflow-y-auto overflow-x-visible scrollbar-none scroll-smooth`}
+          style={{ width: desktopSidebarOpen ? '100%' : '260px', paddingRight: desktopSidebarOpen ? '0' : '180px' }}>
+          {menuItems.map((item: any, idx) => {
             const isActive = checkIsActiveAdmin(item.path);
 
             return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${isActive
-                  ? 'bg-[#38BDF2] text-[#F2F2F2] shadow-sm'
-                  : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
-                  } ${!desktopSidebarOpen ? 'justify-center border-none' : ''}`}
-                title={!desktopSidebarOpen ? item.label : undefined}
-              >
-                <div className={`${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform duration-200`}>
-                  {item.icon}
-                </div>
-                {desktopSidebarOpen && <span className="font-semibold text-sm tracking-tight">{item.label}</span>}
-              </Link>
+              <React.Fragment key={item.path || idx}>
+                {item.separator && (
+                  <div className={`mx-4 my-3 h-[1px] bg-[#2E2E2F]/5 shrink-0 ${!desktopSidebarOpen ? 'mx-2' : ''}`} />
+                )}
+                <Link
+                  to={item.path}
+                  className={`flex transition-all duration-300 group relative shrink-0 ${desktopSidebarOpen
+                    ? 'flex-row items-center gap-3 px-4 py-3 rounded-2xl'
+                    : 'flex-col items-center justify-center gap-1 py-4 px-1 rounded-xl'
+                    } ${isActive
+                      ? 'bg-[#38BDF2] text-white shadow-lg shadow-[#38BDF2]/20'
+                      : 'text-[#2E2E2F]/60 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
+                    }`}
+                  title={!desktopSidebarOpen ? item.label : undefined}
+                >
+                  <div className="relative shrink-0">
+                    {React.cloneElement(item.icon as React.ReactElement<any>, {
+                      className: `transition-transform duration-300 ${desktopSidebarOpen ? 'w-5 h-5' : 'w-6 h-6 group-hover:scale-110'} ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`
+                    })}
+                    {item.premium && <CrownBadge />}
+                  </div>
+
+                  {desktopSidebarOpen ? (
+                    <span className="font-bold text-sm tracking-tight truncate">
+                      {item.label}
+                    </span>
+                  ) : (
+                    <div className="absolute left-full ml-5 px-3.5 py-2.5 bg-[#38BDF2] text-white text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-[999] whitespace-nowrap shadow-[10px_0_30px_-10px_rgba(56,189,242,0.5)] flex items-center">
+                      <div className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 border-[6px] border-transparent border-r-[#38BDF2]" />
+                      {item.label}
+                    </div>
+                  )}
+                </Link>
+              </React.Fragment>
             );
           })}
         </nav>
-
       </aside>
 
       <main
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out md:pb-0 ${desktopSidebarOpen ? 'md:pl-72' : 'md:pl-20'
-          } ${bottomNavItems.length > 0 ? 'pb-24' : ''}`}
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out md:pb-0 ${desktopSidebarOpen ? 'md:pl-64' : 'md:pl-20'} ${bottomNavItems.length > 0 ? 'pb-24' : ''}`}
       >
         <header className="h-20 bg-[#F2F2F2] border-b border-[#2E2E2F]/10 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 w-full">
           <div className="flex items-center gap-3">
             <button
-              className="hidden md:flex w-10 h-10 items-center justify-center rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 transition-colors"
-              onClick={() => setDesktopSidebarOpen((prev) => !prev)}
-              aria-label={desktopSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-              aria-pressed={desktopSidebarOpen}
+              onClick={() => setDesktopSidebarOpen(!desktopSidebarOpen)}
+              className="p-2.5 rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-all group active:scale-95"
+              aria-label="Toggle Sidebar"
             >
-              <svg className="w-5 h-5 text-[#2E2E2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <button
-              className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 transition-colors"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open sidebar"
-            >
-              <svg className="w-5 h-5 text-[#2E2E2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 transition-transform duration-500 ${!desktopSidebarOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             <div className="hidden sm:block">
               <p className="text-[10px] uppercase font-black text-[#2E2E2F]/50 tracking-[0.2em]">
-                {isStaff ? 'Staff Panel' : 'Admin Panel'}
+                {isStaff ? 'Staff Panel' : role === UserRole.ADMIN ? 'Admin Center' : 'Organizer Portal'}
               </p>
             </div>
           </div>
@@ -957,7 +966,6 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
-  const { showToast } = useToast();
   const { role, email, name, imageUrl, isAuthenticated, clearUser, setUser, canReceiveNotifications } = useUser();
   const {
     publicMode,
@@ -968,7 +976,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const [headerSearchTerm, setHeaderSearchTerm] = React.useState('');
   const [animatedPlaceholder, setAnimatedPlaceholder] = React.useState('');
-  const fullPlaceholder = 'Discover events near you';
+  const fullPlaceholder = 'Find your events';
   const [headerLocationTerm, setHeaderLocationTerm] = React.useState(DEFAULT_HEADER_LOCATION);
   const [headerLocationMenuOpen, setHeaderLocationMenuOpen] = React.useState(false);
   const [headerLocating, setHeaderLocating] = React.useState(false);
@@ -977,10 +985,17 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [hasLiveEvents, setHasLiveEvents] = React.useState(false);
 
   React.useEffect(() => {
+    const isEmbeddableVideo = (url: string) => {
+      if (!url || !url.trim()) return false;
+      const n = url.startsWith('http') ? url : `https://${url}`;
+      return /youtube\.com|youtu\.be/.test(n) || /facebook\.com|fb\.watch|fb\.com/.test(n) || /vimeo\.com/.test(n);
+    };
     const checkLive = async () => {
       try {
         const live = await apiService.getLiveEvents();
-        setHasLiveEvents(live && live.length > 0);
+        // Only count events with embeddable video URLs (not Google Meet/Zoom)
+        const videoLive = (live || []).filter(e => isEmbeddableVideo(e.streaming_url || ''));
+        setHasLiveEvents(videoLive.length > 0);
       } catch (err) {
         console.error('Failed to check live status:', err);
       }
@@ -995,7 +1010,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   // Typing animation for search placeholder
   React.useEffect(() => {
-    const text = 'Discover events near you';
+    const text = 'Find your events';
     let index = 0;
     let isDeleting = false;
     let timer: NodeJS.Timeout;
@@ -1029,7 +1044,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const displayName = email?.trim() || name?.trim() || 'User';
   const roleLabel = isOrganizer && isAttendingView ? 'Attending' : getRoleLabel(role);
   const publicUserMenuActionClass = 'w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-colors text-left group';
-  const landingLoginButtonClass = 'px-6 text-[11px] font-black uppercase tracking-widest border !border-black/70 !bg-black !text-white hover:!bg-[#00AEEF] hover:!border-[#66DBFF] hover:!text-white hover:shadow-[0_0_22px_rgba(0,174,239,0.8)] focus-visible:!bg-[#00AEEF] focus-visible:!border-[#66DBFF] focus-visible:shadow-[0_0_22px_rgba(0,174,239,0.8)] transition-all duration-300 ease-out active:scale-95 active:!bg-[#0098D6]';
+  const landingLoginButtonClass = 'px-4 text-[11px] font-black uppercase tracking-widest !bg-transparent !text-[#2E2E2F] hover:!text-[#38BDF2] transition-colors';
   const landingGetStartedButtonClass = 'px-6 text-[11px] font-black uppercase tracking-widest border border-[#66DBFF] bg-[#00AEEF] text-white shadow-[0_0_16px_rgba(0,174,239,0.45)] hover:bg-black hover:border-black hover:text-white hover:shadow-[0_0_22px_rgba(0,174,239,0.5)] focus-visible:bg-black focus-visible:border-black focus-visible:shadow-[0_0_22px_rgba(0,174,239,0.5)] transition-all duration-300 ease-out active:scale-95';
   const initials = (email?.split('@')[0] || name?.trim() || displayName || 'U')
     .split(' ')
@@ -1115,11 +1130,9 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       });
       await supabase.auth.signOut();
       localStorage.removeItem('sb-ddkkbtijqrgpitncxylx-auth-token');
-      showToast('success', 'Logged out successfully', 5000);
       clearUser();
       navigate('/');
     } catch {
-      showToast('success', 'Logged out successfully', 5000);
       clearUser();
       navigate('/');
     }
@@ -1388,228 +1401,232 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             </div>
           </nav>
 
-          <div className="flex items-center gap-4 shrink-0 ml-auto">
-            {/* Styled Watch Live Button */}
-            <Link
-              to="/live"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-[#38BDF2] hover:bg-[#38BDF2]/90 text-[#F2F2F2] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(56,189,242,0.4)] transition-all"
-            >
-              Watch Live
-              {hasLiveEvents && (
-                <span className="relative flex h-2 w-2 ml-0.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
-                </span>
-              )}
-            </Link>
-
+          <div className="flex items-center gap-1 shrink-0 ml-auto">
             {isAuthenticated ? (
-              <div className="relative">
-                <button
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 transition-colors"
-                  onClick={() => setUserMenuOpen((v) => !v)}
-                >
-                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#38BDF2]/20 text-[#2E2E2F] flex items-center justify-center">
-                    {imageUrl ? (
-                      <img src={imageUrl} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="font-semibold text-xs text-[#2E2E2F]">{initials}</span>
-                    )}
-                  </div>
-                  <div className="hidden sm:block text-left leading-tight">
-                    <p className="text-xs font-semibold text-[#2E2E2F] truncate max-w-[120px]">{displayName}</p>
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#2E2E2F]/45 mt-0.5">{roleLabel}</p>
-                  </div>
-                  <svg className="w-4 h-4 text-[#2E2E2F]/50" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {userMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                    <div className="absolute right-0 top-[calc(100%+8px)] w-56 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-2xl shadow-xl z-50 p-2 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
-                      <div className="px-4 py-3 border-b border-[#2E2E2F]/5 mb-1">
-                        <p className="text-[10px] font-medium text-[#2E2E2F]/40 uppercase tracking-widest mb-0.5">Account</p>
-                        <p className="text-xs font-semibold text-[#2E2E2F] truncate">{displayName}</p>
-                        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#2E2E2F]/45 mt-1">{roleLabel}</p>
-                      </div>
-                      {isOrganizer ? (
-                        isAttendingView ? (
+              <>
+                <Link to="/live" className="hidden sm:flex items-center gap-2 px-6 py-2.5 bg-[#38BDF2] border border-[#38BDF2] text-white hover:bg-[#2E2E2F] hover:border-[#2E2E2F] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-[#38BDF2]/20">
+                  Watch Live
+                  {hasLiveEvents && (
+                    <span className="relative flex h-2 w-2 ml-0.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                    </span>
+                  )}
+                </Link>
+
+                <div className="relative">
+                  <button
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 transition-colors"
+                    onClick={() => setUserMenuOpen((v) => !v)}
+                  >
+                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#38BDF2]/20 text-[#2E2E2F] flex items-center justify-center">
+                      {imageUrl ? (
+                        <img src={imageUrl} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-semibold text-xs text-[#2E2E2F]">{initials}</span>
+                      )}
+                    </div>
+                    <div className="hidden sm:block text-left leading-tight">
+                      <p className="text-xs font-semibold text-[#2E2E2F] truncate max-w-[120px]">{displayName}</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#2E2E2F]/45 mt-0.5">{roleLabel}</p>
+                    </div>
+                    <svg className="w-4 h-4 text-[#2E2E2F]/50" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {userMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                      <div className="absolute right-0 top-[calc(100%+8px)] w-56 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-2xl shadow-xl z-50 p-2 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                        <div className="px-4 py-3 border-b border-[#2E2E2F]/5 mb-1">
+                          <p className="text-[10px] font-medium text-[#2E2E2F]/40 uppercase tracking-widest mb-0.5">Account</p>
+                          <p className="text-xs font-semibold text-[#2E2E2F] truncate">{displayName}</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#2E2E2F]/45 mt-1">{roleLabel}</p>
+                        </div>
+                        {isOrganizer ? (
+                          isAttendingView ? (
+                            <>
+                              <button
+                                className={publicUserMenuActionClass}
+                                onClick={() => {
+                                  setPublicMode('attending');
+                                  setUserMenuOpen(false);
+                                  navigate('/browse-events');
+                                }}
+                              >
+                                <ICONS.Calendar className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                <span>Browse Events</span>
+                              </button>
+                              <button
+                                className={publicUserMenuActionClass}
+                                onClick={() => {
+                                  setPublicMode('attending');
+                                  setUserMenuOpen(false);
+                                  navigate('/my-tickets');
+                                }}
+                              >
+                                <ICONS.Ticket className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                <span>My Tickets</span>
+                              </button>
+                              <button
+                                className={publicUserMenuActionClass}
+                                onClick={() => {
+                                  setPublicMode('organizer');
+                                  setUserMenuOpen(false);
+                                  navigate('/my-events');
+                                }}
+                              >
+                                <ICONS.Users className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                <span>Organize Events</span>
+                              </button>
+                              <button
+                                className={publicUserMenuActionClass}
+                                onClick={() => {
+                                  setPublicMode('attending');
+                                  setUserMenuOpen(false);
+                                  navigate('/liked');
+                                }}
+                              >
+                                <ICONS.Heart className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                <span>Liked</span>
+                              </button>
+                              <button
+                                className={publicUserMenuActionClass}
+                                onClick={() => {
+                                  setPublicMode('attending');
+                                  setUserMenuOpen(false);
+                                  navigate('/followings');
+                                }}
+                              >
+                                <ICONS.Users className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                <span>Followings</span>
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className={publicUserMenuActionClass}
+                                onClick={() => {
+                                  setPublicMode('organizer');
+                                  setUserMenuOpen(false);
+                                  navigate('/user-settings?tab=organizer');
+                                }}
+                              >
+                                <ICONS.Users className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                <span>Organizer Profile</span>
+                              </button>
+                              <button
+                                className={publicUserMenuActionClass}
+                                onClick={() => {
+                                  setPublicMode('organizer');
+                                  setUserMenuOpen(false);
+                                  navigate('/user-settings?tab=team');
+                                }}
+                              >
+                                <ICONS.Shield className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                <span>Team & Access</span>
+                              </button>
+                              <button
+                                className={publicUserMenuActionClass}
+                                onClick={() => {
+                                  setPublicMode('organizer');
+                                  setUserMenuOpen(false);
+                                  navigate('/user-settings?tab=email');
+                                }}
+                              >
+                                <ICONS.Mail className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                <span>Email Settings</span>
+                              </button>
+                              <button
+                                className={publicUserMenuActionClass}
+                                onClick={() => {
+                                  setPublicMode('organizer');
+                                  setUserMenuOpen(false);
+                                  navigate('/user-settings?tab=payments');
+                                }}
+                              >
+                                <ICONS.CreditCard className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                <span>Payment Gateway</span>
+                              </button>
+                              <button
+                                className={publicUserMenuActionClass}
+                                onClick={() => {
+                                  setPublicMode('organizer');
+                                  setUserMenuOpen(false);
+                                  navigate('/user-settings?tab=account');
+                                }}
+                              >
+                                <ICONS.Settings className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                <span>Account</span>
+                              </button>
+                            </>
+                          )
+                        ) : (
                           <>
                             <button
                               className={publicUserMenuActionClass}
-                              onClick={() => {
-                                setPublicMode('attending');
-                                setUserMenuOpen(false);
-                                navigate('/browse-events');
-                              }}
+                              onClick={() => { setUserMenuOpen(false); navigate('/browse-events'); }}
                             >
                               <ICONS.Calendar className="w-4 h-4 opacity-70 group-hover:opacity-100" />
                               <span>Browse Events</span>
                             </button>
                             <button
                               className={publicUserMenuActionClass}
-                              onClick={() => {
-                                setPublicMode('attending');
-                                setUserMenuOpen(false);
-                                navigate('/my-tickets');
-                              }}
+                              onClick={() => { setUserMenuOpen(false); navigate('/my-tickets'); }}
                             >
                               <ICONS.Ticket className="w-4 h-4 opacity-70 group-hover:opacity-100" />
                               <span>My Tickets</span>
                             </button>
                             <button
                               className={publicUserMenuActionClass}
-                              onClick={() => {
-                                setPublicMode('organizer');
-                                setUserMenuOpen(false);
-                                navigate('/my-events');
-                              }}
-                            >
-                              <ICONS.Users className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                              <span>Organize Events</span>
-                            </button>
-                            <button
-                              className={publicUserMenuActionClass}
-                              onClick={() => {
-                                setPublicMode('attending');
-                                setUserMenuOpen(false);
-                                navigate('/liked');
-                              }}
+                              onClick={() => { setUserMenuOpen(false); navigate('/liked'); }}
                             >
                               <ICONS.Heart className="w-4 h-4 opacity-70 group-hover:opacity-100" />
                               <span>Liked</span>
                             </button>
                             <button
                               className={publicUserMenuActionClass}
-                              onClick={() => {
-                                setPublicMode('attending');
-                                setUserMenuOpen(false);
-                                navigate('/followings');
-                              }}
+                              onClick={() => { setUserMenuOpen(false); navigate('/followings'); }}
                             >
                               <ICONS.Users className="w-4 h-4 opacity-70 group-hover:opacity-100" />
                               <span>Followings</span>
                             </button>
                           </>
-                        ) : (
-                          <>
-                            <button
-                              className={publicUserMenuActionClass}
-                              onClick={() => {
-                                setPublicMode('organizer');
-                                setUserMenuOpen(false);
-                                navigate('/user-settings?tab=organizer');
-                              }}
-                            >
-                              <ICONS.Users className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                              <span>Organizer Profile</span>
-                            </button>
-
-                            <button
-                              className={publicUserMenuActionClass}
-                              onClick={() => {
-                                setPublicMode('organizer');
-                                setUserMenuOpen(false);
-                                navigate('/user-settings?tab=team');
-                              }}
-                            >
-                              <ICONS.Shield className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                              <span>Team & Access</span>
-                            </button>
-                            <button
-                              className={publicUserMenuActionClass}
-                              onClick={() => {
-                                setPublicMode('organizer');
-                                setUserMenuOpen(false);
-                                navigate('/user-settings?tab=email');
-                              }}
-                            >
-                              <ICONS.Mail className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                              <span>Email Settings</span>
-                            </button>
-                            <button
-                              className={publicUserMenuActionClass}
-                              onClick={() => {
-                                setPublicMode('organizer');
-                                setUserMenuOpen(false);
-                                navigate('/user-settings?tab=payments');
-                              }}
-                            >
-                              <ICONS.CreditCard className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                              <span>Payment Gateway</span>
-                            </button>
-                            <button
-                              className={publicUserMenuActionClass}
-                              onClick={() => {
-                                setPublicMode('organizer');
-                                setUserMenuOpen(false);
-                                navigate('/user-settings?tab=account');
-                              }}
-                            >
-                              <ICONS.Settings className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                              <span>Account</span>
-                            </button>
-                          </>
-                        )
-                      ) : (
-                        <>
+                        )}
+                        <div className="border-t border-[#2E2E2F]/5 mt-1 pt-1">
                           <button
-                            className={publicUserMenuActionClass}
-                            onClick={() => { setUserMenuOpen(false); navigate('/browse-events'); }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#2E2E2F]/70 hover:bg-red-50 hover:text-red-500 transition-colors text-left group"
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              handleLogout();
+                            }}
                           >
-                            <ICONS.Calendar className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                            <span>Browse Events</span>
+                            <svg className="w-4 h-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            <span>Logout</span>
                           </button>
-                          <button
-                            className={publicUserMenuActionClass}
-                            onClick={() => { setUserMenuOpen(false); navigate('/my-tickets'); }}
-                          >
-                            <ICONS.Ticket className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                            <span>My Tickets</span>
-                          </button>
-                          <button
-                            className={publicUserMenuActionClass}
-                            onClick={() => { setUserMenuOpen(false); navigate('/liked'); }}
-                          >
-                            <ICONS.Heart className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                            <span>Liked</span>
-                          </button>
-                          <button
-                            className={publicUserMenuActionClass}
-                            onClick={() => { setUserMenuOpen(false); navigate('/followings'); }}
-                          >
-                            <ICONS.Users className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                            <span>Followings</span>
-                          </button>
-                        </>
-                      )}
-                      <div className="border-t border-[#2E2E2F]/5 mt-1 pt-1">
-                        <button
-                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#2E2E2F]/70 hover:bg-red-50 hover:text-red-500 transition-colors text-left group"
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            handleLogout();
-                          }}
-                        >
-                          <svg className="w-4 h-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                          </svg>
-                          <span>Logout</span>
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  </>
-                )}
-              </div>
+                    </>
+                  )}
+                </div>
+              </>
             ) : (
-              <div className="flex items-center gap-3">
-                <Link to="/login">
-                  <Button size="sm" className={landingLoginButtonClass}>
-                    Login
-                  </Button>
+              <>
+                <Link to="/login" className={landingLoginButtonClass}>
+                  Login
                 </Link>
-              </div>
+                <Link to="/live" className="hidden sm:flex items-center gap-2 px-6 py-2.5 bg-[#38BDF2] border border-[#38BDF2] text-white hover:bg-[#2E2E2F] hover:border-[#2E2E2F] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-[#38BDF2]/20">
+                  Watch Live
+                  {hasLiveEvents && (
+                    <span className="relative flex h-2 w-2 ml-0.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                    </span>
+                  )}
+                </Link>
+              </>
             )}
           </div>
         </div>
@@ -1682,8 +1699,7 @@ const DashboardWrapper: React.FC = () => {
 const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { role, email, name, imageUrl, clearUser, setUser, canReceiveNotifications } = useUser();
-  const { showToast } = useToast();
+  const { role, email, name, imageUrl, isAuthenticated, clearUser, setUser, canReceiveNotifications } = useUser();
   const { isAttendingView, setPublicMode } = useEngagement();
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -1725,7 +1741,6 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         n.notificationId === notificationId ? { ...n, isRead: true } : n
       ));
       setUnreadCount(prev => Math.max(0, prev - 1));
-      showToast('success', 'Notification marked as read');
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
     }
@@ -1737,7 +1752,6 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       await apiService.markAllNotificationsRead();
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      showToast('success', 'All notifications marked as read');
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
     }
@@ -1769,7 +1783,6 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   }, [location.pathname]);
   const [organizerSidebarLogoUrl, setOrganizerSidebarLogoUrl] = React.useState('');
   const [organizerSidebarName, setOrganizerSidebarName] = React.useState('');
-  const [hasPlanFeature, setHasPlanFeature] = React.useState(false);
 
   const displayName = email?.trim() || name?.trim() || 'User';
   const roleLabel = getRoleLabel(role);
@@ -1835,7 +1848,6 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         if (!isMounted) return;
         setOrganizerSidebarLogoUrl(organizer?.profileImageUrl || '');
         setOrganizerSidebarName((organizer?.organizerName || '').trim());
-        setHasPlanFeature(Boolean(organizer?.plan)); // Enable support if they have a plan
       } catch {
         if (isMounted) {
           setOrganizerSidebarLogoUrl('');
@@ -1882,18 +1894,11 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     try {
       await fetch(`${API}/api/auth/logout`, { method: "POST", credentials: "include" });
       await supabase.auth.signOut();
-      localStorage.removeItem('sb-ddkkbtijqrgpitncxylx-auth-token');
-      showToast('success', 'Logged out successfully', 5000);
-      clearUser(); 
-      navigate('/');
-    } catch { 
-      showToast('success', 'Logged out successfully', 5000);
-      clearUser(); 
-      navigate('/'); 
-    }
+      clearUser(); navigate('/');
+    } catch { clearUser(); navigate('/'); }
   };
 
-  const [expandedSections, setExpandedSections] = React.useState<string[]>(['Main', 'Events Records', 'Settings', 'Communication']);
+  const [expandedSections, setExpandedSections] = React.useState<string[]>(['Main', 'Events Records', 'Communication', 'Settings']);
 
   const toggleSection = (title: string) => {
     setExpandedSections(prev =>
@@ -1901,46 +1906,35 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     );
   };
 
-  const menuGroups = [
-    {
-      title: 'Main',
-      icon: <ICONS.Layout className="w-5 h-5" />,
-      items: [
-        { label: 'Home', path: '/user-home', icon: <ICONS.Home className="w-5 h-5" /> },
-        { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-5 h-5" /> },
-      ]
-    },
-    {
-      title: 'Events Records',
-      icon: <ICONS.Database className="w-5 h-5" />,
-      items: [
-        { label: 'Events', path: '/my-events', icon: <ICONS.Calendar className="w-5 h-5" /> },
-        { label: 'Archive', path: '/user/archive', icon: <ICONS.Archive className="w-5 h-5" /> },
-        { label: 'Reports', path: '/user/reports', icon: <ICONS.BarChart className="w-5 h-5" /> },
-        { label: 'Attendees', path: '/user/attendees', icon: <ICONS.Users className="w-5 h-5" /> },
-        { label: 'Check-In', path: '/user/checkin', icon: <ICONS.CheckCircle className="w-5 h-5" /> },
-      ]
-    },
-    {
-      title: 'Communication',
-      icon: <ICONS.MessageSquare className="w-5 h-5" />,
-      items: [
-        { label: 'Support center', path: '/user/support', icon: <ICONS.Zap className="w-5 h-5" /> },
-      ]
-    },
-    {
-      title: 'Settings',
-      icon: <ICONS.Settings className="w-5 h-5" />,
-      items: [
-        { label: 'Org Profile', path: '/user-settings?tab=organizer', icon: <ICONS.Users className="w-5 h-5" /> },
-        { label: 'Teams & Access', path: '/user-settings?tab=team', icon: <ICONS.Shield className="w-5 h-5" /> },
-        { label: 'Email Setup', path: '/user-settings?tab=email', icon: <ICONS.Mail className="w-5 h-5" /> },
-        { label: 'Payment Gateway', path: '/user-settings?tab=payments', icon: <ICONS.CreditCard className="w-5 h-5" /> },
-        { label: 'Subscription', path: '/subscription', icon: <ICONS.CreditCard className="w-5 h-5" /> },
-        { label: 'Account Settings', path: '/user-settings?tab=account', icon: <ICONS.Settings className="w-5 h-5" /> },
-      ]
-    }
-  ];
+  const menuItems = (
+    !isAuthenticated || !role
+      ? []
+      : role === UserRole.STAFF && (setUser as any).canViewEvents === false && (setUser as any).canManualCheckIn === false
+        ? [
+          { label: 'Users', path: '/user/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
+        ]
+        : role === UserRole.STAFF
+          ? [
+            ...((setUser as any).canViewEvents !== false ? [{ label: 'Events', path: '/my-events', icon: <ICONS.Calendar className="w-6 h-6" /> }] : []),
+            { label: 'Users', path: '/user/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
+            ...((setUser as any).canManualCheckIn !== false ? [{ label: 'Scan', path: '/user/checkin', icon: <ICONS.CheckCircle className="w-6 h-6" /> }] : []),
+          ]
+          : [
+            { label: 'Home', path: '/user-home', icon: <ICONS.Home className="w-6 h-6" /> },
+            { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-6 h-6" /> },
+            { label: 'Events Management', path: '/my-events', icon: <ICONS.Calendar className="w-6 h-6" /> },
+            { label: 'Attendees', path: '/user/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
+            { label: 'Check In', path: '/user/checkin', icon: <ICONS.CheckCircle className="w-6 h-6" /> },
+            { label: 'Reports', path: '/user/reports', icon: <ICONS.BarChart className="w-6 h-6" /> },
+            { label: 'Archive', path: '/user/archive', icon: <ICONS.Archive className="w-6 h-6" />, separator: true },
+            { label: 'Plans', path: '/subscription', icon: <ICONS.Layout className="w-6 h-6" /> },
+            { label: 'Organization Profile', path: '/user-settings?tab=organizer', icon: <ICONS.Users className="w-6 h-6" /> },
+            { label: 'Team and Access', path: '/user-settings?tab=team', icon: <ICONS.Users className="w-6 h-6" /> },
+            { label: 'Email Settings', path: '/user-settings?tab=email', icon: <ICONS.Mail className="w-6 h-6" /> },
+            { label: 'Payment Settings', path: '/user-settings?tab=payments', icon: <ICONS.CreditCard className="w-6 h-6" /> },
+            { label: 'Account Settings', path: '/user-settings?tab=account', icon: <ICONS.Settings className="w-6 h-6" />, separator: true },
+          ]
+  );
 
   const checkIsActive = (itemPath: string) => {
     if (itemPath.includes('?')) {
@@ -1970,106 +1964,88 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     <div className="min-h-screen flex bg-[#F2F2F2]">
       {/* Sidebar for desktop */}
       <aside
-        className={`bg-[#F2F2F2] border-r border-[#2E2E2F]/10 hidden md:flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'w-72' : 'w-20'
-          }`}
+        className={`bg-[#F2F2F2] border-r border-[#2E2E2F]/10 hidden md:flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'w-64' : 'w-20'}`}
+        style={{ overflow: desktopSidebarOpen ? 'hidden' : 'visible' }}
       >
-        <div className={`min-h-[120px] py-4 flex items-center justify-center transition-all duration-300 border-b border-[#2E2E2F]/5 ${desktopSidebarOpen ? 'px-6' : 'px-2'}`}>
-          <Link to="/user-home" className="flex items-center justify-center w-full group transition-all duration-500 transform hover:scale-[1.05] active:scale-[0.95] relative">
-            <div className="absolute inset-0 bg-[#38BDF2]/5 rounded-2xl opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-500" />
-            {hasOrganizerSidebarLogo ? (
+        <div className={`py-6 px-4 flex items-center justify-center border-b border-[#2E2E2F]/5 shrink-0 ${desktopSidebarOpen ? 'min-h-[140px]' : 'min-h-[100px]'}`}>
+          <Link to="/user-home" className="flex items-center justify-center group transition-all duration-500 transform hover:scale-[1.05] active:scale-[0.95]">
+            {organizerSidebarLogoUrl ? (
               <img
                 src={organizerSidebarLogoUrl}
                 alt={organizerSidebarLogoAlt}
-                className={`object-contain transition-all duration-700 group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
+                className={desktopSidebarOpen ? "h-16 w-auto max-w-full object-contain group-hover:rotate-1 transition-transform" : "h-11 w-11 object-contain group-hover:rotate-6 transition-transform rounded-xl shadow-lg border-2 border-[#38BDF2]/20"}
               />
             ) : (
-              <img
-                src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
-                alt="StartupLab Logo"
-                className={`object-contain transition-all duration-700 group-hover:brightness-110 relative z-10 ${desktopSidebarOpen ? 'h-[120px] w-full max-w-[280px]' : 'h-14 w-14'}`}
-              />
+              desktopSidebarOpen ? (
+                <Branding className="h-14 w-auto" />
+              ) : (
+                <img src="/lgo.webp" alt="Logo" className="h-10 w-10 object-contain group-hover:rotate-6 transition-transform" />
+              )
             )}
           </Link>
         </div>
-        <nav className={`flex-1 ${desktopSidebarOpen ? 'px-4' : 'px-2'} py-4 space-y-2 overflow-y-auto scrollbar-thin`}>
-          {menuGroups.map((group) => (
-            <div key={group.title} className="space-y-1">
-              {desktopSidebarOpen ? (
-                <button
-                  onClick={() => toggleSection(group.title)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-[#2E2E2F]/60 hover:text-[#2E2E2F] transition-colors group/header"
-                >
-                  <div className="transition-opacity duration-200">
-                    {group.icon}
-                  </div>
-                  <span className="flex-1 text-left font-semibold text-sm tracking-tight">{group.title}</span>
-                  <svg
-                    className={`w-3.5 h-3.5 transition-all duration-300 ${expandedSections.includes(group.title) ? 'rotate-180 opacity-60' : 'opacity-20'}`}
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              ) : (
-                <div className="h-px bg-[#2E2E2F]/5 my-2 mx-2" />
-              )}
+        <nav className={`flex-1 py-6 ${desktopSidebarOpen ? 'px-4' : 'px-2'} flex flex-col gap-1 overflow-y-auto overflow-x-visible scrollbar-none scroll-smooth`}
+          style={{ width: desktopSidebarOpen ? '100%' : '260px', paddingRight: desktopSidebarOpen ? '0' : '180px' }}>
+          {menuItems.map((item: any, idx) => {
+            const isActive = checkIsActive(item.path);
 
-              {(expandedSections.includes(group.title) || !desktopSidebarOpen) && (
-                <div className="space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                  {group.items.map((item) => {
-                    const isActive = checkIsActive(item.path);
-                    return (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${isActive
-                          ? 'bg-[#38BDF2] text-[#F2F2F2] shadow-sm'
-                          : 'text-[#2E2E2F]/70 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
-                          } ${!desktopSidebarOpen ? 'justify-center' : 'ml-8'}`}
-                        title={!desktopSidebarOpen ? item.label : undefined}
-                      >
-                        <div className={`${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform duration-200`}>
-                          {item.icon}
-                        </div>
-                        {desktopSidebarOpen && <span className="font-semibold text-sm tracking-tight">{item.label}</span>}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
+            return (
+              <React.Fragment key={item.path || idx}>
+                {item.separator && (
+                  <div className={`mx-4 my-3 h-[1px] bg-[#2E2E2F]/5 shrink-0 ${!desktopSidebarOpen ? 'mx-2' : ''}`} />
+                )}
+                <Link
+                  to={item.path}
+                  className={`flex transition-all duration-300 group relative shrink-0 ${desktopSidebarOpen
+                    ? 'flex-row items-center gap-3 px-4 py-3 rounded-2xl'
+                    : 'flex-col items-center justify-center gap-1 py-4 px-1 rounded-xl'
+                    } ${isActive
+                      ? 'bg-[#38BDF2] text-white shadow-lg shadow-[#38BDF2]/20'
+                      : 'text-[#2E2E2F]/60 hover:bg-[#38BDF2]/10 hover:text-[#38BDF2]'
+                    }`}
+                  title={!desktopSidebarOpen ? item.label : undefined}
+                >
+                  <div className="relative shrink-0">
+                    {React.cloneElement(item.icon as React.ReactElement<any>, {
+                      className: `transition-transform duration-300 ${desktopSidebarOpen ? 'w-5 h-5' : 'w-6 h-6 group-hover:scale-110'} ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`
+                    })}
+                    {item.premium && <CrownBadge />}
+                  </div>
+
+                  {desktopSidebarOpen ? (
+                    <span className="font-bold text-sm tracking-tight truncate">
+                      {item.label}
+                    </span>
+                  ) : (
+                    <div className="absolute left-full ml-5 px-3.5 py-2.5 bg-[#38BDF2] text-white text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-[999] whitespace-nowrap shadow-[10px_0_30px_-10px_rgba(56,189,242,0.5)] flex items-center">
+                      <div className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 border-[6px] border-transparent border-r-[#38BDF2]" />
+                      {item.label}
+                    </div>
+                  )}
+                </Link>
+              </React.Fragment>
+            );
+          })}
         </nav>
       </aside>
 
       <main
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'md:pl-72' : 'md:pl-20'
-          }`}
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'md:pl-64' : 'md:pl-20'}`}
       >
         <header className="h-20 bg-[#F2F2F2] border-b border-[#2E2E2F]/10 px-4 sm:px-8 flex items-center justify-between gap-4 sm:gap-6 sticky top-0 z-40 w-full">
           <div className="flex items-center gap-3">
             <button
-              className="hidden md:flex w-10 h-10 items-center justify-center rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 transition-colors"
-              onClick={() => setDesktopSidebarOpen((prev) => !prev)}
-              aria-label={desktopSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-              aria-pressed={desktopSidebarOpen}
+              onClick={() => setDesktopSidebarOpen(!desktopSidebarOpen)}
+              className="p-2.5 rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-all group active:scale-95"
+              aria-label="Toggle Sidebar"
             >
-              <svg className="w-5 h-5 text-[#2E2E2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <button
-              className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 transition-colors"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open sidebar"
-            >
-              <svg className="w-5 h-5 text-[#2E2E2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 transition-transform duration-500 ${!desktopSidebarOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             <div className="hidden sm:block">
               <p className="text-[10px] uppercase font-black text-[#2E2E2F]/50 tracking-[0.2em]">
-                Organizer Panel
+                Organizer Portal
               </p>
             </div>
           </div>
@@ -2328,33 +2304,26 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
               </div>
-              <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
-                {menuGroups.map((group) => (
-                  <div key={group.title} className="space-y-2">
-                    <p className="px-4 text-[10px] font-black text-white/40 uppercase tracking-widest">
-                      {group.title}
-                    </p>
-                    <div className="space-y-1">
-                      {group.items.map((item) => {
-                        const isActive = checkIsActive(item.path);
-                        return (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${isActive
-                              ? 'bg-white text-[#38BDF2] shadow-lg shadow-black/5'
-                              : 'text-white/60 hover:bg-[#2E2E2F] hover:text-white'
-                              }`}
-                            onClick={() => setSidebarOpen(false)}
-                          >
-                            {item.icon}
-                            <span className="font-bold text-sm tracking-tight">{item.label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+              <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto pb-24">
+                {menuItems.map((item: any) => {
+                  const isActive = checkIsActive(item.path);
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group ${isActive
+                        ? 'bg-white text-[#38BDF2] shadow-xl shadow-black/10'
+                        : 'text-white/70 hover:bg-white/10 hover:text-white'
+                        }`}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <div className={isActive ? 'text-[#38BDF2]' : 'text-white/60 group-hover:text-white'}>
+                        {item.icon}
+                      </div>
+                      <span className="font-bold text-sm tracking-tight">{item.label}</span>
+                    </Link>
+                  );
+                })}
               </nav>
             </aside>
           </div>
@@ -2378,10 +2347,9 @@ const roleHomePath = (role: UserRole): string => {
 };
 
 const RequireRoleRoute: React.FC<{ allow: UserRole[]; children: React.ReactElement }> = ({ allow, children }) => {
-  const { setUser, clearUser, isOnboarded } = useUser();
+  const { setUser, clearUser } = useUser();
   const [checking, setChecking] = React.useState(true);
   const [resolvedRole, setResolvedRole] = React.useState<UserRole | null>(null);
-  const location = useLocation();
 
   React.useEffect(() => {
     let cancelled = false;
@@ -2403,7 +2371,6 @@ const RequireRoleRoute: React.FC<{ allow: UserRole[]; children: React.ReactEleme
           canEditEvents: me.canEditEvents,
           canManualCheckIn: me.canManualCheckIn,
           canReceiveNotifications: me.canReceiveNotifications,
-          isOnboarded: me.isOnboarded,
         });
 
         if (!cancelled) setResolvedRole(role);
@@ -2422,49 +2389,30 @@ const RequireRoleRoute: React.FC<{ allow: UserRole[]; children: React.ReactEleme
   if (checking) return <PageLoader label="Checking access..." variant="page" />;
   if (!resolvedRole) return <Navigate to="/login" replace />;
   if (!allow.includes(resolvedRole)) return <Navigate to={roleHomePath(resolvedRole)} replace />;
-  
-  // Enforce onboarding for organizers
-  if (resolvedRole === UserRole.ORGANIZER && isOnboarded === false && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
-  }
-  
   return children;
 };
 
 const HashBypassBridge: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   useEffect(() => {
-    // If the browser lands on a non-root path (common on hosting like Vercel with clean URLs)
-    // we need to force it back to the root hash route so React Router takes over properly.
-    if (window.location.pathname !== '/' && window.location.pathname !== '') {
-      console.log('🧼 [App] Cleanup triggered for dirty URL:', window.location.pathname);
-      
+    // If the browser lands on a non-hash path that matches our success route
+    // (This happens when HitPay/Browsers strip the # part or misinterpret the redirect)
+    if (window.location.pathname === '/subscription/success') {
+      console.log('🔀 [App] Redirecting clean URL to Hash route...');
       const search = window.location.search;
-      const urlParams = new URLSearchParams(search);
-      const refId = urlParams.get('reference_id') || urlParams.get('reference_number');
-      
-      // Persist the reference ID if it exists in the dirty URL
-      if (refId) {
-        sessionStorage.setItem('subscriptionReferenceId', refId);
-      }
-
-      // Determine the destination hash
-      let targetHash = '/';
-      if (window.location.pathname.includes('/subscription/success')) {
-        targetHash = '/subscription/success';
-      }
-
-      // Force a HARD reload to the root origin with the clean hash
-      // This wipes the 'pathname' and ensures the browser settles on index.html
-      const cleanUrl = `${window.location.origin}/#${targetHash}`;
-      window.location.replace(cleanUrl);
+      navigate(`/subscription/success${search}`, { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
   return null;
 };
 
 const App: React.FC = () => (
-  <Router>
+  <ToastProvider>
+    <ToastContainer />
+    <Router>
     <HashBypassBridge />
     <Routes>
       <Route path="/login" element={<LoginPerspective />} />
@@ -2504,8 +2452,8 @@ const App: React.FC = () => (
       <Route path="/user/checkin" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><CheckIn /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/user/archive" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><ArchiveEvents /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/user/reports" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerReports /></UserPortalLayout></RequireRoleRoute>} />
-      <Route path="/user/support" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerSupport /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/subscription" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerSubscription /></UserPortalLayout></RequireRoleRoute>} />
+      <Route path="/organizer-support" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerSupport /></UserPortalLayout></RequireRoleRoute>} />
       <Route path="/subscription/success" element={<PublicLayout><SubscriptionSuccess /></PublicLayout>} />
 
       {/* Admin Portal Routes */}
@@ -2513,13 +2461,12 @@ const App: React.FC = () => (
       <Route path="/events" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><EventsManagement /></PortalLayout></RequireRoleRoute>} />
       <Route path="/attendees" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><RegistrationsList /></PortalLayout></RequireRoleRoute>} />
       <Route path="/checkin" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><CheckIn /></PortalLayout></RequireRoleRoute>} />
-      <Route path="/admin/support" element={<RequireRoleRoute allow={[UserRole.ADMIN]}><PortalLayout><SupportTickets /></PortalLayout></RequireRoleRoute>} />
       <Route path="/settings" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><SettingsView /></PortalLayout></RequireRoleRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   </Router>
+  </ToastProvider>
 );
 export default App;
-
 

@@ -7,6 +7,7 @@ import { Event, TicketType, EventStatus } from '../../types';
 import { Card, Button, Modal, Input } from '../../components/Shared';
 import { OnsiteLocationAssistant } from '../../components/OnsiteLocationAssistant';
 import { PlanUpgradeModal } from '../../components/PlanUpgradeModal';
+import { SupportCenter } from '../../components/SupportCenter';
 import { ICONS } from '../../constants';
 
 const getImageUrl = (img: any): string => {
@@ -23,6 +24,8 @@ export const UserHome: React.FC = () => {
     const [submitting, setSubmitting] = useState(false);
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [emailQuota, setEmailQuota] = useState<{ remaining: number; limit: number; sent: number; canSend: boolean; quotaStatus: string } | null>(null);
+    const [isSupportCenterOpen, setIsSupportCenterOpen] = useState(false);
 
     const initialFormData = {
         eventName: '',
@@ -50,13 +53,21 @@ export const UserHome: React.FC = () => {
     const [organizerProfile, setOrganizerProfile] = useState<any>(null);
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
+    // Check if organizer's plan has priority support
+    const hasPrioritySupport = organizerProfile?.plan?.features?.enable_priority_support || 
+                               organizerProfile?.plan?.features?.priority_support;
+
     React.useEffect(() => {
         const fetchData = async () => {
             try {
-                const [events, analytics, organizer] = await Promise.all([
+                const [events, analytics, organizer, quota] = await Promise.all([
                     apiService.getUserEvents(),
                     apiService.getAnalytics(),
-                    apiService.getMyOrganizer()
+                    apiService.getMyOrganizer(),
+                    apiService.getEmailQuotaStatus().catch((err) => {
+                        console.error('Email quota fetch error:', err);
+                        return null;
+                    }),
                 ]);
                 const liveCount = events.filter(e => e.status === 'PUBLISHED').length;
                 setStats({
@@ -64,6 +75,7 @@ export const UserHome: React.FC = () => {
                     ticketsSold: analytics.totalRegistrations || 0
                 });
                 setOrganizerProfile(organizer);
+                if (quota) setEmailQuota(quota);
 
                 const hideModal = localStorage.getItem('hideUpgradeModal');
                 if (!hideModal) {
@@ -99,16 +111,12 @@ export const UserHome: React.FC = () => {
         }
     };
 
-    const isSubscriptionReady = !!organizerProfile?.currentPlanId && organizerProfile?.subscriptionStatus !== 'pending';
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!isSubscriptionReady) {
-            setNotification({ message: 'Select a plan (free or paid) before initializing events.', type: 'error' });
-            setTimeout(() => navigate('/subscription'), 1500);
-            return;
-        }
+
 
         setSubmitting(true);
         try {
@@ -172,11 +180,11 @@ export const UserHome: React.FC = () => {
             <div className="bg-[#F2F2F2] border-2 border-[#2E2E2F]/5 rounded-[3rem] p-10 md:p-14 mb-4">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
                     <div className="max-w-2xl">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#38BDF2]/10 border border-[#38BDF2]/20 text-[#38BDF2] text-[10px] font-black uppercase tracking-[0.2em] mb-6">
-                            Organizer Portal
+                        <div className="w-12 h-12 rounded-2xl bg-[#2E2E2F]/5 flex items-center justify-center mb-8">
+                            <ICONS.Home className="w-6 h-6 text-[#2E2E2F]/20" />
                         </div>
                         <h1 className="text-4xl md:text-6xl font-black text-[#2E2E2F] tracking-tighter leading-none mb-6">
-                            Oh hello, <span className="text-[#38BDF2]">{displayName}</span>
+                            Oh hello, {displayName}
                         </h1>
                         <p className="text-[#2E2E2F]/60 text-lg font-medium leading-relaxed">
                             Welcome back to your event nerve center. Craft new experiences, engage your audience, and scale your influence with StartupLab.
@@ -184,14 +192,14 @@ export const UserHome: React.FC = () => {
                     </div>
                     <div className="flex gap-10 shrink-0">
                         <div className="text-center group">
-                            <p className={`text-[#38BDF2] text-5xl font-black leading-none mb-3 transition-all duration-700 ${loadingStats ? 'opacity-0 scale-50' : 'opacity-100 scale-100'}`}>
+                            <p className={`text-[#2E2E2F] text-5xl font-black leading-none mb-3 transition-all duration-700 ${loadingStats ? 'opacity-0 scale-50' : 'opacity-100 scale-100'}`}>
                                 {stats.liveEventsCount}
                             </p>
                             <p className="text-[10px] uppercase font-black text-[#2E2E2F] tracking-[0.25em] opacity-40 group-hover:opacity-100 transition-opacity">Live Events</p>
                         </div>
                         <div className="w-px h-14 bg-[#2E2E2F]/10 self-center" />
                         <div className="text-center group">
-                            <p className={`text-[#38BDF2] text-5xl font-black leading-none mb-3 transition-all duration-700 delay-100 ${loadingStats ? 'opacity-0 scale-50' : 'opacity-100 scale-100'}`}>
+                            <p className={`text-[#2E2E2F] text-5xl font-black leading-none mb-3 transition-all duration-700 delay-100 ${loadingStats ? 'opacity-0 scale-50' : 'opacity-100 scale-100'}`}>
                                 {stats.ticketsSold}
                             </p>
                             <p className="text-[10px] uppercase font-black text-[#2E2E2F] tracking-[0.25em] opacity-40 group-hover:opacity-100 transition-opacity">Tickets</p>
@@ -200,38 +208,102 @@ export const UserHome: React.FC = () => {
                 </div>
             </div>
 
+            {/* Email Quota and Current Plan Section */}
+            {emailQuota && organizerProfile && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Current Plan Card */}
+                    {organizerProfile?.plan && (
+                        <div className="bg-[#F2F2F2] border-2 border-[#2E2E2F]/10 rounded-[2rem] p-6">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-[#2E2E2F]/60 mb-2">Current Plan</p>
+                            <p className="text-2xl font-black text-[#2E2E2F] tracking-tight">{organizerProfile.plan.name}</p>
+                            <p className="text-[10px] text-[#2E2E2F]/60 font-medium mt-2">{organizerProfile.plan.description}</p>
+                        </div>
+                    )}
+
+                    {/* Email Quota Widget */}
+                    <div className={`${organizerProfile?.currentPlanId ? 'bg-[#F2F2F2] border-[#2E2E2F]/10' : 'bg-red-50 border-red-200'} border-2 rounded-[2rem] p-6 h-fit`}>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className={`p-2 ${organizerProfile?.currentPlanId ? 'bg-[#2E2E2F]/10' : 'bg-red-200'} rounded-lg`}>
+                                <ICONS.Mail className={`w-5 h-5 ${organizerProfile?.currentPlanId ? 'text-[#2E2E2F]' : 'text-red-600'}`} strokeWidth={2} />
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-[#2E2E2F]/60">Email Quota</p>
+                                <p className={`text-lg font-black ${organizerProfile?.currentPlanId ? 'text-[#2E2E2F]' : 'text-red-600'}`}>
+                                    {organizerProfile?.currentPlanId ? emailQuota.remaining : '0'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="text-[10px] font-black text-[#2E2E2F]/60 mb-2">
+                                {organizerProfile?.currentPlanId ? `${emailQuota.sent}/${emailQuota.limit}` : 'No Active Plan'}
+                            </p>
+                            {organizerProfile?.currentPlanId ? (
+                                <div className="w-full h-2 bg-[#2E2E2F]/10 rounded-full overflow-hidden">
+                                    <div 
+                                        className={`h-full rounded-full transition-all ${emailQuota.canSend ? 'bg-[#2E2E2F]/40' : 'bg-red-500'}`}
+                                        style={{ width: `${(emailQuota.sent / emailQuota.limit) * 100}%` }}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="w-full h-2 bg-red-200 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full bg-red-500 w-full" />
+                                </div>
+                            )}
+                        </div>
+
+                        {!organizerProfile?.currentPlanId && (
+                            <button 
+                                onClick={() => setIsUpgradeModalOpen(true)}
+                                className="mt-4 w-full px-4 py-2 rounded-xl bg-[#2E2E2F] text-white font-black text-[10px] uppercase tracking-wider hover:opacity-90 transition-all shadow-lg shadow-[#2E2E2F]/10"
+                            >
+                                Subscribe
+                            </button>
+                        )}
+                        {organizerProfile?.currentPlanId && !emailQuota.canSend && (
+                            <button 
+                                onClick={() => setIsUpgradeModalOpen(true)}
+                                className="mt-4 w-full px-4 py-2 rounded-xl bg-[#2E2E2F] text-white font-black text-[10px] uppercase tracking-wider hover:opacity-90 transition-all shadow-lg shadow-[#2E2E2F]/10"
+                            >
+                                Upgrade
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Create First Event Card */}
                 <div
-                    className="group relative bg-[#F2F2F2] border-2 border-[#2E2E2F]/5 rounded-[2.5rem] p-8 flex flex-col items-start transition-all duration-300 hover:border-[#38BDF2] hover:shadow-[0_20px_40px_-20px_rgba(56,189,242,0.3)] hover:-translate-y-1"
+                    className="group relative bg-[#F2F2F2] border-2 border-[#2E2E2F]/5 rounded-[2.5rem] p-8 flex flex-col items-start transition-all duration-300 hover:border-[#2E2E2F]/20 hover:shadow-[0_20px_40px_-20px_rgba(0,0,0,0.05)] hover:-translate-y-1"
                     onClick={() => navigate('/my-events?openModal=true')}
                 >
-                    <div className="w-14 h-14 rounded-2xl bg-[#38BDF2] text-white flex items-center justify-center mb-8 shadow-lg shadow-[#38BDF2]/30 group-hover:scale-110 transition-transform">
+                    <div className="w-14 h-14 rounded-2xl bg-[#2E2E2F]/10 text-[#2E2E2F] flex items-center justify-center mb-8 group-hover:bg-[#2E2E2F] group-hover:text-white transition-all">
                         <ICONS.Plus className="w-8 h-8 stroke-[3]" />
                     </div>
                     <h2 className="text-2xl font-black text-[#2E2E2F] tracking-tight mb-3">Create First Event</h2>
                     <p className="text-[#2E2E2F]/60 font-medium leading-relaxed mb-8 flex-1">
                         Follow the organizer workflow: complete your identity, set up your organization profile, pick a subscription plan, save your event as a draft, then add tickets before finally publishing.
                     </p>
-                    <div className="flex items-center gap-2 text-[10px] font-black text-[#38BDF2] uppercase tracking-[0.2em]">
+                    <div className="flex items-center gap-2 text-[10px] font-black text-[#2E2E2F]/40 uppercase tracking-[0.2em] group-hover:text-[#2E2E2F] transition-colors">
                         Start Wizard <ICONS.ChevronRight className="w-4 h-4" />
                     </div>
                 </div>
 
                 {/* Manage Events Card */}
                 <div
-                    className="group relative bg-[#F2F2F2] border-2 border-[#2E2E2F]/5 rounded-[2.5rem] p-8 flex flex-col items-start transition-all duration-300 hover:border-[#2E2E2F] hover:shadow-[0_20px_40px_-20px_rgba(46,46,47,0.1)] hover:-translate-y-1"
+                    className="group relative bg-[#F2F2F2] border-2 border-[#2E2E2F]/5 rounded-[2.5rem] p-8 flex flex-col items-start transition-all duration-300 hover:border-[#2E2E2F]/20 hover:shadow-[0_20px_40px_-20px_rgba(0,0,0,0.05)] hover:-translate-y-1"
                     onClick={() => navigate('/my-events')}
                 >
-                    <div className="w-14 h-14 rounded-2xl bg-[#2E2E2F] text-white flex items-center justify-center mb-8 shadow-lg shadow-[#2E2E2F]/30 group-hover:scale-110 transition-transform">
+                    <div className="w-14 h-14 rounded-2xl bg-[#2E2E2F]/10 text-[#2E2E2F] flex items-center justify-center mb-8 group-hover:bg-[#2E2E2F] group-hover:text-white transition-all">
                         <ICONS.Calendar className="w-7 h-7 stroke-[2]" />
                     </div>
                     <h2 className="text-2xl font-black text-[#2E2E2F] tracking-tight mb-3">Manage My Events</h2>
                     <p className="text-[#2E2E2F]/60 font-medium leading-relaxed mb-8 flex-1">
                         View, edit, and track the performance of all your existing events. Stay on top of registrations.
                     </p>
-                    <div className="flex items-center gap-2 text-[10px] font-black text-[#2E2E2F] uppercase tracking-[0.2em]">
+                    <div className="flex items-center gap-2 text-[10px] font-black text-[#2E2E2F]/40 uppercase tracking-[0.2em] group-hover:text-[#2E2E2F] transition-colors">
                         Open Library <ICONS.ChevronRight className="w-4 h-4" />
                     </div>
                 </div>
@@ -385,6 +457,11 @@ export const UserHome: React.FC = () => {
                     // Refresh data after upgrade
                     setTimeout(() => window.location.reload(), 1500);
                 }}
+            />
+            <SupportCenter
+                isOpen={isSupportCenterOpen}
+                onClose={() => setIsSupportCenterOpen(false)}
+                organizerName={organizerProfile?.organizerName || ''}
             />
         </div>
     );

@@ -11,6 +11,7 @@ import {
   unfollowOrganizer,
   getMyFollowings,
   getAllOrganizers,
+  getEmailQuotaStatus,
 } from '../controller/organizerController.js';
 
 const router = express.Router();
@@ -24,6 +25,9 @@ router.post('/organizer', authMiddleware, upsertOrganizer);
 
 // GET /api/organizer/me
 router.get('/organizer/me', authMiddleware, getMyOrganizer);
+
+// GET /api/organizer/email-quota
+router.get('/organizer/email-quota', authMiddleware, getEmailQuotaStatus);
 
 // GET /api/organizer/followings
 router.get('/organizer/followings', authMiddleware, getMyFollowings);

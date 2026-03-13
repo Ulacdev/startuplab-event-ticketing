@@ -226,10 +226,21 @@ export const listEvents = async (req, res) => {
       regCountMap.set(att.eventId, (regCountMap.get(att.eventId) || 0) + 1);
     });
 
+    // Fetch promotion status for these events
+    let pagePromotedMap = new Map();
+    const { data: pagePromotedData } = await supabase
+      .from('promoted_events')
+      .select('eventId, expires_at')
+      .in('eventId', eventIdsForPage)
+      .gte('expires_at', new Date().toISOString());
+    (pagePromotedData || []).forEach(p => pagePromotedMap.set(p.eventId, p));
+
     const withTicketTypes = pagedEvents.map(e => {
       const usableTTs = ttMap.get(e.eventId) || [];
       return {
         ...e,
+        is_promoted: !!pagePromotedMap.has(e.eventId),
+        promotionEndDate: pagePromotedMap.get(e.eventId)?.expires_at || null,
         ticketTypes: usableTTs,
         registrationCount: regCountMap.get(e.eventId) || 0,
         likesCount: allLikeCountMap.get(e.eventId) || 0,
@@ -281,7 +292,15 @@ export const getEventBySlug = async (req, res) => {
       return res.status(500).json({ error: ttError.message });
     }
 
-    // 3) Attach tickets and return
+    // 3) Fetch promotion data
+    const { data: promotion } = await supabase
+      .from('promoted_events')
+      .select('*')
+      .eq('eventId', event.eventId)
+      .gte('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    // 4) Attach tickets and return
     // Note: we no longer strictly filter by sales window here so they show up in UI
     // The frontend or registration logic handles the actual validity of the sale.
     const usableTicketTypes = ticketTypes || [];
@@ -292,6 +311,8 @@ export const getEventBySlug = async (req, res) => {
     console.log(`🔍 [Event Slug] Enriching with organizer...`);
     const [enrichedEvent] = await enrichEventsWithOrganizer([{
       ...event,
+      is_promoted: !!promotion,
+      promotionEndDate: promotion?.expires_at || null,
       ticketTypes: usableTicketTypes,
       likesCount: likeCounts.get(event.eventId) || 0,
     }]);
@@ -305,5 +326,196 @@ export const getEventBySlug = async (req, res) => {
   } catch (err) {
     console.error('❌ [Event Slug] Error:', err);
     return res.status(500).json({ error: err?.message || 'Unexpected error' });
+  }
+};
+
+/**
+ * GET /api/events/feed - Returns mixed promoted + regular events
+ * Query params: page, limit, location, search, category
+ */
+export const getEventsFeed = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
+    const search = (req.query.search || '').toString().trim();
+    const location = (req.query.location || '').toString().trim();
+
+    // Build base query for active, published events
+    let query = supabase.from('events').select('*').eq('is_archived', false).eq('status', 'PUBLISHED');
+
+    if (search) {
+      query = query.or(`eventName.ilike.%${search}%,locationText.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    if (location && location !== 'Online Events') {
+      query = query.ilike('locationText', `%${location}%`);
+    } else if (location === 'Online Events') {
+      query = query.in('locationType', ['ONLINE', 'HYBRID']);
+    }
+
+    // Fetch events ordered by promoted first, then by start date
+    const { data: allEvents, error: eventsErr } = await query
+      .order('startAt', { ascending: true });
+
+    if (eventsErr) throw eventsErr;
+
+    // Get promotion data for all events
+    const eventIds = (allEvents || []).map(e => e.eventId);
+    let promotedEventsMap = new Map();
+
+    if (eventIds.length > 0) {
+      const { data: promotedData } = await supabase
+        .from('promoted_events')
+        .select('*')
+        .in('eventId', eventIds)
+        .gte('expires_at', new Date().toISOString());
+
+      (promotedData || []).forEach(p => {
+        promotedEventsMap.set(p.eventId, p);
+      });
+    }
+
+    // Enrich events with promotion data
+    const enrichedEvents = (allEvents || []).map(event => ({
+      ...event,
+      is_promoted: !!promotedEventsMap.has(event.eventId),
+      promotionEndDate: promotedEventsMap.get(event.eventId)?.expires_at || null,
+    }));
+
+    // Sort: promoted first, then by start date
+    enrichedEvents.sort((a, b) => {
+      if (a.is_promoted !== b.is_promoted) {
+        return a.is_promoted ? -1 : 1; // promoted first
+      }
+      return new Date(a.startAt) - new Date(b.startAt);
+    });
+
+    // Apply pagination
+    const paginatedEvents = enrichedEvents.slice(offset, offset + limit);
+
+    // Get ticket types for matching events
+    const { data: ticketTypes } = await supabase
+      .from('ticketTypes')
+      .select('*')
+      .in('eventId', eventIds)
+      .eq('status', true);
+
+    const ttMapForFeed = new Map();
+    (ticketTypes || []).forEach(tt => {
+      const list = ttMapForFeed.get(tt.eventId) || [];
+      list.push(tt);
+      ttMapForFeed.set(tt.eventId, list);
+    });
+
+    // Enrich with organizer data
+    const enrichedWithOrganizer = await enrichEventsWithOrganizer(paginatedEvents);
+
+    // Get likes count
+    const likeCountsMap = await getEventLikeCountsMap((paginatedEvents || []).map(e => e.eventId));
+    const finalEvents = enrichedWithOrganizer.map(e => ({
+      ...e,
+      ticketTypes: ttMapForFeed.get(e.eventId) || [],
+      likesCount: likeCountsMap.get(e.eventId) || 0,
+    }));
+
+    return res.json({
+      events: finalEvents,
+      pagination: {
+        page,
+        limit,
+        total: enrichedEvents.length,
+        totalPages: Math.ceil(enrichedEvents.length / limit),
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err?.message || 'Failed to fetch events feed' });
+  }
+};
+
+/**
+ * GET /api/events/:id/details - Returns event details with promotion + review data
+ */
+export const getEventDetails = async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    if (!eventId) return res.status(400).json({ error: 'Event ID required' });
+
+    // Fetch event
+    const { data: event, error: eventErr } = await supabase
+      .from('events')
+      .select('*')
+      .eq('eventId', eventId)
+      .maybeSingle();
+
+    if (eventErr) throw eventErr;
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+
+    // Fetch promotion data
+    const { data: promotion } = await supabase
+      .from('promoted_events')
+      .select('*')
+      .eq('eventId', eventId)
+      .gte('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    // Fetch reviews
+    const { data: reviews } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('eventId', eventId)
+      .order('created_at', { ascending: false });
+
+    // Calculate rating
+    const avgRating = reviews && reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
+      : 0;
+
+    // Fetch organizer data
+    const { data: organizer } = await supabase
+      .from('organizers')
+      .select('*')
+      .eq('organizerId', event.organizerId)
+      .maybeSingle();
+
+    // Fetch analytics for social proof
+    const { data: analytics } = await supabase
+      .from('event_analytics')
+      .select('*')
+      .eq('eventId', eventId)
+      .gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Last 7 days
+
+    const viewsWeek = (analytics || []).reduce((sum, a) => sum + (a.views || 0), 0);
+
+    // Fetch total orders for this event
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('orderId')
+      .eq('eventId', eventId)
+      .eq('status', 'completed');
+
+    // Like count
+    const { data: likes } = await supabase
+      .from('event_likes')
+      .select('likeId')
+      .eq('eventId', eventId);
+
+    // Enrich event with all data
+    const enrichedEvent = {
+      ...event,
+      is_promoted: !!promotion,
+      promotionEndDate: promotion?.expires_at || null,
+      organizer,
+      reviews: (reviews || []).slice(0, 10), // Top 10 reviews
+      avgRating: parseFloat(avgRating),
+      reviewCount: reviews?.length || 0,
+      viewsThisWeek: viewsWeek,
+      totalOrders: orders?.length || 0,
+      likesCount: likes?.length || 0,
+    };
+
+    return res.json(enrichedEvent);
+  } catch (err) {
+    return res.status(500).json({ error: err?.message || 'Failed to fetch event details' });
   }
 };

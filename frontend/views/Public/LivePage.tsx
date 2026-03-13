@@ -33,6 +33,17 @@ const getEmbedUrl = (link: string) => {
     return null;
 };
 
+// Helper: determines if a streaming URL is an embeddable video platform (YouTube, Facebook, Vimeo)
+// Meeting links (Google Meet, Zoom) and other non-video URLs return false
+const isEmbeddableVideoUrl = (link: string): boolean => {
+    if (!link || !link.trim()) return false;
+    const normalized = link.startsWith('http') ? link : `https://${link}`;
+    if (/youtube\.com|youtu\.be/.test(normalized)) return true;
+    if (/facebook\.com|fb\.watch|fb\.com/.test(normalized)) return true;
+    if (/vimeo\.com/.test(normalized)) return true;
+    return false;
+};
+
 export const LivePage: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
@@ -42,10 +53,13 @@ export const LivePage: React.FC = () => {
         const fetchLive = async () => {
             try {
                 const data = await apiService.getLiveEvents();
-                setEvents(data);
-                if (data.length > 0 && !currentEvent) {
-                    setCurrentEvent(data[0]);
-                } else if (data.length === 0) {
+                // Only show events with embeddable video URLs (YouTube, Facebook, Vimeo)
+                // Exclude Google Meet, Zoom, and other non-video meeting links
+                const videoEvents = data.filter(e => isEmbeddableVideoUrl(e.streaming_url || ''));
+                setEvents(videoEvents);
+                if (videoEvents.length > 0 && !currentEvent) {
+                    setCurrentEvent(videoEvents[0]);
+                } else if (videoEvents.length === 0) {
                     setCurrentEvent(null);
                 }
             } catch (err) {

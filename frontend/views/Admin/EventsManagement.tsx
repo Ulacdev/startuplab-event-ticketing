@@ -420,14 +420,24 @@ export const EventsManagement: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-8 py-7">
-                    <div className={`inline-flex px-3.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${event.status === 'PUBLISHED'
-                      ? 'bg-[#38BDF2]/20 text-[#2E2E2F]'
-                      : event.status === 'DRAFT'
-                        ? 'bg-[#F2F2F2] text-[#2E2E2F]/60 border border-[#2E2E2F]/20'
-                        : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
-                      }`}>
-                      {event.status}
-                    </div>
+                    {(() => {
+                      const now = new Date();
+                      const eventEnd = event.endAt ? new Date(event.endAt) : new Date(new Date(event.startAt).getTime() + 2 * 60 * 60 * 1000);
+                      const isCompleted = now > eventEnd;
+
+                      return (
+                        <div className={`inline-flex px-3.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${isCompleted
+                          ? 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
+                          : event.status === 'PUBLISHED'
+                            ? 'bg-[#38BDF2]/20 text-[#2E2E2F]'
+                            : event.status === 'DRAFT'
+                              ? 'bg-[#F2F2F2] text-[#2E2E2F]/60 border border-[#2E2E2F]/20'
+                              : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
+                          }`}>
+                          {isCompleted ? 'COMPLETED' : event.status}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-8 py-7 text-center">
                     <div className="flex justify-center items-center gap-6 opacity-70 group-hover:opacity-100 transition-colors">

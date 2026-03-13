@@ -16,6 +16,7 @@ type PlanDraft = {
   isActive: boolean;
   features: AdminPlan['features'];
   limits: AdminPlan['limits'];
+  promotions?: { max_promoted_events: number; promotion_duration_days: number };
 };
 
 const defaultDraft: PlanDraft = {
@@ -34,10 +35,13 @@ const defaultDraft: PlanDraft = {
     enable_priority_support: false,
   },
   limits: {
-    max_events: 3,
-    max_active_events: 2,
     max_staff_accounts: 2,
     max_attendees_per_month: 100,
+    email_quota_per_day: 500,
+  },
+  promotions: {
+    max_promoted_events: 0,
+    promotion_duration_days: 7,
   },
 };
 
@@ -73,10 +77,13 @@ const toDraft = (plan: AdminPlan): PlanDraft => ({
     enable_priority_support: !!(plan.features?.enable_priority_support || (plan.features as any)?.priority_support),
   },
   limits: {
-    max_events: plan.limits?.max_events ?? 0,
-    max_active_events: plan.limits?.max_active_events ?? 0,
     max_staff_accounts: plan.limits?.max_staff_accounts ?? 0,
     max_attendees_per_month: plan.limits?.max_attendees_per_month ?? 0,
+    email_quota_per_day: plan.limits?.email_quota_per_day ?? 500,
+  },
+  promotions: {
+    max_promoted_events: (plan as any)?.promotions?.max_promoted_events ?? 0,
+    promotion_duration_days: (plan as any)?.promotions?.promotion_duration_days ?? 7,
   },
 });
 
@@ -100,10 +107,13 @@ const toPayload = (draft: PlanDraft): Partial<AdminPlan> => ({
     priority_support: !!draft.features.enable_priority_support,
   },
   limits: {
-    max_events: draft.limits.max_events,
-    max_active_events: draft.limits.max_active_events,
     max_staff_accounts: draft.limits.max_staff_accounts,
     max_attendees_per_month: draft.limits.max_attendees_per_month,
+    email_quota_per_day: draft.limits.email_quota_per_day,
+  },
+  promotions: {
+    max_promoted_events: Math.max(0, Math.floor(draft.promotions?.max_promoted_events ?? 0)),
+    promotion_duration_days: Math.max(1, Math.floor(draft.promotions?.promotion_duration_days ?? 7)),
   },
 });
 
@@ -345,20 +355,21 @@ export const SubscriptionPlans: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-black text-[#2E2E2F]/30 uppercase tracking-[0.2em] mb-4 ml-1">Plan Limits</label>
+                    <label className="block text-[9px] font-black text-[#2E2E2F]/30 uppercase tracking-[0.2em] mb-4 ml-1">Plan Limits & Promotion</label>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { label: 'Total Events', val: plan.limits?.max_total_events || plan.limits?.max_events || 0, icon: <ICONS.Box /> },
-                        { label: 'Active Events', val: plan.limits?.max_active_events || plan.limits?.max_events || 0, icon: <ICONS.CheckCircle /> },
+                        { label: 'Promoted Events', val: (plan as any)?.promotions?.max_promoted_events || 0, icon: <ICONS.TrendingUp /> },
+                        { label: 'Promo Duration', val: ((plan as any)?.promotions?.promotion_duration_days || 7) + ' days', icon: <ICONS.Calendar /> },
                         { label: 'Staff Accounts', val: plan.limits?.max_staff_accounts || 0, icon: <ICONS.Users /> },
                         { label: 'Monthly Attendees', val: plan.limits?.monthly_attendees || plan.limits?.max_attendees_per_month || 0, icon: <ICONS.Users /> },
+                        { label: 'Daily Email Quota', val: (plan.limits?.email_quota_per_day || 0) + ' emails/day', icon: <ICONS.Mail /> },
                       ].map((limit, idx) => (
                         <div key={idx} className="p-4 bg-[#F2F2F2]/50 rounded-2xl border border-[#2E2E2F]/5 hover:border-[#38BDF2]/30 transition-all group/limit hover:shadow-sm">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="text-[#38BDF2] w-4 h-4 opacity-70 group-hover/limit:opacity-100 transition-opacity">
                               {React.cloneElement(limit.icon as React.ReactElement<any>, { className: 'w-full h-full', strokeWidth: 3 })}
                             </div>
-                            <span className="text-[16px] font-black text-[#2E2E2F] tracking-tighter leading-none">{limit.val}</span>
+                            <span className={`font-black text-[#2E2E2F] tracking-tighter leading-none ${typeof limit.val === 'string' ? 'text-sm' : 'text-[16px]'}`}>{limit.val}</span>
                           </div>
                           <p className="text-[8px] font-black uppercase tracking-[0.2em] text-[#38BDF2]/50">{limit.label}</p>
                         </div>
@@ -450,13 +461,14 @@ export const SubscriptionPlans: React.FC = () => {
 
             <div className="space-y-8">
               <div>
-                <label className="block text-[10px] font-black text-[#2E2E2F]/40 uppercase tracking-[0.2em] mb-3 ml-1">Plan Limits</label>
+                <label className="block text-[10px] font-black text-[#2E2E2F]/40 uppercase tracking-[0.2em] mb-3 ml-1">Plan Limits & Promotions</label>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-                  <Input label="Max Total Events" type="number" value={draft.limits.max_events} onChange={(e: any) => setDraft((prev) => ({ ...prev, limits: { ...prev.limits, max_events: parseNumeric(e.target.value, 0) } }))} />
-                  <Input label="Max Active Events" type="number" value={draft.limits.max_active_events} onChange={(e: any) => setDraft((prev) => ({ ...prev, limits: { ...prev.limits, max_active_events: parseNumeric(e.target.value, 0) } }))} />
+                  <Input label="Max Promoted Events" type="number" value={draft.promotions?.max_promoted_events || 0} onChange={(e: any) => setDraft((prev) => ({ ...prev, promotions: { ...prev.promotions, max_promoted_events: Math.max(0, parseNumeric(e.target.value, 0)) } }))} />
+                  <Input label="Promotion Duration (Days)" type="number" value={draft.promotions?.promotion_duration_days || 7} onChange={(e: any) => setDraft((prev) => ({ ...prev, promotions: { ...prev.promotions, promotion_duration_days: Math.max(1, parseNumeric(e.target.value, 7)) } }))} />
                   <Input label="Max Staff Accounts" type="number" value={draft.limits.max_staff_accounts} onChange={(e: any) => setDraft((prev) => ({ ...prev, limits: { ...prev.limits, max_staff_accounts: parseNumeric(e.target.value, 0) } }))} />
                   <Input label="Monthly Attendees" type="number" value={draft.limits.max_attendees_per_month} onChange={(e: any) => setDraft((prev) => ({ ...prev, limits: { ...prev.limits, max_attendees_per_month: parseNumeric(e.target.value, 0) } }))} />
                   <Input label="Free Trial Days" type="number" value={draft.trialDays} onChange={(e: any) => setDraft((prev) => ({ ...prev, trialDays: Math.max(0, Math.floor(parseNumeric(e.target.value, 0))) }))} />
+                  <Input label="Daily Email Quota" type="number" value={(draft.limits.email_quota_per_day as any) || 500} onChange={(e: any) => setDraft((prev) => ({ ...prev, limits: { ...prev.limits, email_quota_per_day: Math.max(0, parseNumeric(e.target.value, 500)) } }))} />
                 </div>
               </div>
             </div>

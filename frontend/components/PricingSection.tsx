@@ -45,10 +45,10 @@ export const PricingSection: React.FC = () => {
             <div className="max-w-6xl mx-auto px-5 sm:px-8">
                 <div className="text-center mb-16">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#38BDF2] mb-4">Pricing Plans</p>
-                    <h2 className="text-3xl sm:text-4xl font-black text-[#2E2E2F] tracking-tight mb-4">
+                    <h2 className="text-2xl font-black text-[#2E2E2F] tracking-tighter uppercase leading-none mb-2">
                         Simple & Transparent Pricing
                     </h2>
-                    <p className="max-w-xl mx-auto text-[#2E2E2F]/60 font-medium">
+                    <p className="text-[#2E2E2F]/40 text-[11px] font-black uppercase tracking-[0.2em]">
                         Live values are synced from the admin subscription plan settings.
                     </p>
                 </div>

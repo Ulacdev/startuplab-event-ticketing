@@ -130,7 +130,15 @@ img {
    UTILITY CLASSES
    ======================================== */
 
-/* Custom Scrollbar Styles */
+/* Hide scrollbar but maintain functionality */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: rgba(46, 46, 47, 0.2) transparent;
@@ -233,6 +241,36 @@ img {
   to {
     transform: translateX(-50%);
   }
+}
+
+/* Float animation for hero badges */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Custom scrollbar for fixed sidebars */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(46, 46, 47, 0.1);
+  border-radius: 20px;
+  transition: background 0.3s;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(46, 46, 47, 0.25);
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(46, 46, 47, 0.1) transparent;
 }
 
 /* ========================================

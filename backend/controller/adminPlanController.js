@@ -9,10 +9,14 @@ const DEFAULT_FEATURES = {
 };
 
 const DEFAULT_LIMITS = {
-  max_events: 3,
-  max_active_events: 2,
   max_staff_accounts: 2,
   max_attendees_per_month: 100,
+  email_quota_per_day: 500,
+};
+
+const DEFAULT_PROMOTIONS = {
+  max_promoted_events: 0,
+  promotion_duration_days: 7,
 };
 
 const FEATURE_KEYS = {
@@ -23,10 +27,14 @@ const FEATURE_KEYS = {
 };
 
 const LIMIT_KEYS = {
-  max_events: 'max_events',
-  max_active_events: 'max_active_events',
   max_staff_accounts: 'max_staff_accounts',
   max_attendees_per_month: 'max_attendees_per_month',
+  email_quota_per_day: 'email_quota_per_day',
+};
+
+const PROMOTION_KEYS = {
+  max_promoted_events: 'max_promoted_events',
+  promotion_duration_days: 'promotion_duration_days',
 };
 
 const toBoolean = (value, fallback = false) => {
@@ -78,10 +86,14 @@ const normalizePlanInput = (body = {}) => {
   };
 
   const limits = {
-    max_events: body?.limits?.max_events ?? DEFAULT_LIMITS.max_events,
-    max_active_events: body?.limits?.max_active_events ?? DEFAULT_LIMITS.max_active_events,
     max_staff_accounts: body?.limits?.max_staff_accounts ?? DEFAULT_LIMITS.max_staff_accounts,
     max_attendees_per_month: body?.limits?.max_attendees_per_month ?? DEFAULT_LIMITS.max_attendees_per_month,
+    email_quota_per_day: body?.limits?.email_quota_per_day ?? DEFAULT_LIMITS.email_quota_per_day,
+  };
+
+  const promotions = {
+    max_promoted_events: Math.max(0, Math.floor(toNumber(body?.promotions?.max_promoted_events, DEFAULT_PROMOTIONS.max_promoted_events))),
+    promotion_duration_days: Math.max(1, Math.floor(toNumber(body?.promotions?.promotion_duration_days, DEFAULT_PROMOTIONS.promotion_duration_days))),
   };
 
   return {
@@ -100,18 +112,20 @@ const normalizePlanInput = (body = {}) => {
     },
     features,
     limits,
+    promotions,
   };
 };
 
-const buildFeatureRows = (planId, features, limits) => [
+const buildFeatureRows = (planId, features, limits, promotions) => [
   { planId, key: FEATURE_KEYS.enable_custom_branding, value: String(Boolean(features.enable_custom_branding)) },
   { planId, key: FEATURE_KEYS.enable_discount_codes, value: String(Boolean(features.enable_discount_codes)) },
   { planId, key: FEATURE_KEYS.enable_advanced_reports, value: String(Boolean(features.enable_advanced_reports)) },
   { planId, key: FEATURE_KEYS.enable_priority_support, value: String(Boolean(features.enable_priority_support)) },
-  { planId, key: LIMIT_KEYS.max_events, value: String(limits.max_events ?? DEFAULT_LIMITS.max_events) },
-  { planId, key: LIMIT_KEYS.max_active_events, value: String(limits.max_active_events ?? DEFAULT_LIMITS.max_active_events) },
   { planId, key: LIMIT_KEYS.max_staff_accounts, value: String(limits.max_staff_accounts ?? DEFAULT_LIMITS.max_staff_accounts) },
   { planId, key: LIMIT_KEYS.max_attendees_per_month, value: String(limits.max_attendees_per_month ?? DEFAULT_LIMITS.max_attendees_per_month) },
+  { planId, key: LIMIT_KEYS.email_quota_per_day, value: String(limits.email_quota_per_day ?? DEFAULT_LIMITS.email_quota_per_day) },
+  { planId, key: PROMOTION_KEYS.max_promoted_events, value: String(promotions.max_promoted_events ?? DEFAULT_PROMOTIONS.max_promoted_events) },
+  { planId, key: PROMOTION_KEYS.promotion_duration_days, value: String(promotions.promotion_duration_days ?? DEFAULT_PROMOTIONS.promotion_duration_days) },
 ];
 
 const coerceLimitValue = (value) => {
@@ -125,6 +139,7 @@ const coerceLimitValue = (value) => {
 const buildPlanResponse = (row, featureRows = []) => {
   const features = { ...DEFAULT_FEATURES };
   const limits = { ...DEFAULT_LIMITS };
+  const promotions = { ...DEFAULT_PROMOTIONS };
 
   featureRows.forEach((item) => {
     if (!item) return;
@@ -132,10 +147,11 @@ const buildPlanResponse = (row, featureRows = []) => {
     if (item.key === FEATURE_KEYS.enable_discount_codes) features.enable_discount_codes = toBoolean(item.value, false);
     if (item.key === FEATURE_KEYS.enable_advanced_reports) features.enable_advanced_reports = toBoolean(item.value, false);
     if (item.key === FEATURE_KEYS.enable_priority_support) features.enable_priority_support = toBoolean(item.value, false);
-    if (item.key === LIMIT_KEYS.max_events) limits.max_events = coerceLimitValue(item.value);
-    if (item.key === LIMIT_KEYS.max_active_events) limits.max_active_events = coerceLimitValue(item.value);
     if (item.key === LIMIT_KEYS.max_staff_accounts) limits.max_staff_accounts = coerceLimitValue(item.value);
     if (item.key === LIMIT_KEYS.max_attendees_per_month) limits.max_attendees_per_month = coerceLimitValue(item.value);
+    if (item.key === LIMIT_KEYS.email_quota_per_day) limits.email_quota_per_day = coerceLimitValue(item.value);
+    if (item.key === PROMOTION_KEYS.max_promoted_events) promotions.max_promoted_events = toNumber(item.value, DEFAULT_PROMOTIONS.max_promoted_events);
+    if (item.key === PROMOTION_KEYS.promotion_duration_days) promotions.promotion_duration_days = toNumber(item.value, DEFAULT_PROMOTIONS.promotion_duration_days);
   });
 
   return {
@@ -153,6 +169,7 @@ const buildPlanResponse = (row, featureRows = []) => {
     isActive: !!row.isActive,
     features,
     limits,
+    promotions,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -228,7 +245,7 @@ export const createAdminPlan = async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
-    const { plan, features, limits } = normalizePlanInput(req.body);
+    const { plan, features, limits, promotions } = normalizePlanInput(req.body);
     if (!plan.name) return res.status(400).json({ error: 'Plan name is required.' });
 
     await clearExistingDefaultIfNeeded(plan.isDefault);
@@ -253,6 +270,7 @@ export const createAdminPlan = async (req, res) => {
         isActive: plan.isActive,
         features, // Sync JSONB column
         limits,   // Sync JSONB column
+        promotions, // Sync JSONB column
         createdBy: userId,
         updated_at: now,
       })
@@ -261,7 +279,7 @@ export const createAdminPlan = async (req, res) => {
 
     if (insertError) throw insertError;
 
-    const featureRows = buildFeatureRows(inserted.planId, features, limits);
+    const featureRows = buildFeatureRows(inserted.planId, features, limits, promotions);
     const { error: featureError } = await supabase
       .from('planFeatures')
       .upsert(featureRows, { onConflict: 'planId,key' });
@@ -296,7 +314,7 @@ export const updateAdminPlan = async (req, res) => {
     if (lookupError) throw lookupError;
     if (!existing) return res.status(404).json({ error: 'Plan not found.' });
 
-    const { plan, features, limits } = normalizePlanInput({ ...existing, ...req.body });
+    const { plan, features, limits, promotions } = normalizePlanInput({ ...existing, ...req.body });
     if (!plan.name) return res.status(400).json({ error: 'Plan name is required.' });
 
     await clearExistingDefaultIfNeeded(plan.isDefault, planId);
@@ -319,6 +337,7 @@ export const updateAdminPlan = async (req, res) => {
         isActive: plan.isActive,
         features, // Sync JSONB column
         limits,   // Sync JSONB column
+        promotions, // Sync JSONB column
         updated_at: new Date().toISOString(),
       })
       .eq('planId', planId)
@@ -326,7 +345,7 @@ export const updateAdminPlan = async (req, res) => {
       .single();
     if (updateError) throw updateError;
 
-    const featureRows = buildFeatureRows(planId, features, limits);
+    const featureRows = buildFeatureRows(planId, features, limits, promotions);
     const { error: featureError } = await supabase
       .from('planFeatures')
       .upsert(featureRows, { onConflict: 'planId,key' });

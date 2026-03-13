@@ -63,7 +63,6 @@ const StreamStatusBanner: React.FC<{ event: Event; isOwner?: boolean }> = ({ eve
   const startAt = event.startAt ? new Date(event.startAt) : null;
   const endAt = event.endAt ? new Date(event.endAt) : (startAt ? new Date(startAt.getTime() + 2 * 60 * 60 * 1000) : null);
   const isLiveByTime = startAt && endAt && now >= startAt && now <= endAt;
-  const isLiveStatus = isLiveByTime || event.status === 'LIVE';
 
   const streamingUrl = event.streaming_url || '';
   const hasStreamingUrl = !!streamingUrl.trim();
@@ -72,10 +71,68 @@ const StreamStatusBanner: React.FC<{ event: Event; isOwner?: boolean }> = ({ eve
   const normalizedUrl = url && !url.startsWith('http') ? `https://${url}` : url;
   const isYouTube = /youtube\.com|youtu\.be/.test(normalizedUrl);
   const isFacebook = /facebook\.com|fb\.watch|fb\.com/.test(normalizedUrl);
+  const isGoogleMeet = /meet\.google\.com/.test(normalizedUrl);
+  const isZoom = /zoom\.us|zoom\.com/.test(normalizedUrl);
+  const isMeetingLink = isGoogleMeet || isZoom;
   const videoId = isYouTube ? getYouTubeId(normalizedUrl) : null;
   const hasLink = !!(normalizedUrl && normalizedUrl.startsWith('http'));
 
-  const showingLive = hasStreamingUrl && isLiveByTime;
+  // Meeting links (Google Meet / Zoom) — show as simple meeting link card, NOT live stream
+  if (isMeetingLink && hasStreamingUrl) {
+    const platformName = isGoogleMeet ? 'Google Meet' : 'Zoom';
+    const platformColor = isGoogleMeet ? '#00897B' : '#2D8CFF';
+
+    return (
+      <div className="rounded-[2rem] border border-[#2E2E2F]/10 bg-[#F2F2F2] p-8 mb-10">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: platformColor }} />
+          <h3 className="text-[10px] font-black text-[#2E2E2F]/40 uppercase tracking-[0.2em]">Meeting Link</h3>
+        </div>
+        <a
+          href={normalizedUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-5 p-6 rounded-2xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:border-[#2E2E2F]/30 hover:shadow-lg transition-all group"
+        >
+          {/* Platform Logo */}
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm" style={{ backgroundColor: `${platformColor}15` }}>
+            {isGoogleMeet ? (
+              <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none">
+                <path d="M3 6.5C3 5.12 4.12 4 5.5 4h7C13.88 4 15 5.12 15 6.5v11c0 1.38-1.12 2.5-2.5 2.5h-7C4.12 20 3 18.88 3 17.5v-11z" fill="#00897B"/>
+                <path d="M15 9.5l4.15-3.12A1 1 0 0121 7.23v9.54a1 1 0 01-1.85.85L15 14.5v-5z" fill="#00897B" opacity="0.7"/>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none">
+                <circle cx="12" cy="12" r="10" fill="#2D8CFF"/>
+                <path d="M8.5 9.5C8.5 8.67 9.17 8 10 8h2c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5h-2c-.83 0-1.5-.67-1.5-1.5v-5z" fill="white"/>
+                <path d="M14 10.5l2.5-1.5v6l-2.5-1.5v-3z" fill="white"/>
+              </svg>
+            )}
+          </div>
+
+          {/* Meeting Info */}
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] mb-1" style={{ color: platformColor }}>
+              {platformName}
+            </p>
+            <p className="text-lg font-black text-[#2E2E2F] tracking-tight group-hover:text-[#38BDF2] transition-colors">
+              Join {platformName} Session
+            </p>
+            <p className="text-[11px] font-bold text-[#2E2E2F]/40 mt-1 truncate">
+              {normalizedUrl}
+            </p>
+          </div>
+
+          {/* Arrow */}
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-[#2E2E2F]/10 group-hover:border-[#38BDF2] group-hover:bg-[#38BDF2] group-hover:text-white text-[#2E2E2F]/30 transition-all shrink-0">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 5l7 7-7 7M5 12h16" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </div>
+        </a>
+      </div>
+    );
+  }
+
+  const showingLive = hasStreamingUrl && isLiveByTime && !isMeetingLink;
 
   if (!showingLive) return null;
 
@@ -205,10 +262,12 @@ const CompactEventRow: React.FC<{ event: Event; brandColor: string }> = ({ event
             {minPrice > 0 ? `Starts at ${minPrice.toFixed(2)} PHP` : 'Free'}
           </p>
         </div>
-        {(event as any).trendingRank && (
-          <div className="mt-2 flex items-center gap-1.5 opacity-60">
-            <span className="text-[9px] font-black uppercase tracking-widest text-[#2E2E2F]/40">Promoted</span>
-            <ICONS.Info className="w-2.5 h-2.5 text-[#2E2E2F]/30" />
+        {(event.is_promoted || (event as any).isPromoted) && (
+          <div className="mt-2 flex items-center gap-1.5 opacity-80">
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#38BDF2]/10 border border-[#38BDF2]/20">
+              <ICONS.Info className="w-2.5 h-2.5 text-[#38BDF2]" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#38BDF2]">Promoted</span>
+            </div>
           </div>
         )}
       </div>
@@ -343,12 +402,18 @@ export const EventDetails: React.FC = () => {
     }));
   };
 
+  const now = new Date();
   const totalQuantity = (Object.values(quantities) as number[]).reduce((acc: number, q: number) => acc + q, 0);
   const grandTotal = event.ticketTypes.reduce((acc: number, t: TicketType) => acc + (t.priceAmount * (Number(quantities[t.ticketTypeId]) || 0)), 0);
+  
+  // Event Completion Check
+  const eventStart = event.startAt ? new Date(event.startAt) : null;
+  const eventEnd = event.endAt ? new Date(event.endAt) : (eventStart ? new Date(eventStart.getTime() + 2 * 60 * 60 * 1000) : null);
+  const isDone = eventEnd && now > eventEnd;
+
   const ctaLabel = totalQuantity === 0 ? 'Select Tickets' : 'Reserve Access';
 
   // Registration window
-  const now = new Date();
   const regOpen = event.regOpenAt ? new Date(event.regOpenAt) : null;
   const regClose = event.regCloseAt ? new Date(event.regCloseAt) : null;
   let regState = '';
@@ -516,6 +581,26 @@ export const EventDetails: React.FC = () => {
           <div className="flex-1 space-y-10">
             {/* Event Profile Body */}
             <div>
+              {(event.isPromoted || (event as any).is_promoted) && (
+                <div className="group/promoted relative mb-4 w-fit">
+                  <div 
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full shadow-lg border border-white/20 animate-in fade-in zoom-in duration-700 cursor-help"
+                    style={{ 
+                      background: brandColor 
+                        ? `linear-gradient(135deg, ${brandColor}, ${brandColor}DD)` 
+                        : 'linear-gradient(135deg, #38BDF2, #00AEEF)',
+                      boxShadow: `0 0 15px ${brandColor ? brandColor + '66' : 'rgba(56,189,242,0.4)'}`
+                    }}
+                  >
+                    <ICONS.Info className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white drop-shadow-sm">Promoted</span>
+                  </div>
+                  <div className="absolute left-0 top-full mt-2 w-48 p-3 bg-[#2E2E2F] text-white text-[9px] font-bold rounded-xl shadow-2xl opacity-0 translate-y-1 pointer-events-none group-hover/promoted:opacity-100 group-hover/promoted:translate-y-0 transition-all z-50 leading-relaxed">
+                    The organizer has highlighted this event as part of their elite plan features.
+                    <div className="absolute bottom-full left-4 border-8 border-transparent border-b-[#2E2E2F]"></div>
+                  </div>
+                </div>
+              )}
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
                 <h1 className="text-4xl lg:text-5xl font-black text-[#2E2E2F] tracking-tighter leading-tight">
                   {event.eventName}
@@ -755,6 +840,23 @@ export const EventDetails: React.FC = () => {
                     Previewing how attendees see your tickets
                   </p>
                 </div>
+              ) : isDone ? (
+                <div className="flex flex-col items-center text-center py-10 lg:py-16">
+                  <div className="w-20 h-20 rounded-full bg-[#2E2E2F]/5 flex items-center justify-center mb-6">
+                    <ICONS.Calendar className="w-10 h-10 text-[#2E2E2F]/20" />
+                  </div>
+                  <h3 className="text-2xl font-black text-[#2E2E2F] mb-3 uppercase tracking-tighter">Event Finished</h3>
+                  <p className="text-[11px] font-bold text-[#2E2E2F]/40 uppercase tracking-[0.2em] mb-10 max-w-[200px]">
+                    This session has already concluded.
+                  </p>
+                  <Button
+                    onClick={() => navigate('/browse-events')}
+                    className="w-full rounded-2xl py-4 font-black text-[11px] uppercase tracking-[0.2em] text-white shadow-xl"
+                    style={{ backgroundColor: brandColor }}
+                  >
+                    Browse more events
+                  </Button>
+                </div>
               ) : (
                 <>
                   <h2 className="text-xl font-black text-[#2E2E2F] mb-8 lg:mb-6 tracking-tight lg:shrink-0">
@@ -884,7 +986,7 @@ export const EventDetails: React.FC = () => {
         </div>
       </div>
 
-      {!isOwnEvent && (
+      {!isOwnEvent && !isDone && (
         <div
           className="fixed inset-x-0 z-[60] px-3 sm:px-4 lg:hidden pointer-events-none"
           style={{ bottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}

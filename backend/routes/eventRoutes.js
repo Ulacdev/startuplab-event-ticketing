@@ -1,5 +1,5 @@
 import express from 'express';
-import { listEvents, getEventBySlug, listLiveEvents } from '../controller/eventController.js';
+import { listEvents, getEventBySlug, listLiveEvents, getEventsFeed, getEventDetails } from '../controller/eventController.js';
 import { getMyLikedEvents, likeEvent, unlikeEvent } from '../controller/eventLikeController.js';
 import { createEvent } from '../controller/adminEventController.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -9,6 +9,9 @@ const router = express.Router();
 // GET /api/events/live
 router.get('/live', listLiveEvents);
 
+// GET /api/events/feed - Mixed promoted + regular events
+router.get('/feed', getEventsFeed);
+
 // GET /api/events
 router.get('/', listEvents);
 
@@ -17,6 +20,9 @@ router.post('/', authMiddleware, createEvent);
 
 // GET /api/events/likes/me
 router.get('/likes/me', authMiddleware, getMyLikedEvents);
+
+// GET /api/events/:id/details - Event details with promotion data
+router.get('/:id/details', getEventDetails);
 
 // POST /api/events/:id/like
 router.post('/:id/like', authMiddleware, likeEvent);

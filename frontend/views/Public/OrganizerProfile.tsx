@@ -87,8 +87,15 @@ export const OrganizerProfilePage: React.FC = () => {
                 setOrganizer(orgData);
                 setEvents(eventData.events || []);
 
-                // Check if any of this organizer's events are live
-                const matchingLive = allLiveEvents.find(e => e.organizerId === orgData.organizerId);
+                // Check if any of this organizer's events are live WITH an embeddable video URL
+                const isEmbeddableVideo = (url: string) => {
+                    if (!url || !url.trim()) return false;
+                    const n = url.startsWith('http') ? url : `https://${url}`;
+                    return /youtube\.com|youtu\.be/.test(n) || /facebook\.com|fb\.watch|fb\.com/.test(n) || /vimeo\.com/.test(n);
+                };
+                const matchingLive = allLiveEvents.find(e => 
+                    e.organizerId === orgData.organizerId && isEmbeddableVideo(e.streaming_url || '')
+                );
                 setLiveEvent(matchingLive || null);
             } catch (error) {
                 console.error('Failed to load organizer profile:', error);
@@ -405,9 +412,31 @@ const EventMiniCard: React.FC<{ event: Event; brandColor: string }> = ({ event, 
                     alt={event.eventName}
                     className="w-full h-full object-cover"
                 />
+                {/* Promoted Badge - Upper Left */}
+                {(event.is_promoted || (event as any).isPromoted) && (
+                    <div className="absolute top-4 left-4 z-10 group/promoted">
+                        <div 
+                            className="flex items-center gap-1.5 px-3 py-1 rounded-full shadow-lg border border-white/20 animate-in fade-in zoom-in duration-500 cursor-help"
+                            style={{ 
+                                background: brandColor 
+                                    ? `linear-gradient(135deg, ${brandColor}, ${brandColor}DD)` 
+                                    : 'linear-gradient(135deg, #38BDF2, #00AEEF)',
+                                boxShadow: `0 0 15px ${brandColor ? brandColor + '66' : 'rgba(56,189,242,0.4)'}`
+                            }}
+                        >
+                            <ICONS.Info className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-white drop-shadow-sm">Promoted</span>
+                        </div>
+                        <div className="absolute left-0 top-full mt-2 w-48 p-3 bg-[#2E2E2F] text-white text-[9px] font-bold rounded-xl shadow-2xl opacity-0 translate-y-1 pointer-events-none group-hover/promoted:opacity-100 group-hover/promoted:translate-y-0 transition-all z-50 leading-relaxed">
+                            The organizer has highlighted this event as part of their elite plan features.
+                            <div className="absolute bottom-full left-4 border-8 border-transparent border-b-[#2E2E2F]"></div>
+                        </div>
+                    </div>
+                )}
                 <button
                     onClick={handleLike}
-                    className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${liked ? 'bg-red-500 text-white' : 'bg-white/90 text-[#2E2E2F] border border-[#2E2E2F]/10'}`}
+                    className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${liked ? 'text-white' : 'bg-white/90 text-[#2E2E2F] border border-[#2E2E2F]/10'}`}
+                    style={liked ? { backgroundColor: brandColor } : {}}
                 >
                     <ICONS.Heart className="w-4 h-4" />
                 </button>

@@ -111,6 +111,10 @@ export const UserEvents: React.FC = () => {
         isActive: true
     });
 
+    const [promotedEventsMap, setPromotedEventsMap] = useState<Record<string, { promoted: boolean; remainingDays?: number }>>({});
+    const [promotionQuota, setPromotionQuota] = useState<{ used: number; limit: number; canPromote: boolean } | null>(null);
+    const [togglingPromotionId, setTogglingPromotionId] = useState<string | null>(null);
+
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -141,14 +145,13 @@ export const UserEvents: React.FC = () => {
     const isPersonalProfileReady = !!name?.trim();
     const isOrganizerProfileReady = !!organizerProfile?.organizerId && !!organizerProfile?.organizerName?.trim();
     const isSubscriptionReady = !!organizerProfile?.currentPlanId && organizerProfile?.subscriptionStatus !== 'pending';
-    const canStartCreation = isPersonalProfileReady && isOrganizerProfileReady && isSubscriptionReady;
+    const canStartCreation = isPersonalProfileReady && isOrganizerProfileReady;
     const canPublishByTicketRule = initialEventStatus === 'PUBLISHED' || activeEventTicketCount > 0;
     const hasExistingEvents = events.length > 0;
     const hasPublishedEvent = events.some((event) => event.status === 'PUBLISHED');
     const workflowCompletedCount = [
         isPersonalProfileReady,
         isOrganizerProfileReady,
-        isSubscriptionReady,
         hasExistingEvents,
         hasPublishedEvent,
     ].filter(Boolean).length;
@@ -210,6 +213,46 @@ export const UserEvents: React.FC = () => {
                 setIsFetching(false);
                 initialLoadRef.current = false;
             }
+        }
+    };
+
+    const loadPromotionMetadata = async () => {
+        try {
+            const [promoted, quota] = await Promise.all([
+                apiService.listMyPromotedEvents(),
+                apiService.getPromotionQuota()
+            ]);
+            
+            const map: Record<string, { promoted: boolean; remainingDays?: number }> = {};
+            promoted.forEach((p: any) => {
+                map[p.eventId] = { promoted: true, remainingDays: p.remainingDays };
+            });
+            setPromotedEventsMap(map);
+            setPromotionQuota(quota);
+        } catch {
+            console.error('Failed to load promotion metadata');
+        }
+    };
+
+    useEffect(() => {
+        loadPromotionMetadata();
+    }, []);
+
+    const handleToggleEventPromotion = async (eventId: string, currentStatus: boolean) => {
+        setTogglingPromotionId(eventId);
+        try {
+            if (currentStatus) {
+                await apiService.demoteEvent(eventId);
+                setNotification({ message: 'Event removed from promotions.', type: 'success' });
+            } else {
+                await apiService.promoteEvent(eventId);
+                setNotification({ message: 'Event successfully promoted!', type: 'success' });
+            }
+            await loadPromotionMetadata();
+        } catch (err: any) {
+            setNotification({ message: err.message || 'Promotion action failed.', type: 'error' });
+        } finally {
+            setTogglingPromotionId(null);
         }
     };
 
@@ -327,11 +370,6 @@ export const UserEvents: React.FC = () => {
         if (!isOrganizerProfileReady) {
             setNotification({ message: 'Set up your organization profile first before creating events.', type: 'error' });
             navigate('/user-settings?tab=organizer');
-            return;
-        }
-        if (!isSubscriptionReady) {
-            setNotification({ message: 'You need to choose a plan (free or paid) before you can start creating events.', type: 'error' });
-            navigate('/subscription');
             return;
         }
 
@@ -709,11 +747,11 @@ export const UserEvents: React.FC = () => {
                 </div>
             )}
 
-            {/* Header section replicated from Admin */}
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 px-2 mb-8 pt-4">
-                <div className="flex flex-col">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-bold text-[#2E2E2F] tracking-tight">Events</h1>
+            {/* Header section - Refined with Title/Subtitle aligned to Controls */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 px-2 mb-8 pt-6 border-b border-[#2E2E2F]/10 pb-8">
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                        <h1 className="text-3xl font-black text-[#2E2E2F] tracking-tight">Events</h1>
                         <button
                             type="button"
                             onClick={() => setIsWorkflowNoticeOpen(true)}
@@ -722,23 +760,39 @@ export const UserEvents: React.FC = () => {
                         >
                             <ICONS.Info className="w-4 h-4" />
                         </button>
-                        {organizerProfile && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#2E2E2F]/10 rounded-xl shadow-sm ml-2">
-                                <div className={`w-2 h-2 rounded-full ${organizerProfile.subscriptionStatus === 'active' ? 'bg-green-500' : 'bg-red-400'}`}></div>
+                    </div>
+                    <p className="text-[#2E2E2F]/50 font-bold text-sm">Configure and manage your session lifecycle.</p>
+                </div>
+
+                <div className="flex flex-col gap-3 w-full lg:w-auto lg:items-end">
+                    {/* Plan Status & Promotions Quota - Top Right */}
+                    <div className="flex flex-wrap items-center gap-3 justify-end">
+
+
+                        {promotionQuota && (
+                            <div className={`flex items-center gap-2 px-3 py-1.5 bg-white border rounded-xl shadow-sm whitespace-nowrap ${
+                                promotionQuota.canPromote 
+                                    ? 'border-[#38BDF2]/30 bg-[#38BDF2]/5' 
+                                    : 'border-[#2E2E2F]/10'
+                            }`}>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-[#2E2E2F]/60">
-                                    {organizerProfile.plan?.name || 'Starter'}
+                                    Promotions
                                 </span>
                                 <span className="text-[10px] font-bold text-[#2E2E2F]/30">|</span>
-                                <span className="text-[10px] font-bold text-[#2E2E2F]/60">
-                                    {events.length} / {organizerProfile.plan?.limits?.max_events || 1}
+                                <span className={`text-[10px] font-bold ${
+                                    promotionQuota.used < promotionQuota.limit
+                                        ? 'text-[#38BDF2]' 
+                                        : 'text-red-500'
+                                }`}>
+                                    {promotionQuota.used}/{promotionQuota.limit}
                                 </span>
                             </div>
                         )}
                     </div>
-                    <p className="text-[#2E2E2F]/70 font-medium text-sm mt-1">Configure and manage your session lifecycle.</p>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full lg:w-auto">
-                    <div className="relative w-full sm:w-72">
+
+                    <div className="flex flex-wrap items-center gap-3 w-full">
+
+                    <div className="relative w-full sm:w-64">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#2E2E2F]/60">
                             <ICONS.Search className="h-4 w-4" strokeWidth={3} />
                         </div>
@@ -791,6 +845,7 @@ export const UserEvents: React.FC = () => {
                             <p className="mt-1.5 text-[10px] text-[#2E2E2F]/50 font-bold uppercase tracking-tight">Upgrade for more events</p>
                         )}
                     </div>
+                    </div>
                 </div>
             </div>
 
@@ -819,18 +874,33 @@ export const UserEvents: React.FC = () => {
                                             <img src={getImageUrl(event.imageUrl)} alt="" className="w-full h-full object-cover" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between gap-2 mb-1">
-                                                <Badge
-                                                    type={event.status === 'PUBLISHED' ? 'success' : 'neutral'}
-                                                    className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5"
-                                                >
-                                                    {event.status}
-                                                </Badge>
-                                                <span className="text-[10px] font-medium text-[#2E2E2F]/40 truncate">
-                                                    ID: {event.eventId.split('-')[0]}
-                                                </span>
+                                            <div className="flex items-center gap-2">
+                                                {(() => {
+                                                    const now = new Date();
+                                                    const eventEnd = event.endAt ? new Date(event.endAt) : new Date(new Date(event.startAt).getTime() + 2 * 60 * 60 * 1000);
+                                                    const isCompleted = now > eventEnd;
+                                                    return (
+                                                        <Badge
+                                                            type={isCompleted ? 'neutral' : (event.status === 'PUBLISHED' ? 'success' : 'neutral')}
+                                                            className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5"
+                                                        >
+                                                            {isCompleted ? 'COMPLETED' : event.status}
+                                                        </Badge>
+                                                    );
+                                                })()}
+                                                {promotedEventsMap[event.eventId]?.promoted && (
+                                                    <Badge
+                                                        type="success"
+                                                        className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-[#38BDF2]/20 text-[#38BDF2] border border-[#38BDF2]/30"
+                                                    >
+                                                        Promoted
+                                                    </Badge>
+                                                )}
                                             </div>
-                                            <h3 className="font-bold text-[#2E2E2F] text-base truncate mb-2">
+                                            <span className="text-[10px] font-medium text-[#2E2E2F]/40 truncate">
+                                                ID: {event.eventId.split('-')[0]}
+                                            </span>
+                                            <h3 className="font-bold text-[#2E2E2F] text-base truncate mb-2 mt-2">
                                                 {event.eventName}
                                             </h3>
                                             <div className="space-y-1.5">
@@ -904,11 +974,21 @@ export const UserEvents: React.FC = () => {
                                             <tr key={event.eventId} className="hover:bg-[#38BDF2]/10 transition-colors group cursor-pointer" onClick={() => handleOpenEdit(event)}>
                                                 <td className="px-8 py-7">
                                                     <div className="flex items-center gap-5">
-                                                        <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-[#2E2E2F]/20">
+                                                        <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-[#2E2E2F]/20 relative">
                                                             <img src={getImageUrl(event.imageUrl)} alt="" className="w-full h-full object-cover" />
+                                                            {promotedEventsMap[event.eventId]?.promoted && (
+                                                                <div className="absolute inset-0 rounded-2xl ring-2 ring-inset ring-[#38BDF2]" />
+                                                            )}
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <div className="font-bold text-[#2E2E2F] text-[16px] tracking-tight group-hover:text-[#2E2E2F] transition-colors">{event.eventName}</div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="font-bold text-[#2E2E2F] text-[16px] tracking-tight group-hover:text-[#2E2E2F] transition-colors">{event.eventName}</div>
+                                                                {promotedEventsMap[event.eventId]?.promoted && (
+                                                                    <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-[#38BDF2]/20 text-[#38BDF2] border border-[#38BDF2]/30 rounded-full whitespace-nowrap">
+                                                                        Promoted
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                             <div className="flex items-center gap-3">
                                                                 <span className="text-[11px] font-medium text-[#2E2E2F]/40 uppercase tracking-widest">{event.eventId.split('-')[0]}</span>
                                                                 <span className="w-1 h-1 rounded-full bg-[#2E2E2F]/10"></span>
@@ -927,14 +1007,23 @@ export const UserEvents: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-8 py-7">
-                                                    <div className={`inline-flex px-3.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${event.status === 'PUBLISHED'
-                                                        ? 'bg-[#38BDF2]/20 text-[#2E2E2F]'
-                                                        : event.status === 'DRAFT'
-                                                            ? 'bg-[#F2F2F2] text-[#2E2E2F]/60 border border-[#2E2E2F]/20'
-                                                            : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
-                                                        }`}>
-                                                        {event.status}
-                                                    </div>
+                                                    {(() => {
+                                                        const now = new Date();
+                                                        const eventEnd = event.endAt ? new Date(event.endAt) : new Date(new Date(event.startAt).getTime() + 2 * 60 * 60 * 1000);
+                                                        const isCompleted = now > eventEnd;
+                                                        return (
+                                                            <div className={`inline-flex px-3.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${isCompleted
+                                                                ? 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
+                                                                : event.status === 'PUBLISHED'
+                                                                    ? 'bg-[#38BDF2]/20 text-[#2E2E2F]'
+                                                                    : event.status === 'DRAFT'
+                                                                        ? 'bg-[#F2F2F2] text-[#2E2E2F]/60 border border-[#2E2E2F]/20'
+                                                                        : 'bg-[#2E2E2F]/10 text-[#2E2E2F]'
+                                                                }`}>
+                                                                {isCompleted ? 'COMPLETED' : event.status}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </td>
                                                 <td className="px-8 py-7 text-center">
                                                     <div className="flex justify-center items-center gap-6 opacity-70 group-hover:opacity-100 transition-colors">
@@ -945,6 +1034,33 @@ export const UserEvents: React.FC = () => {
                                                         >
                                                             <svg className="w-[1.2rem] h-[1.2rem]" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                                         </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const isPromoted = promotedEventsMap[event.eventId]?.promoted;
+                                                                if (promotionQuota && !isPromoted && !promotionQuota.canPromote) {
+                                                                    setNotification({ message: 'You have reached your promotion limit.', type: 'error' });
+                                                                } else {
+                                                                    handleToggleEventPromotion(event.eventId, isPromoted || false);
+                                                                }
+                                                            }}
+                                                            disabled={togglingPromotionId === event.eventId}
+                                                            className={`transition-all p-1 ${togglingPromotionId === event.eventId
+                                                                    ? 'opacity-50 cursor-not-allowed'
+                                                                    : 'text-[#2E2E2F] hover:text-[#38BDF2] cursor-pointer'
+                                                                } ${promotedEventsMap[event.eventId]?.promoted
+                                                                    ? 'text-[#38BDF2]'
+                                                                    : ''
+                                                                }`}
+                                                            title={`${promotedEventsMap[event.eventId]?.promoted ? 'Demote Event' : 'Promote Event'}`}
+                                                        >
+                                                            <svg className="w-[1.2rem] h-[1.2rem]" fill={promotedEventsMap[event.eventId]?.promoted ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                                        </button>
+                                                        {promotedEventsMap[event.eventId]?.promoted && promotedEventsMap[event.eventId]?.remainingDays !== undefined && (
+                                                            <span className="text-[10px] font-semibold text-[#38BDF2] uppercase tracking-widest" title="Days remaining in promotion">
+                                                                {promotedEventsMap[event.eventId]?.remainingDays}d
+                                                            </span>
+                                                        )}
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleOpenTickets(event); }}
                                                             className="text-[#2E2E2F] hover:text-[#2E2E2F] transition-colors p-1"

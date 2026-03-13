@@ -25,6 +25,7 @@ import adminPlanRoutes from "./routes/adminPlanRoutes.js";
 import planRoutes from "./routes/planRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
+import eventPromotionRoutes from "./routes/eventPromotionRoutes.js";
 const PORT = process.env.BACKEND_PORT
 const app = express();
 
@@ -116,6 +117,7 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/admin/events", authMiddleware, adminEventRoutes);
 app.use("/api/admin/plans", authMiddleware, adminPlanRoutes);
 app.use("/api", promotionRoutes);
+app.use("/api", eventPromotionRoutes);
 
 // Root endpoint for status check
 app.get("/", (req, res) => {
