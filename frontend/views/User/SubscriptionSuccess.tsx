@@ -150,7 +150,7 @@ export const SubscriptionSuccess: React.FC = () => {
                                 onClick={() => navigate('/user-home')}
                                 className="w-full py-4 rounded-2xl font-black tracking-widest text-xs"
                             >
-                                GO TO DASHBOARD
+                                GO TO DASHBOARDS
                             </Button>
                             <Button
                                 variant="outline"
