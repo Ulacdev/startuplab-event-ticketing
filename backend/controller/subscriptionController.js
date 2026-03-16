@@ -501,7 +501,7 @@ const createHitPayPayment = async (req, amount, currency, organizerName, planNam
   const serverBaseUrl = (process.env.SERVER_BASE_URL || dynamicBaseUrl).replace(/\/$/, '');
   const webhookUrl = `${serverBaseUrl}/api/subscriptions/webhook`;
 
-  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const frontendUrl = (process.env.FRONTEND_URL || 'https://startuplab-event-creation.vercel.app').replace(/\/$/, '');
   const redirectUrl = `${frontendUrl}/subscription/success?reference_id=${encodeURIComponent(subscriptionId)}`;
 
   const payload = new URLSearchParams();

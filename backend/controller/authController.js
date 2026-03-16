@@ -41,7 +41,8 @@ export const register = async (req, res) => {
 
     // Create signup verification link in Supabase Auth
     // Use the custom domain if available, otherwise fallback.
-    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const frontendUrl = (process.env.FRONTEND_URL || 'https://startuplab-event-creation.vercel.app').replace(/\/$/, '');
+    console.log(`[Auth] Registration request for: ${email}. Using FRONTEND_URL: ${frontendUrl}`);
     
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'signup',
@@ -88,6 +89,8 @@ export const register = async (req, res) => {
     const verificationLink = tokenHash
       ? `${supabaseConfig.url}/auth/v1/verify?token=${encodeURIComponent(tokenHash)}&type=signup&redirect_to=${encodeURIComponent(frontendUrl + '/#/login')}`
       : linkData.properties?.action_link;
+
+    console.log(`[Auth] Generated Verification Link: ${verificationLink}`);
 
     // Insert into users table with role ORGANIZER
     let { data: userData, error: dbError } = await db
