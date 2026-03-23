@@ -155,7 +155,7 @@ export const LoginPerspective: React.FC = () => {
 
             <div className="mt-1">
               <Button
-                className="w-full py-4 text-[13px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#38BDF2]/20 rounded-2xl"
+                className="w-full py-4 text-[13px] font-black uppercase tracking-[0.2em] rounded-2xl"
                 type="submit"
                 disabled={loading}
               >

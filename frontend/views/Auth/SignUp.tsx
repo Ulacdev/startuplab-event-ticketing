@@ -16,6 +16,7 @@ export const SignUpView: React.FC = () => {
     confirmPassword: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,6 +37,12 @@ export const SignUpView: React.FC = () => {
     }
     if (!formData.name.trim()) {
       const msg = 'Name is required.';
+      setError(msg);
+      showToast('error', msg);
+      return;
+    }
+    if (!agreedToTerms) {
+      const msg = 'You must agree to the Terms of Service and Privacy Policy.';
       setError(msg);
       showToast('error', msg);
       return;
@@ -132,7 +139,7 @@ export const SignUpView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-3">
                 <div className="space-y-1">
                   <label className="block text-[11px] font-bold text-[#2E2E2F]/70 uppercase tracking-wider ml-1">Password</label>
                   <PasswordInput
@@ -145,7 +152,7 @@ export const SignUpView: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-[#2E2E2F]/70 uppercase tracking-wider ml-1">Confirm</label>
+                  <label className="block text-[11px] font-bold text-[#2E2E2F]/70 uppercase tracking-wider ml-1">Confirm Password</label>
                   <PasswordInput
                     placeholder="••••••••"
                     required
@@ -158,13 +165,33 @@ export const SignUpView: React.FC = () => {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full py-4 text-[13px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#38BDF2]/20 rounded-2xl mt-1"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Creating Account...' : 'Create Account'}
-            </Button>
+            <div className="flex flex-col gap-4 mt-2">
+              <label className="flex items-start gap-3 px-1 cursor-pointer group">
+                <div className="relative flex items-center mt-0.5">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="w-4 h-4 rounded border-2 border-[#2E2E2F]/20 text-[#38BDF2] focus:ring-[#38BDF2] focus:ring-opacity-50 transition-colors cursor-pointer accent-[#38BDF2]"
+                  />
+                </div>
+                <span className="text-[11px] text-[#2E2E2F]/60 font-medium leading-relaxed group-hover:text-[#2E2E2F] transition-colors">
+                  I agree to the{' '}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[#38BDF2] font-bold hover:underline">Terms of Service</a>
+                  {' '}and{' '}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[#38BDF2] font-bold hover:underline">Privacy Policy</a>.
+                </span>
+              </label>
+
+              <Button
+                type="submit"
+                className="w-full py-4 text-[13px] font-black uppercase tracking-[0.2em] rounded-2xl"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            </div>
 
             {error && (
               <div className="mt-1 p-3 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-[11px] font-bold text-center">
