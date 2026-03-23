@@ -32,7 +32,7 @@ export async function updateSmtpSettings(req, res) {
             { user_id: userId, key: 'email_host', value: smtpHost },
             { user_id: userId, key: 'email_port', value: String(smtpPort || '') },
             { user_id: userId, key: 'email_username', value: smtpUsername },
-            { user_id: userId, key: 'email_password', value: smtpPassword },
+            { user_id: userId, key: 'email_password', value: encryptString(smtpPassword || '') },
             { user_id: userId, key: 'email_encryption', value: mailEncryption },
             { user_id: userId, key: 'email_from_address', value: fromAddress },
             { user_id: userId, key: 'email_from_name', value: fromName },
@@ -117,7 +117,11 @@ export async function getSmtpSettings(req, res) {
                 'email_from_name': 'fromName'
             };
             if (fieldMap[item.key]) {
-                result[fieldMap[item.key]] = item.value;
+                let val = item.value;
+                if (item.key === 'email_password') {
+                    val = decryptString(val);
+                }
+                result[fieldMap[item.key]] = val;
             }
         });
 

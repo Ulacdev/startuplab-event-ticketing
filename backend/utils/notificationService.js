@@ -14,6 +14,7 @@ export const debugLog = (msg) => {
 };
 import { sendSmtpEmail } from './smtpMailer.js';
 import { isMissingColumnError, isMissingRelationError } from './organizerData.js';
+import { decryptString } from './encryption.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_PATH = path.resolve(__dirname, '../templates/notificationEmail.html');
@@ -168,11 +169,6 @@ export async function getSmtpConfig(organizerId = null, triggerUserId = null, re
       debugLog('✅ [SMTP] Custom general settings loaded.');
       return config;
     }
-
-    if (organizerId && String(recipientUserId) === String(targetUserId)) {
-      debugLog(`🚫 [SMTP] Organizer (${targetUserId}) has NO custom settings.`);
-      return null;
-    }
   }
 
   // 3. FALLBACK: Use the Superadmin SMTP settings (role = 'ADMIN')
@@ -239,7 +235,7 @@ async function fetchSmtpFromOrganizerSettings(organizerId) {
     smtpHost: data.smtpHost,
     smtpPort: parseInt(data.smtpPort, 10) || 587,
     smtpUser: data.smtpUsername,
-    smtpPass: data.smtpPassword,
+    smtpPass: decryptString(data.smtpPassword),
     mailEncryption: data.mailEncryption || 'TLS',
     fromAddress: data.fromAddress || data.smtpUsername,
     fromName: data.fromName || 'Organizer',
@@ -281,7 +277,7 @@ async function fetchSmtpFromSettingsTable(userId) {
     smtpHost: map.get('email_host'),
     smtpPort: parseInt(map.get('email_port'), 10) || 587,
     smtpUser: map.get('email_username'),
-    smtpPass: map.get('email_password'),
+    smtpPass: decryptString(map.get('email_password')),
     mailEncryption: map.get('email_encryption') || 'TLS',
     fromAddress: map.get('email_from_address') || map.get('email_username'),
     fromName: map.get('email_from_name') || 'Organizer',
@@ -447,6 +443,7 @@ export async function notifyUserByPreference({
   fromName,
   fromEmail,
   smtpConfigOverride,
+  emailEnabledOverride,
 }) {
   if (!recipientUserId && !recipientFallbackEmail) return { inApp: false, email: false };
 
@@ -491,7 +488,7 @@ export async function notifyUserByPreference({
   }
 
   let finalRecipientEmail = normalizeEmail(recipientFallbackEmail || '');
-  let emailEnabled = true;
+  let emailEnabled = emailEnabledOverride !== undefined ? !!emailEnabledOverride : true;
 
   try {
     const { data: settings } = await supabase
@@ -516,13 +513,14 @@ export async function notifyUserByPreference({
   }
 
   if (emailEnabled && finalRecipientEmail) {
-    if (organizerId && !smtpConfig) {
-      debugLog('🚫 [Notifications] Request explicitly requires organizer email config (no system config fallback for tickets). Email SKIPPED.');
-      return { inApp: inAppDelivered, email: false };
-    }
-
     // Check email quota before sending
     if (organizerId) {
+      // If we made it here but still don't have a config (unlikely with admin fallback enabled), skip sending
+      if (!smtpConfig) {
+        debugLog('🚫 [Notifications] No SMTP config resolved (even after admin fallback). Email SKIPPED.');
+        return { inApp: inAppDelivered, email: false };
+      }
+
       try {
         const quotaCheck = await emailQuotaManager.canSendEmails(organizerId, 1);
         if (!quotaCheck.canSend) {
@@ -562,10 +560,32 @@ export async function notifyUserByPreference({
     });
     emailDelivered = !!result?.ok;
     
-    // Record email sent if successful
+    // Record email sent if successful (only if using system SMTP and is an OUTBOUND CUSTOMER email)
     if (emailDelivered && organizerId) {
       try {
-        await emailQuotaManager.recordEmailSent(organizerId, 1);
+        const isCustom = !!(smtpConfig && smtpConfig.organizerId);
+        
+        // --- FAIRNESS LOGIC ---
+        // We deduct quota for outbound communications to customers and engagement alerts.
+        // Internal system alerts (ADMIN_ALERT) remain FREE.
+        const OUTBOUND_CUSTOMER_TYPES = [
+          'TICKET_DELIVERY',
+          'ORDER_PLACED',
+          'TICKET_CANCELLED',
+          'EVENT_UPDATE',
+          'EVENT_LIKED',
+          'LIKE_CONFIRMATION',
+          'ORGANIZER_FOLLOWED',
+          'FOLLOW_CONFIRMATION'
+        ];
+        const isOutboundOutreach = OUTBOUND_CUSTOMER_TYPES.includes(type);
+
+        if (isOutboundOutreach && !isCustom) {
+          debugLog(`📉 [Quota] Deducting quota for email type: ${type}`);
+          await emailQuotaManager.recordEmailSent(organizerId, 1, false);
+        } else {
+          debugLog(`💎 [Quota] Free/Bypassed notification tier: ${type}. No quota deduction.`);
+        }
       } catch (recordError) {
         console.warn('[Notifications] Failed to record email quota:', recordError.message);
       }

@@ -51,7 +51,7 @@ export const OrganizerSettings: React.FC<OrganizerSettingsProps> = ({
   onboardingMode = false,
   onSaved,
 }) => {
-  const { name } = useUser();
+  const { name, setUser, userId, role, email, isOnboarded: currentOnboarded } = useUser();
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -202,6 +202,16 @@ export const OrganizerSettings: React.FC<OrganizerSettingsProps> = ({
     event.preventDefault();
 
     const organizerName = stripHtml(formData.organizerName).trim();
+    const bio = stripHtml(formData.bio).trim();
+
+    if (!organizerName || !bio) {
+      setNotification({ 
+        message: !organizerName ? 'Organizer Name is required.' : 'Bio / Description is required.', 
+        type: 'error' 
+      });
+      setSaving(false);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -226,6 +236,15 @@ export const OrganizerSettings: React.FC<OrganizerSettingsProps> = ({
         message: onboardingMode ? 'Organizer profile setup complete.' : 'Organizer profile updated.',
         type: 'success'
       });
+      if (userId && role && email) {
+        setUser({
+          userId,
+          role,
+          email,
+          isOnboarded: saved.isOnboarded || onboardingMode || currentOnboarded,
+          name: name || saved.organizerName,
+        });
+      }
       onSaved?.(saved);
     } catch (error) {
       setNotification({
@@ -370,7 +389,12 @@ export const OrganizerSettings: React.FC<OrganizerSettingsProps> = ({
 
                 <div className="md:col-span-2">
                   <Input
-                    label="Organizer Name"
+                    label={
+                      <span className="flex items-center gap-1">
+                        Organizer Name <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span>
+                      </span>
+                    }
+                    required
                     value={formData.organizerName}
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                       handleFormChange('organizerName', stripHtml(event.target.value))
@@ -400,8 +424,12 @@ export const OrganizerSettings: React.FC<OrganizerSettingsProps> = ({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-[#2E2E2F]/70 mb-1.5">Bio / Description (Text only)</label>
+                  <label className="flex items-center gap-2 text-sm font-medium text-[#2E2E2F]/70 mb-1.5">
+                    Bio / Description (Text only)
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span>
+                  </label>
                   <textarea
+                    required
                     className="w-full px-3 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-xl outline-none focus:ring-2 focus:ring-[#38BDF2]/40 min-h-[120px]"
                     value={formData.bio}
                     onChange={(event) => handleFormChange('bio', stripHtml(event.target.value))}

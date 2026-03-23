@@ -152,10 +152,15 @@ export const emailQuotaManager = {
    * Record email(s) sent for quota tracking
    * @param {string} organizerId - Organization ID
    * @param {number} count - Number of emails sent (default 1)
+   * @param {boolean} isCustom - Whether a custom SMTP was used (skips quota reduction)
    * @returns {Promise<void>}
    */
-  async recordEmailSent(organizerId, count = 1, description = null) {
+  async recordEmailSent(organizerId, count = 1, isCustom = false) {
     try {
+      if (isCustom) {
+        console.log(`[Quota] Sent via Custom SMTP. Skipping quota reduction for org ${organizerId}`);
+        return;
+      }
       // Get organizer to get their timezone
       const { data: organizer, error: fetchError } = await supabase
         .from('organizers')

@@ -317,7 +317,13 @@ export const FollowingsEventsPage: React.FC = () => {
               <OrganizerCard
                 key={organizer.organizerId}
                 organizer={organizer}
-                variant="compact"
+                isFollowing={true}
+                onFollow={(e) => {
+                  e.stopPropagation();
+                  toggleFollowing(organizer.organizerId);
+                }}
+                onClick={() => setSelectedOrganizerId(organizer.organizerId)}
+                className="w-full"
               />
             ))}
           </div>
@@ -349,7 +355,13 @@ export const FollowingsEventsPage: React.FC = () => {
                   <OrganizerCard
                     key={organizer.organizerId}
                     organizer={organizer}
-                    variant="horizontal"
+                    isFollowing={true}
+                    onFollow={(e) => {
+                      e.stopPropagation();
+                      toggleFollowing(organizer.organizerId);
+                    }}
+                    onClick={() => setSelectedOrganizerId(organizer.organizerId)}
+                    className="w-[260px] shrink-0"
                   />
                 ))}
               </div>

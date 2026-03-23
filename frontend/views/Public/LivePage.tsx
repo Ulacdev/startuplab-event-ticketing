@@ -139,14 +139,14 @@ export const LivePage: React.FC = () => {
                             <div className="space-y-8">
                                 <div className="overflow-hidden rounded-xl border border-[#2E2E2F]/10 shadow-2xl bg-[#F2F2F2]">
                                     {/* Integrated Header */}
-                                    <div className={`${status === 'LIVE' ? 'bg-[#00AEEF]' : 'bg-[#2E2E2F]'} p-8 text-white text-left flex justify-between items-center border-b border-white/10 shadow-xl`}>
+                                    <div className="bg-[#38BDF2] p-8 text-white text-left flex justify-between items-center border-b border-white/10 shadow-xl">
                                         <div>
                                             <h2 className="text-3xl font-black tracking-tight leading-tight uppercase mb-1">{currentEvent.eventName}</h2>
                                             <p className="text-[12px] font-black opacity-90 uppercase tracking-[0.2em] text-[#F2F2F2]">
                                                 {new Date(currentEvent.startAt).toLocaleDateString('en-US', { weekday: 'long' })} AT {new Date(currentEvent.startAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
                                             </p>
                                         </div>
-                                        <div className={`flex items-center gap-2.5 ${status === 'LIVE' ? 'bg-red-600 border-red-500 animate-pulse' : 'bg-white/10 border-white/20'} px-5 py-2.5 rounded-full border shadow-lg`}>
+                                        <div className={`flex items-center gap-2.5 ${status === 'LIVE' ? 'bg-red-600 border-red-500 animate-pulse' : 'bg-white/20 border-white/30'} px-5 py-2.5 rounded-full border shadow-lg`}>
                                             {status === 'LIVE' && <div className="w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]" />}
                                             <span className="text-[11px] font-black text-white uppercase tracking-[0.2em]">
                                                 {status === 'LIVE' ? 'Live Now' : status === 'PAST' ? 'Archived' : 'Upcoming'}
@@ -185,7 +185,7 @@ export const LivePage: React.FC = () => {
                                                         href={currentEvent.streaming_url || ''}
                                                         target="_blank"
                                                         rel="noreferrer"
-                                                        className="bg-[#00AEEF] text-white px-10 py-5 rounded-xl font-black text-[12px] uppercase tracking-[0.2em] flex items-center gap-3 transition-all hover:scale-105 hover:bg-[#0098D6] active:scale-95 shadow-2xl"
+                                                        className="bg-[#38BDF2] text-white px-10 py-5 rounded-xl font-black text-[12px] uppercase tracking-[0.2em] flex items-center gap-3 transition-all hover:scale-105 hover:bg-[#2E2E2F] active:scale-95 shadow-2xl shadow-[#38BDF2]/20"
                                                     >
                                                         <ICONS.Globe className="w-5 h-5" />
                                                         Watch on {currentEvent.streamingPlatform || 'Platform'}
@@ -251,7 +251,7 @@ export const LivePage: React.FC = () => {
                                                 </div>
                                             )}
 
-                                            <Link to={`/events/${currentEvent.slug}`} className="px-6 py-3 rounded-xl bg-[#00AEEF] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#0098D6] transition-all shadow-lg shadow-[#00AEEF]/20 active:scale-95">
+                                            <Link to={`/events/${currentEvent.slug}`} className="px-6 py-3 rounded-xl bg-[#38BDF2] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#2E2E2F] transition-all shadow-lg shadow-[#38BDF2]/20 active:scale-95">
                                                 View Full Details
                                             </Link>
                                         </div>
@@ -345,8 +345,8 @@ export const LivePage: React.FC = () => {
                                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                             }}
                                             className={`w-full text-left p-6 rounded-xl transition-all duration-300 border ${currentEvent?.eventId === event.eventId
-                                                ? 'bg-[#F2F2F2] border-[#2E2E2F] shadow-xl shadow-black/5 scale-[1.02]'
-                                                : 'bg-[#F2F2F2] border-[#2E2E2F]/5 hover:border-[#2E2E2F]/20 hover:scale-[1.01]'
+                                                ? 'bg-[#F2F2F2] border-[#38BDF2] shadow-xl shadow-[#38BDF2]/10 scale-[1.02] ring-1 ring-[#38BDF2]/20'
+                                                : 'bg-[#F2F2F2] border-[#2E2E2F]/5 hover:border-[#38BDF2]/20 hover:scale-[1.01]'
                                                 }`}
                                         >
                                             <div className="flex items-start gap-4">

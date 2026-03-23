@@ -226,32 +226,29 @@ export const likeEvent = async (req, res) => {
           const recipientProfile = await getUserProfileByAuthId(context.organizerOwnerUserId);
           const organizerEmail = recipientProfile?.email || '';
 
-          if (orgData?.emailOptIn) {
-            debugLog(`📡 [Like] Sending notification to Team (Owner: ${context.organizerOwnerUserId})`);
-            await notifyTeamByPreference({
-              recipientUserId: context.organizerOwnerUserId,
-              recipientFallbackEmail: organizerEmail,
-              actorUserId: userId,
-              eventId: context.eventId,
-              organizerId: context.organizerId,
-              type: 'EVENT_LIKED',
-              title: 'Your event was liked',
-              message,
-              metadata: {
-                eventName: context.eventName,
-                eventPath: context.eventPath,
-                organizerName: context.organizerName || null,
-                actorName,
-                actorEmail: actor?.email || requesterEmail || null,
-                actionLabel: 'VIEW EVENT',
-                actionUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL.replace(/\/$/, '')}${context.eventPath}` : null,
-              },
-              emailSubject: 'Your event was liked',
-              emailText: `${message}${context.eventPath ? `\nEvent: ${context.eventPath}` : ''}`,
-            });
-          } else {
-            debugLog(`👤 [Like] Organizer ${context.organizerOwnerUserId} has emailOptIn DISABLED. Skipping organizer email.`);
-          }
+          debugLog(`📡 [Like] Sending notification to Team (Owner: ${context.organizerOwnerUserId})`);
+          await notifyTeamByPreference({
+            recipientUserId: context.organizerOwnerUserId,
+            recipientFallbackEmail: organizerEmail,
+            actorUserId: userId,
+            eventId: context.eventId,
+            organizerId: context.organizerId,
+            type: 'EVENT_LIKED',
+            title: 'Your event was liked',
+            message,
+            metadata: {
+              eventName: context.eventName,
+              eventPath: context.eventPath,
+              organizerName: context.organizerName || null,
+              actorName,
+              actorEmail: actor?.email || requesterEmail || null,
+              actionLabel: 'VIEW EVENT',
+              actionUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL.replace(/\/$/, '')}${context.eventPath}` : null,
+            },
+            emailSubject: 'Your event was liked',
+            emailText: `${message}${context.eventPath ? `\nEvent: ${context.eventPath}` : ''}`,
+            emailEnabledOverride: !!orgData?.emailOptIn,
+          });
 
           // 2. Notify Follower (Attendee - Confirmation Email)
           debugLog(`📡 [Like] Sending "Thank You" email to Liker: ${userId}`);

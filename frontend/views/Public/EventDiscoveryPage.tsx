@@ -344,7 +344,7 @@ export const EventDiscoveryPage: React.FC = () => {
                                     >
                                         {/* Featured Badge - Show only for promoted events */}
                                         {event.isPromoted && (
-                                            <div className="absolute -top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-[#38BDF2] rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg border border-white/20">
+                                            <div className="absolute -top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-[#38BDF2] rounded-full text-[9px] font-bold uppercase tracking-widest text-white shadow-lg border border-white/20">
                                                 <div className="w-5 h-5 rounded-full overflow-hidden bg-white/20 border border-white/10 flex-shrink-0">
                                                     {event.organizer?.profileImageUrl ? (
                                                         <img 

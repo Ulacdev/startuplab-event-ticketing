@@ -199,7 +199,12 @@ export const UserEvents: React.FC = () => {
     const maxTotalEvents = parseLimit(organizerProfile?.plan?.limits?.max_total_events || organizerProfile?.plan?.limits?.max_events, 3);
     const isAtTotalLimit = totalEventsCount >= maxTotalEvents && !isEditMode;
 
-    const maxEventCapacity = parseLimit(organizerProfile?.plan?.limits?.max_attendees_per_event, 50);
+    const maxEventCapacity = parseLimit(
+        organizerProfile?.plan?.limits?.max_attendees_per_event || 
+        organizerProfile?.plan?.limits?.max_attendees_per_month ||
+        organizerProfile?.plan?.limits?.monthly_attendees, 
+        50
+    );
 
     const activeStepMeta = EVENT_SETUP_STEPS.find((step) => step.id === wizardStep) || EVENT_SETUP_STEPS[0];
     const previewDateLabel = (() => {
@@ -576,6 +581,13 @@ export const UserEvents: React.FC = () => {
 
     const handleSaveTickets = async (updatedTickets: TicketType[]) => {
         if (!selectedEvent) return;
+
+        const totalCap = updatedTickets.reduce((acc, t) => acc + (t.quantityTotal * (t.capacityPerTicket || 1)), 0);
+        if (totalCap > maxEventCapacity) {
+            setNotification({ message: `Total capacity (${totalCap}) exceeds your plan limit of ${maxEventCapacity}.`, type: 'error' });
+            return;
+        }
+
         setSubmitting(true);
         try {
             for (const ticket of updatedTickets) {
@@ -815,7 +827,7 @@ export const UserEvents: React.FC = () => {
                     <div className="flex flex-wrap items-center gap-3 justify-end">
 
                         {promotionQuota && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 border-2 rounded-xl shadow-sm whitespace-nowrap border-[#2E2E2F]/15 bg-[#2E2E2F]/5">
+                            <div className="flex items-center gap-2 px-3 py-1.5 border-2 rounded-xl shadow-sm whitespace-nowrap border-[#D1D5DB] bg-[#F2F2F2]">
                                 <ICONS.Zap className="w-3.5 h-3.5 text-[#2E2E2F]/40" />
                                 <span className="text-[10px] font-black uppercase tracking-widest text-[#2E2E2F]/60">
                                     Promotions
@@ -835,7 +847,7 @@ export const UserEvents: React.FC = () => {
                             const currentPaidCount = events.filter(e => (e.ticketTypes || []).some((t: any) => (t.priceAmount || 0) > 0)).length;
 
                             return (
-                                <div className={`flex items-center gap-2 px-3 py-1.5 bg-[#F2F2F2] border-2 rounded-xl shadow-sm whitespace-nowrap border-[#2E2E2F]/15`}>
+                                <div className={`flex items-center gap-2 px-3 py-1.5 bg-[#F2F2F2] border-2 rounded-xl shadow-sm whitespace-nowrap border-[#D1D5DB]`}>
                                     <ICONS.CreditCard className="w-3.5 h-3.5 text-[#2E2E2F]/40" />
                                     <span className="text-[10px] font-black uppercase tracking-widest text-[#2E2E2F]/60">
                                         Paid Events
@@ -2081,7 +2093,7 @@ export const UserEvents: React.FC = () => {
                 isOpen={isTicketModalOpen}
                 onClose={handleCloseTicketModal}
                 title="Ticket Inventory Config"
-                size="lg"
+                size="xl"
             >
                 <TicketManager
                     event={selectedEvent}
@@ -2211,6 +2223,12 @@ function TicketManager({ event, onSave, submitting, setNotification, maxEventCap
         fetchTickets();
     }, [event?.eventId]);
 
+    const totalGuestCapacity = useMemo(() =>
+        tickets.reduce((acc, t) => acc + (t.quantityTotal * (t.capacityPerTicket || 1)), 0),
+        [tickets]
+    );
+    const isOverCapacity = totalGuestCapacity > maxEventCapacity;
+
     const [newTicket, setNewTicket] = useState({
         name: '',
         description: '',
@@ -2226,6 +2244,13 @@ function TicketManager({ event, onSave, submitting, setNotification, maxEventCap
 
     const addTicket = () => {
         if (!newTicket.name) return;
+
+        const newTotalCap = totalGuestCapacity + (newTicket.quantityTotal * (newTicket.capacityPerTicket || 1));
+        if (newTotalCap > maxEventCapacity) {
+            setNotification({ message: `Adding this ticket would exceed your plan limit of ${maxEventCapacity} guests.`, type: 'error' });
+            return;
+        }
+
         if (newTicket.priceAmount > 0 && !isPaymentReady) {
             setIsPaymentRestrictionOpen(true);
             return;
@@ -2284,10 +2309,12 @@ function TicketManager({ event, onSave, submitting, setNotification, maxEventCap
     };
 
     return (
-        <div className="space-y-8">
-            <div className="bg-[#F2F2F2] p-6 rounded-3xl border-2 border-[#2E2E2F]/15">
-                <h4 className="text-[11px] font-semibold text-[#2E2E2F]/60 uppercase tracking-wide mb-4">Add Ticket Tier</h4>
-                <div className="space-y-4">
+        <div className="flex flex-col lg:grid lg:grid-cols-[380px_1fr] gap-10 items-start">
+            {/* Left Column: Form */}
+            <div className="space-y-6 w-full lg:sticky lg:top-0">
+                <div className="bg-[#F2F2F2] p-6 rounded-3xl border-2 border-[#2E2E2F]/15">
+                    <h4 className="text-[11px] font-semibold text-[#2E2E2F]/60 uppercase tracking-wide mb-4">Add Ticket Tier</h4>
+                    <div className="space-y-4">
                     <Input
                         placeholder="Tier Name (e.g. VIP Access)"
                         value={newTicket.name}
@@ -2395,16 +2422,67 @@ function TicketManager({ event, onSave, submitting, setNotification, maxEventCap
                         onClick={() => {
                             addTicket();
                         }}
-                        className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:text-[#F2F2F2] transition-colors"
+                        disabled={totalGuestCapacity + (newTicket.quantityTotal * (newTicket.capacityPerTicket || 1)) > maxEventCapacity}
+                        className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${totalGuestCapacity + (newTicket.quantityTotal * (newTicket.capacityPerTicket || 1)) > maxEventCapacity
+                            ? 'bg-[#2E2E2F] text-white/40 cursor-not-allowed'
+                            : 'bg-[#38BDF2] text-[#F2F2F2] hover:text-[#F2F2F2]'
+                            }`}
                     >
-                        Add to Inventory
+                        {totalGuestCapacity + (newTicket.quantityTotal * (newTicket.capacityPerTicket || 1)) > maxEventCapacity ? 'Limit Reached' : 'Add to Inventory'}
                     </Button>
                 </div>
-            </div>
 
-            <div className="space-y-4">
-                <h4 className="text-[11px] font-semibold text-[#2E2E2F]/60 uppercase tracking-wide">Current Inventory</h4>
-                {tickets.map((t) => {
+                {tickets.length > 0 && (
+                    <div className="p-4 bg-[#2E2E2F] rounded-2xl text-white space-y-2 mt-6">
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest opacity-60">
+                            <span>Total Guest Capacity</span>
+                            <span>{tickets.reduce((acc, t) => acc + (t.quantityTotal * (t.capacityPerTicket || 1)), 0)} / {maxEventCapacity}</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-[#F2F2F2]/10 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full transition-all ${tickets.reduce((acc, t) => acc + (t.quantityTotal * (t.capacityPerTicket || 1)), 0) > maxEventCapacity ? 'bg-red-500' : 'bg-[#38BDF2]'
+                                    }`}
+                                style={{
+                                    width: `${Math.min(100, (tickets.reduce((acc, t) => acc + (t.quantityTotal * (t.capacityPerTicket || 1)), 0) / maxEventCapacity) * 100)}%`
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {isOverCapacity && (
+                    <div className="p-4 bg-red-500/10 border-2 border-red-500/20 rounded-2xl flex items-start gap-4 mt-4">
+                        <div className="w-8 h-8 bg-red-500/20 rounded-xl flex items-center justify-center shrink-0">
+                            <ICONS.AlertTriangle className="w-4 h-4 text-red-500" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-bold text-red-600 uppercase tracking-wide">Capacity Warning</p>
+                            <p className="text-[10px] text-red-500 font-medium leading-relaxed">
+                                Your current configuration allows for {totalGuestCapacity} guests, but your plan limit is {maxEventCapacity}. Please reduce quantities or upgrade.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                <Button
+                    onClick={() => onSave(tickets)}
+                    disabled={submitting || isOverCapacity}
+                    className={`w-full mt-4 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${isOverCapacity
+                        ? 'bg-[#2E2E2F] text-white/40 cursor-not-allowed opacity-80'
+                        : 'bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]'
+                        }`}
+                >
+                    {submitting ? 'Updating...' : isOverCapacity ? 'Over Plan Capacity' : 'Commit Inventory Changes'}
+                </Button>
+            </div>
+        </div>
+
+        {/* Right Column: Inventory List */}
+            <div className="space-y-6 w-full h-full">
+                <div className="space-y-4 h-full">
+                    <h4 className="text-[11px] font-semibold text-[#2E2E2F]/60 uppercase tracking-wide">Current Inventory</h4>
+                    <div className="space-y-3">
+                        {tickets.map((t) => {
                     const isExpanded = expandedTicketId === t.ticketTypeId;
                     const priceLabel = t.priceAmount === 0 ? 'Complimentary' : `PHP ${t.priceAmount.toLocaleString()}`;
 
@@ -2609,86 +2687,66 @@ function TicketManager({ event, onSave, submitting, setNotification, maxEventCap
                         </div>
                     );
                 })}
-                {tickets.length === 0 && <p className="text-center py-6 text-[#2E2E2F]/50 text-xs font-bold uppercase tracking-widest">No tickets configured</p>}
+                {tickets.length === 0 && (
+                    <div className="py-24 text-center border-2 border-dashed border-[#2E2E2F]/15 rounded-[2rem] text-[#2E2E2F]/30 uppercase text-[10px] font-black tracking-widest">
+                        No tickets configured
+                    </div>
+                )}
+                </div>
             </div>
-
-            {tickets.length > 0 && (
-                <div className="p-4 bg-[#2E2E2F] rounded-2xl text-white space-y-2">
-                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest opacity-60">
-                        <span>Total Guest Capacity</span>
-                        <span>{tickets.reduce((acc, t) => acc + (t.quantityTotal * (t.capacityPerTicket || 1)), 0)} / {maxEventCapacity}</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-[#F2F2F2]/10 rounded-full overflow-hidden">
-                        <div
-                            className={`h-full transition-all ${tickets.reduce((acc, t) => acc + (t.quantityTotal * (t.capacityPerTicket || 1)), 0) > maxEventCapacity ? 'bg-red-500' : 'bg-[#38BDF2]'
-                                }`}
-                            style={{
-                                width: `${Math.min(100, (tickets.reduce((acc, t) => acc + (t.quantityTotal * (t.capacityPerTicket || 1)), 0) / maxEventCapacity) * 100)}%`
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
-
-            <Button
-                onClick={() => onSave(tickets)}
-                disabled={submitting}
-                className="w-full py-2 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-[#F2F2F2] hover:bg-[#2E2E2F] hover:text-[#F2F2F2] transition-colors min-h-[32px]"
-            >
-                {submitting ? 'Updating...' : 'Commit Inventory Changes'}
-            </Button>
-
-            <Modal
-                isOpen={isPaymentRestrictionOpen}
-                onClose={() => setIsPaymentRestrictionOpen(false)}
-                title="Payment Gateway Required"
-            >
-                <div className="space-y-6">
-                    <div className="flex items-start gap-5 p-6 bg-[#38BDF2]/10 border border-[#38BDF2]/20 rounded-[1.75rem]">
-                        <div className="w-12 h-12 bg-[#38BDF2]/20 rounded-2xl flex items-center justify-center shrink-0">
-                            <ICONS.CreditCard className="w-6 h-6 text-[#38BDF2]" strokeWidth={2.5} />
-                        </div>
-                        <div className="space-y-2">
-                            <p className="font-bold text-[#2E2E2F] text-[16px] tracking-tight">
-                                Setup HitPay to Gain More
-                            </p>
-                            <p className="text-[13px] text-[#2E2E2F]/60 font-medium leading-relaxed">
-                                To create paid tickets and receive payouts, you need to connect your HitPay account first. This ensures all transactions are processed securely and funds are routed directly to you.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3">
-                        <div className="flex items-center gap-3 p-4 bg-[#F2F2F2] border-2 border-[#2E2E2F]/15 rounded-2xl">
-                            <div className="w-8 h-8 rounded-lg bg-green-500/10 text-green-600 flex items-center justify-center font-bold text-xs">1</div>
-                            <p className="text-xs font-semibold text-[#2E2E2F]/70">Go to Payment Gateway settings</p>
-                        </div>
-                        <div className="flex items-center gap-3 p-4 bg-[#F2F2F2] border-2 border-[#2E2E2F]/15 rounded-2xl">
-                            <div className="w-8 h-8 rounded-lg bg-green-500/10 text-green-600 flex items-center justify-center font-bold text-xs">2</div>
-                            <p className="text-xs font-semibold text-[#2E2E2F]/70">Enter your HitPay API Key and Salt</p>
-                        </div>
-                        <div className="flex items-center gap-3 p-4 bg-[#F2F2F2] border-2 border-[#2E2E2F]/15 rounded-2xl">
-                            <div className="w-8 h-8 rounded-lg bg-green-500/10 text-green-600 flex items-center justify-center font-bold text-xs">3</div>
-                            <p className="text-xs font-semibold text-[#2E2E2F]/70">Save and return here to enable paid tickets</p>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-4 pt-2">
-                        <Button
-                            className="flex-1 py-2 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#F2F2F2] text-[#2E2E2F] border-2 border-[#2E2E2F]/15"
-                            onClick={() => setIsPaymentRestrictionOpen(false)}
-                        >
-                            Stay Free
-                        </Button>
-                        <Button
-                            className="flex-[2] py-2 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-white hover:bg-black transition-colors min-h-[32px]"
-                            onClick={() => navigate('/user-settings?tab=payments')}
-                        >
-                            Set up HitPay now
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
         </div>
+
+        <Modal
+            isOpen={isPaymentRestrictionOpen}
+            onClose={() => setIsPaymentRestrictionOpen(false)}
+            title="Payment Gateway Required"
+        >
+            <div className="space-y-6">
+                <div className="flex items-start gap-5 p-6 bg-[#38BDF2]/10 border border-[#38BDF2]/20 rounded-[1.75rem]">
+                    <div className="w-12 h-12 bg-[#38BDF2]/20 rounded-2xl flex items-center justify-center shrink-0">
+                        <ICONS.CreditCard className="w-6 h-6 text-[#38BDF2]" strokeWidth={2.5} />
+                    </div>
+                    <div className="space-y-2">
+                        <p className="font-bold text-[#2E2E2F] text-[16px] tracking-tight">
+                            Setup HitPay to Gain More
+                        </p>
+                        <p className="text-[13px] text-[#2E2E2F]/60 font-medium leading-relaxed">
+                            To create paid tickets and receive payouts, you need to connect your HitPay account first. This ensures all transactions are processed securely and funds are routed directly to you.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                    <div className="flex items-center gap-3 p-4 bg-[#F2F2F2] border-2 border-[#2E2E2F]/15 rounded-2xl">
+                        <div className="w-8 h-8 rounded-lg bg-green-500/10 text-green-600 flex items-center justify-center font-bold text-xs">1</div>
+                        <p className="text-xs font-semibold text-[#2E2E2F]/70">Go to Payment Gateway settings</p>
+                    </div>
+                    <div className="flex items-center gap-3 p-4 bg-[#F2F2F2] border-2 border-[#2E2E2F]/15 rounded-2xl">
+                        <div className="w-8 h-8 rounded-lg bg-green-500/10 text-green-600 flex items-center justify-center font-bold text-xs">2</div>
+                        <p className="text-xs font-semibold text-[#2E2E2F]/70">Enter your HitPay API Key and Salt</p>
+                    </div>
+                    <div className="flex items-center gap-3 p-4 bg-[#F2F2F2] border-2 border-[#2E2E2F]/15 rounded-2xl">
+                        <div className="w-8 h-8 rounded-lg bg-green-500/10 text-green-600 flex items-center justify-center font-bold text-xs">3</div>
+                        <p className="text-xs font-semibold text-[#2E2E2F]/70">Save and return here to enable paid tickets</p>
+                    </div>
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                    <Button
+                        className="flex-1 py-1 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#F2F2F2] text-[#2E2E2F] border-2 border-[#2E2E2F]/15"
+                        onClick={() => setIsPaymentRestrictionOpen(false)}
+                    >
+                        Stay Free
+                    </Button>
+                    <Button
+                        className="flex-[2] py-1 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-[#38BDF2] text-white hover:bg-black transition-colors min-h-[32px]"
+                        onClick={() => navigate('/user-settings?tab=payments')}
+                    >
+                        Set up HitPay now
+                    </Button>
+                </div>
+            </div>
+        </Modal>
+    </div>
     );
 }

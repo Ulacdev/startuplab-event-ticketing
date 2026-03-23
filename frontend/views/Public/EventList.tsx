@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
 import { Event, UserRole, OrganizerProfile } from '../../types';
 import { Card, Button, PageLoader } from '../../components/Shared';
+import { OrganizerCard } from '../../components/OrganizerCard';
 import { BrowseEventsNavigator, BrowseTabKey, ONLINE_LOCATION_VALUE } from '../../components/BrowseEventsNavigator';
 import { ICONS } from '../../constants';
 import { EVENT_CATEGORIES } from '../../utils/eventCategories';
@@ -85,6 +86,46 @@ function formatCompactCount(value: number) {
     Math.max(0, Number(value || 0))
   );
 }
+
+
+const AttendeeFacepile: React.FC<{ count: number; realAvatars?: string[]; size?: string; className?: string }> = ({
+  count,
+  realAvatars = [],
+  size = 'w-7 h-7',
+  className = ''
+}) => {
+  if (count <= 0) return null;
+
+  const maxToDisplay = Math.min(count, 4);
+  let displayAvatars = [...realAvatars];
+
+  // If we have less real avatars than the count (e.g. mocked tickets with no attendee rows), pad with fallback initials so the UI looks complete
+  if (displayAvatars.length < maxToDisplay) {
+    const mockNames = ['John', 'Alice', 'Mark', 'Sarah', 'James', 'Emily', 'Chris', 'Luna'];
+    for (let i = displayAvatars.length; i < maxToDisplay; i++) {
+        const seed = mockNames[(count + i) % mockNames.length];
+        displayAvatars.push(`https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=38BDF2&textColor=ffffff`);
+    }
+  }
+
+  // Ensure we never display more than 4 individual faces
+  displayAvatars = displayAvatars.slice(0, 4);
+
+  return (
+    <div className={`flex -space-x-3 items-center ${className}`}>
+      {displayAvatars.map((src, i) => (
+        <div key={i} className={`${size} rounded-full border-[2.5px] border-white overflow-hidden shadow-sm bg-[#F2F2F2] transition-transform hover:scale-110 hover:z-40 relative`} style={{ zIndex: 30 - i }}>
+          <img src={src} className="w-full h-full object-cover" alt="" loading="lazy" />
+        </div>
+      ))}
+      {count > displayAvatars.length && (
+        <div className={`${size} rounded-full border-[2.5px] border-white bg-[#F2F2F2] flex items-center justify-center text-[10px] font-black text-[#2E2E2F] shadow-sm z-10 relative`}>
+          +{count - displayAvatars.length}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface EventCardProps {
   event: Event;
@@ -211,8 +252,12 @@ export const EventCard: React.FC<EventCardProps> = ({
   const isTrendingLanding = isLanding && listing === 'all';
   return (
     <Card
-      className="group flex flex-col h-full border border-transparent hover:border-[#2E2E2F]/10 rounded-xl overflow-hidden bg-[#F2F2F2] transition-all duration-300 cursor-pointer hover:shadow-xl"
-      onClick={() => navigate(`/events/${event.slug}`)}
+      className={`group flex flex-col h-full border rounded-2xl overflow-hidden bg-[#F2F2F2] transition-all duration-300 cursor-pointer 
+        ${(event.isPromoted || (event as any).is_promoted)
+          ? 'border-[#38BDF2]/40 shadow-[0_8px_30px_rgba(56,189,242,0.06)] scale-[1.01]'
+          : 'border-[#2E2E2F]/10 hover:border-[#38BDF2]/30 shadow-sm'} 
+        hover:shadow-xl hover:scale-[1.02]`}
+      onClick={() => navigate(`/events/${event.slug || event.eventId}`)}
     >
       {/* Image Section - Keep phone-like proportions through tablet widths */}
       <div className="relative h-40 sm:h-48 lg:h-64 overflow-hidden">
@@ -235,18 +280,18 @@ export const EventCard: React.FC<EventCardProps> = ({
         <div className="absolute top-3 left-3 z-10">
           {trendingRank && (isLanding && listing === 'all') ? (
             <div
-              className="inline-flex items-center rounded-full px-3.5 py-1.5 bg-[#38BDF2] text-white text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-black/10 transition-transform active:scale-95"
+              className="inline-flex items-center rounded-full px-3.5 py-1.5 bg-[#38BDF2] text-white text-[10px] font-bold uppercase tracking-[0.15em] shadow-lg shadow-black/10 transition-transform active:scale-95"
             >
               #{trendingRank} Trending
             </div>
           ) : (event.isPromoted || (event as any).is_promoted) ? (
             <div className="group/promoted relative">
-                <div
-                  className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 bg-[#38BDF2] animate-in fade-in zoom-in duration-500 cursor-help"
-                >
-                  <ICONS.Info className="w-4 h-4 text-white" strokeWidth={2.5} />
-                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-white">Promoted</span>
-                </div>
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 bg-[#38BDF2] animate-in fade-in zoom-in duration-500 cursor-help"
+              >
+                <ICONS.Info className="w-4 h-4 text-white" strokeWidth={2.5} />
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white">Promoted</span>
+              </div>
               <div className="absolute left-0 top-full mt-2 w-56 p-4 bg-[#2E2E2F] text-white text-[10px] font-bold rounded-xl shadow-2xl opacity-0 translate-y-1 pointer-events-none group-hover/promoted:opacity-100 group-hover/promoted:translate-y-0 transition-all z-50 leading-relaxed ring-1 ring-white/10">
                 This event is highlighted by the organizer as a premium featured session on StartupLab.
                 <div className="absolute bottom-full left-4 border-8 border-transparent border-b-[#2E2E2F]"></div>
@@ -254,7 +299,7 @@ export const EventCard: React.FC<EventCardProps> = ({
             </div>
           ) : trendingRank ? (
             <div
-              className="inline-flex items-center rounded-full px-3.5 py-1.5 bg-[#38BDF2] text-white text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-black/10 transition-transform active:scale-95"
+              className="inline-flex items-center rounded-full px-3.5 py-1.5 bg-[#38BDF2] text-white text-[10px] font-bold uppercase tracking-[0.15em] shadow-lg shadow-black/10 transition-transform active:scale-95"
             >
               #{trendingRank} Trending
             </div>
@@ -291,17 +336,17 @@ export const EventCard: React.FC<EventCardProps> = ({
         {/* Organizer Profile Summary - Hidden in Trending Landing & All Events page */}
         {isLanding && listing !== 'all' && (
           <div
-            className="flex items-center gap-2 mb-5 p-2 rounded-xl transition-colors hover:bg-black/5"
+            className="flex items-center gap-3 mb-5 p-2 rounded-xl transition-colors hover:bg-black/5 -ml-2"
             onClick={(e) => {
               e.stopPropagation();
               if (organizerId) navigate(`/organizers/${organizerId}`);
             }}
           >
-            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center border-2 border-white shadow-sm bg-gradient-to-br from-[#38BDF2] to-[#A5E1FF]">
+            <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 flex items-center justify-center border-2 border-white shadow-sm bg-gradient-to-br from-[#38BDF2] to-[#A5E1FF]">
               {resolvedOrganizer?.profileImageUrl ? (
                 <img src={getImageUrl(resolvedOrganizer.profileImageUrl)} alt={organizerName} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-white font-black text-xs drop-shadow-sm">
+                <span className="text-white font-black text-[10px] drop-shadow-sm">
                   {organizerName.charAt(0).toUpperCase()}
                 </span>
               )}
@@ -312,28 +357,34 @@ export const EventCard: React.FC<EventCardProps> = ({
           </div>
         )}
 
-        <h4 className="text-[#2E2E2F] text-xl sm:text-2xl font-black tracking-tighter leading-tight mb-3 line-clamp-2">
+        <h4 className="text-[#2E2E2F] text-xl sm:text-2xl font-bold tracking-tighter leading-tight mb-3 line-clamp-2">
           {event.eventName}
         </h4>
-        <div className="flex items-center gap-2 text-[12px] sm:text-[13px] font-semibold text-[#2E2E2F]/70 mb-3">
-          <span className={`w-6 h-6 rounded-full flex items-center justify-center ${liked ? 'bg-[#38BDF2] text-white' : 'bg-[#2E2E2F]/10 text-[#2E2E2F]/65'}`}>
+        <div className="flex items-center gap-3 text-[12px] sm:text-[13px] font-semibold text-[#2E2E2F]/70 mb-3">
+          <span className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${liked ? 'bg-[#38BDF2] text-white' : 'bg-[#2E2E2F]/10 text-[#2E2E2F]/65'}`}>
             <ICONS.Heart className="w-3.5 h-3.5" />
           </span>
           <span>{likeLabel}</span>
         </div>
-        <div className="flex flex-col gap-1.5 text-[12px] sm:text-[13px] font-medium text-[#2E2E2F]/70 mb-4">
-          <div className="flex items-center gap-2">
-            <ICONS.Users className="w-4 h-4 text-[#2E2E2F]" />
-            <span className="text-[#2E2E2F]">
+        <div className="flex flex-col gap-2.5 text-[12px] sm:text-[13px] font-medium text-[#2E2E2F]/70 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-6 shrink-0 flex items-center justify-center text-[#2E2E2F]/40">
+              <ICONS.Users className="w-4 h-4" />
+            </div>
+            <span className="text-[#38BDF2] font-bold">
               {(event as any).registrationCount ?? (event.ticketTypes || []).reduce((sum, t) => sum + (t.quantitySold || 0), 0)} registered / {(event.ticketTypes || []).reduce((sum, t) => sum + (t.quantityTotal || 0), 0)} slots
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <ICONS.MapPin className="w-4 h-4" />
+          <div className="flex items-center gap-3">
+            <div className="w-6 shrink-0 flex items-center justify-center text-[#2E2E2F]/40">
+              <ICONS.MapPin className="w-4 h-4" />
+            </div>
             <span className="line-clamp-1">{event.locationText}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <ICONS.Calendar className="w-4 h-4" />
+          <div className="flex items-center gap-3">
+            <div className="w-6 shrink-0 flex items-center justify-center text-[#2E2E2F]/40">
+              <ICONS.Calendar className="w-4 h-4" />
+            </div>
             <span>{formatDate(event.startAt, event.timezone, { day: 'numeric', month: 'short', year: 'numeric' })} · {formatTime(event.startAt, event.timezone)}</span>
           </div>
         </div>
@@ -343,12 +394,12 @@ export const EventCard: React.FC<EventCardProps> = ({
           <div className="h-[1px] w-full bg-[#2E2E2F]/10 invisible group-hover:visible group-hover:opacity-100 transition-all duration-300" />
           {isDone ? (
             <div className="pt-5 flex flex-col items-start">
-              <p className="text-[10px] sm:text-[12px] font-black text-[#2E2E2F]/40 uppercase tracking-[0.2em] mb-1">Status</p>
+              <p className="text-[10px] sm:text-[12px] font-bold text-[#2E2E2F]/40 uppercase tracking-[0.2em] mb-1">Status</p>
               <p className="text-lg sm:text-xl font-bold text-[#2E2E2F]">Event Ended</p>
             </div>
           ) : (
             <div className="pt-5 flex flex-col items-start">
-              <p className="text-[10px] sm:text-[12px] font-black text-[#2E2E2F]/40 uppercase tracking-[0.2em] mb-1">Tickets From</p>
+              <p className="text-[10px] sm:text-[12px] font-bold text-[#2E2E2F]/40 uppercase tracking-[0.2em] mb-1">Tickets From</p>
               <p className="text-lg sm:text-xl font-bold text-[#2E2E2F]">
                 {minPrice > 0
                   ? `₱${minPrice.toLocaleString()}`
@@ -377,6 +428,7 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
   const isLandingAllListing = isLanding && listing === 'all';
   const navigate = useNavigate();
   const location = useLocation();
+  const { role, isAuthenticated, isOnboarded } = useUser();
   const { likedEventIds, followedOrganizerIds } = useEngagement();
   const [events, setEvents] = useState<Event[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 6, total: 0, totalPages: 1 });
@@ -801,17 +853,36 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
                 </p>
 
                 <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4">
+                  {isAuthenticated && role === UserRole.ORGANIZER && !isOnboarded ? (
+                    <Button
+                      onClick={() => navigate('/onboarding')}
+                      className="w-full sm:w-auto px-8 bg-[#38BDF2] border-2 border-[#38BDF2] text-white font-bold tracking-wide text-[15px] h-[52px] rounded-xl shadow-[0_4px_20px_rgba(56,189,242,0.2)] hover:bg-[#2E2E2F] hover:border-[#2E2E2F] transition-all flex items-center justify-center gap-2 active:scale-95 group"
+                    >
+                      Complete Setup
+                      <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => navigate(isAuthenticated ? (role === UserRole.ORGANIZER ? '/user-home' : '/browse-events') : '/signup')}
+                      className="w-full sm:w-auto px-8 bg-[#38BDF2] border-2 border-[#38BDF2] text-white font-bold tracking-wide text-[15px] h-[52px] rounded-xl shadow-[0_4px_20px_rgba(56,189,242,0.2)] hover:bg-[#2E2E2F] hover:border-[#2E2E2F] transition-all flex items-center justify-center gap-2 active:scale-95 group"
+                    >
+                      {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
+                      <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </Button>
+                  )}
                   <Button
-                    onClick={() => navigate('/signup')}
-                    className="w-full sm:w-auto px-8 bg-[#38BDF2] border-2 border-[#38BDF2] text-white font-bold tracking-wide text-[15px] h-[52px] rounded-xl shadow-[0_4px_20px_rgba(56,189,242,0.2)] hover:bg-[#2E2E2F] hover:border-[#2E2E2F] transition-all flex items-center justify-center gap-2 active:scale-95 group"
-                  >
-                    Get Started
-                    <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </Button>
-                  <Button
-                    onClick={() => navigate('/pricing')}
+                    onClick={() => {
+                      const pricingSection = document.getElementById('pricing');
+                      if (pricingSection) {
+                        pricingSection.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        navigate('/pricing');
+                      }
+                    }}
                     className="w-full sm:w-auto px-8 !bg-transparent !border-2 !border-solid !border-[#38BDF2] !text-[#38BDF2] font-bold tracking-wide text-[15px] h-[52px] rounded-xl hover:!bg-[#38BDF2] hover:!text-white transition-colors duration-300 flex items-center justify-center gap-2 active:scale-95 group"
                   >
                     <ICONS.CreditCard className="w-5 h-5 !text-[#38BDF2] group-hover:!text-white transition-colors duration-300" />
@@ -870,10 +941,10 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
               >
                 <div className="flex -space-x-3">
                   {organizerBadgeItems.map((organizer) => (
-                      <div key={organizer.key} className="w-9 h-9 rounded-full border-2 border-[#F2F2F2] overflow-hidden shadow-sm ring-1 ring-black/5 bg-[#38BDF2]/10">
-                        <img src={organizer.src} alt={organizer.alt} className="w-full h-full object-cover" />
-                      </div>
-                    ))}
+                    <div key={organizer.key} className="w-9 h-9 rounded-full border-2 border-[#F2F2F2] overflow-hidden shadow-sm ring-1 ring-black/5 bg-[#38BDF2]/10">
+                      <img src={organizer.src} alt={organizer.alt} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
                   <div className="w-9 h-9 rounded-full border-2 border-[#F2F2F2] bg-[#E8E8E8] flex items-center justify-center text-[10px] font-black text-[#2E2E2F] shadow-sm ring-1 ring-black/5">
                     +{organizerCount > 3 ? organizerCount - 3 : 3}
                   </div>
@@ -938,13 +1009,13 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
           </div>
 
           {/* Category Rail (Top of Available Events) */}
-          <div className="mt-28 mb-20 overflow-visible relative z-10">
-            <div className="rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] px-4 py-6 md:px-7">
-              <div className="flex items-center gap-4 mb-6">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[#2E2E2F]/60">Event Smart Categories.</p>
+          <div className="mt-44 mb-28 overflow-visible relative z-10">
+            <div className="rounded-2xl border border-[#2E2E2F]/10 bg-[#F2F2F2] px-6 py-8 md:px-8 shadow-sm">
+              <div className="flex items-center gap-4 mb-8">
+                <p className="text-[11px] font-bold tracking-tight text-[#2E2E2F]/60">Event smart categories</p>
               </div>
               <div className="py-2">
-                <div 
+                <div
                   ref={categoriesScrollRef}
                   className="flex items-center gap-6 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                 >
@@ -968,153 +1039,153 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
 
           {/* Promoted Events Carousel Section */}
           {promotedEvents.length > 0 && (
-            <div className="w-full mt-28 mb-32 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="w-full mt-44 mb-44 animate-in fade-in slide-in-from-bottom-4 duration-700 px-1">
               {/* Header Section */}
-              <div className="mb-8 text-center flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-2xl font-extrabold text-[#2E2E2F] tracking-tighter uppercase leading-none">Promoted Events</h2>
+              <div className="mb-12 text-center flex flex-col items-center">
+                <div className="flex items-center gap-3 mb-3">
+                  <h2 className="text-3xl md:text-4xl font-black text-[#2E2E2F] tracking-tight leading-none">Promoted Events</h2>
                   <div className="group/info relative">
-                    <ICONS.Info className="w-5 h-5 text-black cursor-help" strokeWidth={1.5} />
+                    <ICONS.Info className="w-6 h-6 text-[#2E2E2F]/30 cursor-help hover:text-[#38BDF2] transition-colors" strokeWidth={2} />
                     <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-64 p-4 bg-[#2E2E2F] text-white text-[11px] font-bold rounded-xl shadow-2xl opacity-0 translate-y-2 pointer-events-none group-hover/info:opacity-100 group-hover/info:translate-y-0 transition-all z-50 leading-relaxed text-center">
                       These events are highlighted because the organizer has subscribed to a premium plan with promotion features.
                       <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-[#2E2E2F]"></div>
                     </div>
                   </div>
                 </div>
-                <p className="text-[#2E2E2F]/40 text-[11px] font-extrabold uppercase tracking-[0.2em]">
+                <p className="text-[#2E2E2F]/50 text-sm md:text-base font-medium max-w-2xl leading-relaxed">
                   Discover curated sessions highlighted by organizers as part of their elite plan features.
                 </p>
               </div>
 
               {!loadingPromoted && promotedEvents.length > 0 ? (
                 <div className="relative">
-                  {/* Carousel Container - More subtle, "out" of the heavy card style */}
-                  <div className="rounded-xl overflow-hidden border border-[#2E2E2F]/5 bg-white shadow-sm group">
-                      <div className="relative h-[280px] sm:h-[400px] lg:h-[500px] overflow-hidden bg-white">
-                        {/* Carousel Images */}
-                        {promotedEvents.map((event, idx) => {
-                          const imageUrl = getImageUrl(event.imageUrl);
-                          return (
-                            <div
-                              key={event.eventId}
-                              className={`absolute inset-0 transition-opacity duration-700 ease-in-out cursor-pointer ${idx === currentPromotedIndex ? 'opacity-100' : 'opacity-0'
-                                }`}
-                              onClick={() => navigate(`/events/${event.slug || event.eventId}`)}
-                            >
-                              {/* Main Image - Now filling for a "wide, bigger" feel */}
-                              <img
-                                src={imageUrl}
-                                alt={event.eventName}
-                                className="w-full h-full object-cover transition-transform duration-700 hover:scale-[1.02] z-10"
-                              />
+                  {/* Carousel Container - More visible border and rounded corners */}
+                  <div className="rounded-2xl overflow-hidden border border-[#2E2E2F]/15 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] group">
+                    <div className="relative h-[280px] sm:h-[400px] lg:h-[500px] overflow-hidden bg-white">
+                      {/* Carousel Images */}
+                      {promotedEvents.map((event, idx) => {
+                        const imageUrl = getImageUrl(event.imageUrl);
+                        return (
+                          <div
+                            key={event.eventId}
+                            className={`absolute inset-0 transition-opacity duration-700 ease-in-out cursor-pointer ${idx === currentPromotedIndex ? 'opacity-100' : 'opacity-0'
+                              }`}
+                            onClick={() => navigate(`/events/${event.slug || event.eventId}`)}
+                          >
+                            {/* Main Image - Full width with hover scale */}
+                            <img
+                              src={imageUrl}
+                              alt={event.eventName}
+                              className="w-full h-full object-cover transition-transform duration-700 hover:scale-[1.05] z-10"
+                            />
 
-                              {/* Info Overlay Panel */}
-                              <div className="absolute inset-0 z-20 flex flex-col justify-end">
-                                {/* Subtle Bottom Gradient for Legibility */}
-                                <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                                
-                                {/* Content Area Overflowing with Image */}
-                                <div className="relative z-30 p-8 sm:p-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                  {(() => {
-                                    const totalSlots = (event.ticketTypes || []).reduce((sum, t) => sum + (t.quantityTotal || 0), 0);
-                                    const soldSlots = (event as any).registrationCount ?? (event.ticketTypes || []).reduce((sum, t) => sum + (t.quantitySold || 0), 0);
-                                    const isDone = new Date(event.endAt) < new Date();
-                                    const minPrice = (event?.ticketTypes || []).length > 0
-                                      ? Math.min(...event!.ticketTypes!.map((t: any) => Number(t.priceAmount || 0)))
-                                      : 0;
-                                    const org = event.organizer || organizers.find((o: any) => o.organizerId === event.organizerId);
+                            {/* Info Overlay Panel */}
+                            <div className="absolute inset-0 z-20 flex flex-col justify-center">
+                              {/* Horizontal Gradient for Max Legibility (f2f2f fade type shi) */}
+                              <div className="absolute inset-y-0 left-0 w-full lg:w-[70%] bg-gradient-to-r from-[#F2F2F2] via-[#F2F2F2] via-[#F2F2F2]/90 to-transparent z-20" />
 
-                                    return (
-                                      <div className="flex flex-col gap-4 text-white">
-                                        <div className="space-y-4">
-                                          {/* Organizer Branding */}
-                                          <div className="flex items-center gap-3 mb-6 opacity-90 animate-in fade-in slide-in-from-left-4 duration-1000">
-                                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white bg-gradient-to-br from-[#38BDF2] to-[#A5E1FF] flex items-center justify-center shrink-0 shadow-lg">
-                                              {org?.profileImageUrl ? (
-                                                <img src={getImageUrl(org.profileImageUrl)} alt={org.organizerName} className="w-full h-full object-cover" />
-                                              ) : (
-                                                <span className="text-white font-black text-sm drop-shadow-sm">
-                                                  {(org?.organizerName || 'O').charAt(0).toUpperCase()}
-                                                </span>
-                                              )}
-                                            </div>
-                                            <span className="text-sm font-black tracking-widest uppercase truncate max-w-[200px] border-b border-white/20 pb-1 text-white">
-                                              {org?.organizerName || 'Organization'}
-                                            </span>
+                              {/* Content Area */}
+                              <div className="relative z-30 p-8 sm:p-12 animate-in fade-in slide-in-from-left-4 duration-700">
+                                {(() => {
+                                  const totalSlots = (event.ticketTypes || []).reduce((sum, t) => sum + (t.quantityTotal || 0), 0);
+                                  const soldSlots = (event as any).registrationCount ?? (event.ticketTypes || []).reduce((sum, t) => sum + (t.quantitySold || 0), 0);
+                                  const isDone = new Date(event.endAt) < new Date();
+                                  const minPrice = (event?.ticketTypes || []).length > 0
+                                    ? Math.min(...event!.ticketTypes!.map((t: any) => Number(t.priceAmount || 0)))
+                                    : 0;
+                                  const org = event.organizer || organizers.find((o: any) => o.organizerId === event.organizerId);
+
+                                  return (
+                                    <div className="flex flex-col gap-6 text-[#2E2E2F]">
+                                      <div className="space-y-4">
+                                        {/* Organizer Branding */}
+                                        <div className="flex items-center gap-3 mb-2 opacity-90 animate-in fade-in slide-in-from-left-4 duration-1000">
+                                          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white bg-gradient-to-br from-[#38BDF2] to-[#A5E1FF] flex items-center justify-center shrink-0 shadow-sm">
+                                            {org?.profileImageUrl ? (
+                                              <img src={getImageUrl(org.profileImageUrl)} alt={org.organizerName} className="w-full h-full object-cover" />
+                                            ) : (
+                                              <span className="text-white font-black text-sm drop-shadow-sm">
+                                                {(org?.organizerName || 'O').charAt(0).toUpperCase()}
+                                              </span>
+                                            )}
                                           </div>
-
-                                          <h3 className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tighter leading-none mb-4 drop-shadow-lg">
-                                            {event.eventName}
-                                          </h3>
-                                          
-                                          <div className="flex flex-col items-start gap-y-3">
-                                            <div className="flex items-center gap-2 text-sm sm:text-base font-medium opacity-90">
-                                              <ICONS.Heart className="w-4 h-4 text-white" strokeWidth={3} />
-                                              <span>{(event as any).likesCount || 0} likes</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm sm:text-base font-medium opacity-90">
-                                              <ICONS.Users className="w-5 h-5 opacity-70 text-white" strokeWidth={3} />
-                                              <span>{soldSlots} registered / {totalSlots} slots</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm sm:text-base font-medium opacity-90 text-white">
-                                              <ICONS.MapPin className="w-5 h-5" strokeWidth={3} />
-                                              <span className="line-clamp-1">{event.locationText || 'Location TBA'}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm sm:text-base font-medium opacity-90 text-white">
-                                              <ICONS.Calendar className="w-5 h-5" strokeWidth={3} />
-                                              <span>{formatStartForCard(event.startAt || '', event.timezone)}</span>
-                                            </div>
-                                          </div>
+                                          <span className="text-xs font-bold tracking-[0.2em] uppercase truncate max-w-[200px] text-[#2E2E2F]">
+                                            {org?.organizerName || 'Organization'}
+                                          </span>
                                         </div>
 
-                                        <div className="flex items-center justify-start gap-6 pt-6 mt-2 border-t border-white/10">
-                                          <div className="flex flex-col items-start">
-                                            <p className="text-[12px] sm:text-[13px] font-medium opacity-60 uppercase tracking-[0.2em] mb-1">
-                                              {isDone ? 'Status' : 'Tickets From'}
-                                            </p>
-                                            <p className="text-2xl sm:text-3xl font-black">
-                                              {isDone 
-                                                ? 'Event Ended' 
-                                                : minPrice === 0 ? 'FREE' : `₱${minPrice.toLocaleString()}`}
-                                            </p>
+                                        <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tighter leading-[0.9] mb-6 text-[#2E2E2F]">
+                                          {event.eventName}
+                                        </h3>
+
+                                        <div className="flex flex-col items-start gap-y-4">
+                                          <div className="flex items-center gap-4 text-sm sm:text-lg font-semibold text-[#2E2E2F]">
+                                            <ICONS.Heart className="w-5 h-5" />
+                                            <span>{(event as any).likesCount || 0} likes</span>
+                                          </div>
+                                          <div className="flex items-center gap-4 text-sm sm:text-lg font-semibold text-[#38BDF2]">
+                                            <ICONS.Users className="w-5 h-5" />
+                                            <span>{soldSlots} registered / {totalSlots} slots</span>
+                                          </div>
+                                          <div className="flex items-center gap-4 text-sm sm:text-lg font-semibold text-[#2E2E2F]">
+                                            <ICONS.MapPin className="w-5 h-5 shrink-0" strokeWidth={3} />
+                                            <span className="whitespace-normal break-words max-w-sm">{event.locationText || 'Location TBA'}</span>
+                                          </div>
+                                          <div className="flex items-center gap-4 text-sm sm:text-lg font-semibold text-[#2E2E2F]">
+                                            <ICONS.Calendar className="w-5 h-5 shrink-0" />
+                                            <span>{formatStartForCard(event.startAt || '', event.timezone)}</span>
                                           </div>
                                         </div>
                                       </div>
-                                    );
-                                  })()}
-                                </div>
+
+                                      <div className="flex items-center justify-start gap-6 pt-6 mt-4 border-t border-[#2E2E2F]/10">
+                                        <div className="flex flex-col items-start">
+                                          <p className="text-[11px] sm:text-[12px] font-bold text-[#2E2E2F] uppercase tracking-[0.2em] mb-1">
+                                            {isDone ? 'Status' : 'Tickets From'}
+                                          </p>
+                                          <p className={`text-3xl sm:text-4xl font-bold ${!isDone && minPrice === 0 ? 'text-[#38BDF2]' : 'text-[#2E2E2F]'}`}>
+                                            {isDone
+                                              ? 'Event Ended'
+                                              : minPrice === 0 ? 'FREE' : `₱${minPrice.toLocaleString()}`}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </div>
-                          );
-                        })}
+                          </div>
+                        );
+                      })}
 
-                        {/* Navigation Arrows - Using a darker, more defined style for visibility on white */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (promotedCarouselInterval) clearInterval(promotedCarouselInterval);
-                            setCurrentPromotedIndex((prev) => (prev - 1 + promotedEvents.length) % promotedEvents.length);
-                          }}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-[#2E2E2F]/5 flex items-center justify-center text-[#2E2E2F] hover:bg-[#38BDF2] hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20"
-                        >
-                          <ICONS.ChevronLeft className="w-5 h-5" strokeWidth={3} />
-                        </button>
+                      {/* Navigation Arrows - Using a darker, more defined style for visibility on white */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (promotedCarouselInterval) clearInterval(promotedCarouselInterval);
+                          setCurrentPromotedIndex((prev) => (prev - 1 + promotedEvents.length) % promotedEvents.length);
+                        }}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-[#2E2E2F]/5 flex items-center justify-center text-[#2E2E2F] hover:bg-[#38BDF2] hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20"
+                      >
+                        <ICONS.ChevronLeft className="w-5 h-5" strokeWidth={3} />
+                      </button>
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (promotedCarouselInterval) clearInterval(promotedCarouselInterval);
-                            setCurrentPromotedIndex((prev) => (prev + 1) % promotedEvents.length);
-                          }}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-[#2E2E2F]/5 flex items-center justify-center text-[#2E2E2F] hover:bg-[#38BDF2] hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20"
-                        >
-                          <ICONS.ChevronRight className="w-5 h-5" />
-                        </button>
-                      </div>
-
-
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (promotedCarouselInterval) clearInterval(promotedCarouselInterval);
+                          setCurrentPromotedIndex((prev) => (prev + 1) % promotedEvents.length);
+                        }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-[#2E2E2F]/5 flex items-center justify-center text-[#2E2E2F] hover:bg-[#38BDF2] hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20"
+                      >
+                        <ICONS.ChevronRight className="w-5 h-5" />
+                      </button>
                     </div>
+
+
                   </div>
+                </div>
               ) : null}
             </div>
           )}
@@ -1156,10 +1227,10 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
           />
 
           {/* Events Listing Section Header */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pt-4 mb-2 pb-0 px-0">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pt-10 mb-8 pb-0 px-0">
             <div className="flex-1 space-y-2">
-              <h2 className="text-2xl font-extrabold text-[#2E2E2F] tracking-tighter uppercase leading-none">{sectionTitle}</h2>
-              <p className="text-[#2E2E2F]/40 text-[11px] font-extrabold uppercase tracking-[0.2em]">{sectionSubtitle}</p>
+              <h2 className="text-3xl md:text-4xl font-black text-[#2E2E2F] tracking-tight leading-none">{sectionTitle}</h2>
+              <p className="text-[#2E2E2F]/50 text-sm md:text-base font-medium leading-relaxed">{sectionSubtitle}</p>
             </div>
           </div>
         </section>
@@ -1353,6 +1424,18 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
             ))}
           </div>
 
+          {isLandingAllListing && (
+            <div className="flex justify-center mt-12 px-4">
+              <button
+                onClick={() => navigate('/browse-events')}
+                className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-4 bg-[#38BDF2] rounded-xl text-[12px] font-black uppercase tracking-widest text-[#F2F2F2] hover:bg-[#2E2E2F] transition-all active:scale-95 shadow-lg shadow-[#38BDF2]/20"
+              >
+                Explore All Events
+                <ICONS.ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
           {/* Empty State */}
           {displayEvents.length === 0 && (
             <div className="py-24 px-6 text-center bg-[#F2F2F2] rounded-xl border border-[#2E2E2F]/10 animate-in zoom-in-95 duration-500">
@@ -1410,43 +1493,52 @@ export const EventList: React.FC<EventListProps> = ({ mode = 'landing', listing 
 
 
       {isLanding && <PricingSection />}
-      {isLanding && <FeaturedOrganizers />}
-      {isLanding && <FAQSection />}
+      <div className="mt-12">
+        {isLanding && <FeaturedOrganizers />}
+      </div>
+      <div className="mt-20">
+        {isLanding && <FAQSection />}
+      </div>
     </div>
   );
 };
 
 const FAQSection: React.FC = () => {
+  const navigate = useNavigate();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const faqs = [
     {
-      question: "Event Setup",
-      answer: "Setting up an event is simple. Navigate to your Organizer Portal, click 'Create Event', and follow the guided steps to add details, images, and ticket types. You can save your progress as a draft or publish immediately to the marketplace."
+      question: "How do I create an event?",
+      answer: "Sign in as an organizer, create a draft event, configure ticket classes and order form fields, then publish when ready."
     },
     {
-      question: "Checkout",
-      answer: "Our checkout process is optimized for speed and security. Attendees can purchase tickets using HitPay with local payment options like GCash, Maya, and GrabPay. Once payment is confirmed, e-tickets are instantly generated and emailed."
+      question: "How do attendees receive tickets?",
+      answer: "After successful checkout, attendees receive confirmation and ticket records tied to their order, including QR-enabled check-in details where configured."
     },
     {
-      question: "Check-In",
-      answer: "Manage entry seamlessly with our mobile-ready check-in system. Each ticket includes a unique QR code that organizers can scan using our built-in scanner in the Staff portal, ensuring real-time attendance tracking and preventing duplicate entries."
+      question: "Can my team have different access levels?",
+      answer: "Yes. Organizer access can be scoped by role so teams can separate event editing, finance, marketing, and check-in responsibilities."
     },
     {
-      question: "Refunds",
-      answer: "Refund policies are determined by each organizer individually. If you require a refund, please contact the event organizer directly through their profile page. Refunds are processed according to the specific terms set for the event."
+      question: "What should I do if payment fails at checkout?",
+      answer: "Retry within the checkout flow. If the issue persists, use support with your order reference and timestamp for transaction review."
+    },
+    {
+      question: "How are refunds processed?",
+      answer: "Refunds follow organizer rules, event status, and platform safeguards. Duplicate refund attempts are blocked by transaction controls."
     }
   ];
 
   return (
-    <section className="mt-32 mb-32 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+    <section className="mt-44 mb-44 animate-in fade-in slide-in-from-bottom-10 duration-1000">
       <div className="text-center mb-16">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#38BDF2] mb-4">FAQs</p>
-        <h2 className="text-2xl font-black text-[#2E2E2F] tracking-tighter uppercase leading-none mb-2">
+        <p className="text-xs font-bold text-[#38BDF2] mb-3 tracking-tight">Help & Support</p>
+        <h2 className="text-3xl md:text-4xl font-black text-[#2E2E2F] tracking-tight leading-none mb-4">
           Frequently Asked Questions
         </h2>
-        <p className="text-[#2E2E2F]/40 text-[11px] font-black uppercase tracking-[0.2em]">
-          Everything you need to know about StartupLab Event SaaS.
+        <p className="text-[#2E2E2F]/50 text-sm md:text-base font-medium max-w-2xl mx-auto leading-relaxed">
+          Quick guidance for the most common organizer and attendee workflows in StartupLab Ticketing.
         </p>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
@@ -1484,6 +1576,15 @@ const FAQSection: React.FC = () => {
             </div>
           </div>
         ))}
+      </div>
+      <div className="flex justify-center mt-16">
+        <button
+          onClick={() => navigate('/faq')}
+          className="flex items-center gap-3 px-10 py-4 bg-[#38BDF2] text-white rounded-xl text-[12px] font-black uppercase tracking-widest hover:bg-[#2E2E2F] transition-all active:scale-95 shadow-lg shadow-[#38BDF2]/20"
+        >
+          Go to FAQ
+          <ICONS.MessageSquare className="w-5 h-5" />
+        </button>
       </div>
     </section>
   );
@@ -1528,73 +1629,36 @@ const FeaturedOrganizers: React.FC = () => {
   const activeDot = Math.min(currentIndex, 4);
 
   return (
-    <section className="mt-20 mb-32 px-4 sm:px-6 lg:px-10 py-12 bg-transparent">
+    <section className="mt-10 mb-20 px-4 sm:px-6 lg:px-10 py-12 bg-transparent">
       <div className="flex flex-col mb-10 text-center items-center justify-center">
-        <h2 className="text-2xl font-black text-[#2E2E2F] tracking-tighter uppercase leading-none mb-2">Featured Organisers</h2>
-        <p className="text-[#2E2E2F]/40 text-[11px] font-black uppercase tracking-[0.2em]">Follow the organisers from these events and get notified when they create new ones.</p>
+        <h2 className="text-3xl md:text-5xl font-black text-[#2E2E2F] tracking-tight leading-none mb-4">Featured Organizers</h2>
+        <p className="text-[#2E2E2F]/40 text-sm md:text-base font-medium max-w-xl leading-relaxed">Stay connected with our top event creators and never miss a highlight session.</p>
       </div>
 
-      <div 
+      <div
         ref={carouselRef}
         onScroll={handleScroll}
         className="flex gap-6 overflow-x-auto pb-8 pt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth snap-x snap-mandatory flex-nowrap"
       >
-        {organizers.map((org, index) => {
+        {organizers.map((org) => {
           const isFollowing = (followedOrganizerIds || []).includes(org.organizerId);
-
           return (
-            <div
+            <OrganizerCard
               key={org.organizerId}
-              className="bg-[#F2F2F2] rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-[#DEE2E6]/60 hover:ring-[#DEE2E6] transition-all duration-300 flex flex-col items-center w-[260px] shrink-0 p-6 pt-8 snap-center cursor-pointer group"
+              organizer={org}
+              isFollowing={isFollowing}
+              onFollow={async (e) => {
+                e.stopPropagation();
+                if (!isAuthenticated) {
+                  navigate('/signup');
+                  return;
+                }
+                if (!canLikeFollow) return;
+                await toggleFollowing(org.organizerId);
+              }}
               onClick={() => navigate(`/organizer/${org.organizerId}`)}
-            >
-              <div className="w-[84px] h-[84px] rounded-full shadow-sm mb-4 border border-gray-100/50 bg-white flex items-center justify-center text-white text-[32px] font-black shrink-0 relative overflow-hidden">
-                <img
-                  src={org.profileImageUrl ? getImageUrl(org.profileImageUrl) : generateDefaultAvatarDataUri((org.organizerName || 'O').split(' ').filter(Boolean).map(p => p[0]).join('').substring(0, 2).toUpperCase() || 'O')}
-                  alt={org.organizerName}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5 mb-1 text-center justify-center">
-                <h3 className="text-[17px] font-bold text-gray-900 tracking-tight line-clamp-1">{org.organizerName}</h3>
-              </div>
-
-              <p className="text-[13px] text-gray-500 mb-5 font-medium line-clamp-1">{org.bio || 'Event Organizer'}</p>
-
-              <div className="flex items-center justify-center gap-4 text-[12px] font-semibold text-gray-500 mb-6 w-full mt-1">
-                <div className="flex items-center gap-1.5">
-                  <ICONS.Users className="w-[14px] h-[14px] text-gray-400" />
-                  <span className="text-gray-900 font-bold">{org.followersCount || 0}</span> followers
-                </div>
-                <div className="w-[1px] h-3 bg-gray-200"></div>
-                <div className="flex items-center gap-1.5">
-                  <ICONS.Calendar className="w-[14px] h-[14px] text-gray-400" />
-                  <span className="text-gray-900 font-bold">{org.eventsHostedCount || 0}</span> Events
-                </div>
-              </div>
-
-              <div className="w-full mt-auto">
-                <Button
-                  variant={isFollowing ? 'outline' : 'primary'}
-                  className={`w-full rounded-[10px] py-[10px] text-[13px] tracking-wide transition-all duration-300 !h-auto ${isFollowing
-                    ? 'bg-transparent border-2 border-[#2E2E2F]/10 text-[#2E2E2F] hover:bg-[#38BDF2]/10 hover:border-[#38BDF2]/30 hover:text-[#38BDF2] font-bold'
-                    : 'bg-[#38BDF2] font-bold border-none text-white hover:bg-[#32a8db] hover:shadow-lg shadow-md shadow-[#38BDF2]/30 active:scale-95'
-                    }`}
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!isAuthenticated) {
-                      navigate('/signup');
-                      return;
-                    }
-                    if (!canLikeFollow) return;
-                    await toggleFollowing(org.organizerId);
-                  }}
-                >
-                  {isFollowing ? 'Following' : '+ Follow'}
-                </Button>
-              </div>
-            </div>
+              className="w-[280px] shrink-0 snap-center"
+            />
           );
         })}
       </div>
@@ -1606,11 +1670,11 @@ const FeaturedOrganizers: React.FC = () => {
       </div>
 
       <div className="flex justify-center mt-10">
-        <button 
-          onClick={() => navigate('/browse-events')}
+        <button
+          onClick={() => navigate('/organizers/discover')}
           className="flex items-center gap-3 px-8 py-3 bg-[#38BDF2] border border-[#38BDF2] rounded-xl text-[13px] font-black uppercase tracking-widest text-[#F2F2F2] hover:bg-black hover:border-black transition-all hover:shadow-xl hover:shadow-[#38BDF2]/20 active:scale-95"
         >
-          View All Organizers 
+          See organizers
           <ICONS.ChevronRight className="w-4 h-4 text-white" />
         </button>
       </div>

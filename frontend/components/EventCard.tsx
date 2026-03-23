@@ -70,7 +70,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEventClick }) => 
 
         {/* Promoted Badge - Top Right */}
         {event.is_promoted && (
-          <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl text-xs font-black text-[#2E2E2F] flex items-center gap-1.5 shadow-md animate-in fade-in slide-in-from-top-2 duration-500">
+          <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl text-xs font-bold text-[#2E2E2F] flex items-center gap-1.5 shadow-md animate-in fade-in slide-in-from-top-2 duration-500">
             <ICONS.Info className="w-4 h-4 text-[#38BDF2]" strokeWidth={2.5} />
             <span>PROMOTED</span>
           </div>
@@ -79,8 +79,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEventClick }) => 
 
       {/* Content */}
       <div className="p-5 space-y-3">
-        {/* Title */}
-        <h3 className="font-black text-[#2E2E2F] text-2xl line-clamp-2 group-hover:text-[#38BDF2] transition-colors leading-tight">
+        <h3 className="font-bold text-[#2E2E2F] text-2xl line-clamp-2 group-hover:text-[#38BDF2] transition-colors leading-tight">
           {event.eventName}
         </h3>
 
@@ -92,13 +91,17 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEventClick }) => 
         {/* Date & Location */}
         <div className="space-y-1.5 text-sm text-[#2E2E2F]/70 font-bold">
           <div className="flex items-center gap-2">
-            <ICONS.Calendar className="w-4 h-4 text-[#38BDF2]" strokeWidth={2.5} />
+            <div className="w-4 shrink-0 flex items-center justify-center">
+              <ICONS.Calendar className="w-4 h-4 text-[#38BDF2]" strokeWidth={2.5} />
+            </div>
             <span>{dateStr}</span>
             {timeStr && <span className="text-[#2E2E2F]/50">•</span>}
             {timeStr && <span>{timeStr}</span>}
           </div>
           <div className="flex items-center gap-2">
-            <ICONS.MapPin className="w-4 h-4 text-[#38BDF2]" strokeWidth={2.5} />
+            <div className="w-4 shrink-0 flex items-center justify-center">
+              <ICONS.MapPin className="w-4 h-4 text-[#38BDF2]" strokeWidth={2.5} />
+            </div>
             <span className="line-clamp-1">{event.locationText}</span>
           </div>
         </div>
@@ -107,23 +110,28 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEventClick }) => 
         <div className="h-[1px] w-full bg-[#2E2E2F]/10 invisible group-hover:visible group-hover:opacity-100 transition-all duration-300" />
 
         {/* Rating & Price */}
-        <div className="flex items-center justify-between text-sm font-bold">
-          <div className="flex items-center gap-1.5">
-            {event.avgRating && event.avgRating > 0 ? (
-              <>
-                <span className="text-warn">⭐</span>
-                <span className="text-[#2E2E2F]">{event.avgRating.toFixed(1)}</span>
-                <span className="text-[#2E2E2F]/60 text-xs">({event.reviewCount || 0})</span>
-              </>
-            ) : (
-              <span className="text-[#2E2E2F]/50 text-xs">No ratings yet</span>
-            )}
+        {/* Rating & Price */}
+        <div className="space-y-1.5 text-sm font-bold">
+          <div className="flex items-center gap-2">
+            <div className="w-4 shrink-0 flex items-center justify-center">
+              <span className="text-[#38BDF2]">⭐</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {event.avgRating && event.avgRating > 0 ? (
+                <>
+                  <span className="text-[#2E2E2F]">{event.avgRating.toFixed(1)}</span>
+                  <span className="text-[#2E2E2F]/60 text-xs">({event.reviewCount || 0})</span>
+                </>
+              ) : (
+                <span className="text-[#2E2E2F]/50 text-xs">No ratings yet</span>
+              )}
+            </div>
           </div>
-          <div className="font-black text-[#38BDF2]">
+          <div className="font-bold text-[#38BDF2]">
             {(() => {
               const now = new Date();
               const eventStart = event.startAt ? new Date(event.startAt) : null;
-              const eventEnd = eventStart ? new Date(eventStart.getTime() + 2 * 60 * 60 * 1000) : null; // Fallback to 2h window
+              const eventEnd = eventStart ? new Date(eventStart.getTime() + 2 * 60 * 60 * 1000) : null;
               const isDone = eventEnd && now > eventEnd;
 
               if (isDone) return <span className="text-xs text-[#2E2E2F]/40 uppercase tracking-widest">Event Ended</span>;
@@ -141,23 +149,16 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEventClick }) => 
 
         {/* Ticket Progress (if available) */}
         {event.ticketsAvailable !== undefined && event.totalTickets !== undefined && (
-          <div className="space-y-1">
-            <div className="w-full bg-[#F2F2F2] rounded-full h-1.5">
-              <div
-                className="bg-[#38BDF2] h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(ticketPercentage, 100)}%` }}
-              />
-            </div>
-            <p className="text-[8px] font-black uppercase tracking-widest text-[#2E2E2F]/50">
-              {event.ticketsAvailable} of {event.totalTickets} available
-            </p>
+          <div className="flex items-center gap-2 text-[11px] font-bold text-[#38BDF2]">
+            <ICONS.Users className="w-4 h-4 text-[#2E2E2F]/40" />
+            <span>{(event.totalTickets - event.ticketsAvailable)} registered / {event.totalTickets} slots</span>
           </div>
         )}
 
         {/* Promoted Duration (if promoted) */}
         {event.is_promoted && event.promotionEndDate && (
           <div className="pt-2">
-            <p className="text-[8px] text-[#38BDF2] font-black uppercase tracking-widest flex items-center gap-1">
+            <p className="text-[8px] text-[#38BDF2] font-bold uppercase tracking-widest flex items-center gap-1">
               <ICONS.Info className="w-3 h-3" strokeWidth={2.5} />
               {new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(
                 new Date(event.promotionEndDate)

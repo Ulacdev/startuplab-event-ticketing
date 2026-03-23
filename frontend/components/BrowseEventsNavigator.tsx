@@ -147,7 +147,7 @@ export const BrowseEventsNavigator: React.FC<BrowseEventsNavigatorProps> = ({
   return (
     <section className={`px-0 ${className}`}>
       <div>
-        <p className="text-[22px] sm:text-[25px] md:text-[28px] font-black text-[#2E2E2F] tracking-tight leading-tight">
+        <p className="text-2xl md:text-3xl font-black text-[#2E2E2F] tracking-tight leading-none mb-4">
           Browsing events in{' '}
           <span className="relative inline-block" ref={dropdownRef}>
             <button

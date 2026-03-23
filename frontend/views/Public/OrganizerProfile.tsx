@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
 import { OrganizerProfile as IOrganizerProfile, Event } from '../../types';
 import { Button, PageLoader, Card } from '../../components/Shared';
@@ -30,9 +29,9 @@ const getEmbedUrl = (link: string) => {
 
 // Helper to handle JSONB image format
 const getImageUrl = (img: any): string => {
-    if (!img) return 'https://via.placeholder.com/800x400';
+    if (!img) return '';
     if (typeof img === 'string') return img;
-    return img.url || img.path || img.publicUrl || 'https://via.placeholder.com/800x400';
+    return img.url || img.path || img.publicUrl || '';
 };
 
 const formatDate = (iso: string, timezone?: string, opts?: Intl.DateTimeFormatOptions) => {
@@ -72,7 +71,6 @@ export const OrganizerProfilePage: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [interactionNotice, setInteractionNotice] = useState('');
-    const [bioExpanded, setBioExpanded] = useState(false);
     const [liveEvent, setLiveEvent] = useState<Event | null>(null);
 
     useEffect(() => {
@@ -87,7 +85,6 @@ export const OrganizerProfilePage: React.FC = () => {
                 setOrganizer(orgData);
                 setEvents(eventData.events || []);
 
-                // Check if any of this organizer's events are live WITH an embeddable video URL
                 const isEmbeddableVideo = (url: string) => {
                     if (!url || !url.trim()) return false;
                     const n = url.startsWith('http') ? url : `https://${url}`;
@@ -96,14 +93,10 @@ export const OrganizerProfilePage: React.FC = () => {
                 const matchingLive = allLiveEvents.find(e => {
                     const isOurOrg = e.organizerId === orgData.organizerId;
                     const hasVideo = isEmbeddableVideo(e.streaming_url || '');
-
-                    // Ensure the event is actually happening NOW
                     const eventNow = new Date();
                     const eventStart = new Date(e.startAt);
                     const eventEnd = e.endAt ? new Date(e.endAt) : new Date(eventStart.getTime() + 2 * 60 * 60 * 1000);
-
                     const isOngoing = eventNow >= eventStart && eventNow < eventEnd;
-
                     return isOurOrg && hasVideo && isOngoing;
                 });
                 setLiveEvent(matchingLive || null);
@@ -160,7 +153,6 @@ export const OrganizerProfilePage: React.FC = () => {
         }
     };
 
-
     const upcomingEvents = events.filter(e => {
         const end = e.endAt ? new Date(e.endAt) : new Date(new Date(e.startAt).getTime() + 2 * 60 * 60 * 1000);
         return end >= now;
@@ -181,244 +173,171 @@ export const OrganizerProfilePage: React.FC = () => {
 
     return (
         <div className="bg-[#F2F2F2] min-h-screen">
-            <div className="max-w-[1250px] mx-auto bg-[#F2F2F2] border-x border-b border-[#2E2E2F]/5 shadow-sm rounded-b-[2rem] overflow-hidden">
-                {/* Cover Photo / Live Player Area */}
-                <div className="relative group">
-                    <div className="aspect-[3.5/1] w-full overflow-hidden bg-[#2E2E2F]/5">
-                        {liveEvent ? (
-                            <div className="w-full h-full relative">
-                                {embedUrl ? (
-                                    <iframe
-                                        className="absolute inset-0 w-full h-full"
-                                        src={embedUrl}
-                                        title="Live Stream"
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        allowFullScreen
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex flex-col items-center justify-center bg-[#F2F2F2]">
-                                        <div className="flex items-center gap-3 bg-red-600 px-6 py-2.5 rounded-full border border-red-500 shadow-lg animate-pulse mb-4">
-                                            <div className="w-2 h-2 bg-white rounded-full" />
-                                            <span className="text-[10px] font-black text-white uppercase tracking-widest">Live Now</span>
-                                        </div>
-                                        <a
-                                            href={liveEvent.streaming_url || liveEvent.locationText}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="bg-[#38BDF2] text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-md hover:scale-105 transition-transform"
-                                        >
-                                            View Broadcast
-                                        </a>
+            <div className="max-w-[1200px] mx-auto bg-[#F2F2F2]">
+                {/* Cover Photo Area - Facebook style */}
+                <div className="relative w-full aspect-[3/1] lg:aspect-[3.5/1] bg-[#E5E5E5] overflow-hidden rounded-b-2xl shadow-sm border-x border-b border-[#2E2E2F]/5">
+                    {liveEvent ? (
+                        <div className="w-full h-full relative">
+                            {embedUrl ? (
+                                <iframe
+                                    className="absolute inset-0 w-full h-full"
+                                    src={embedUrl}
+                                    title="Live Stream"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                />
+                            ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-[#F2F2F2]">
+                                    <div className="flex items-center gap-3 bg-red-600 px-6 py-2.5 rounded-full border border-red-500 shadow-lg animate-pulse mb-4">
+                                        <div className="w-2 h-2 bg-white rounded-full" />
+                                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Live Now</span>
                                     </div>
-                                )}
-                                <div className="absolute top-6 right-8 bg-red-600 px-4 py-2 rounded-xl text-white text-[9px] font-black uppercase tracking-widest shadow-lg animate-pulse z-20">
-                                    LIVE
+                                    <a
+                                        href={liveEvent.streaming_url || liveEvent.locationText}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="bg-[#38BDF2] text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-md hover:scale-105 transition-transform"
+                                    >
+                                        View Broadcast
+                                    </a>
                                 </div>
+                            )}
+                            <div className="absolute top-6 right-8 bg-red-600 px-4 py-2 rounded-xl text-white text-[9px] font-black uppercase tracking-widest shadow-lg animate-pulse z-20">
+                                LIVE
                             </div>
-                        ) : organizer.coverImageUrl ? (
-                            <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2E2E2F]/10 to-[#F2F2F2]">
-                                <ICONS.Image className="w-16 h-16 text-[#2E2E2F]/20" />
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : coverImage ? (
+                        <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full bg-[#E5E5E5] flex items-center justify-center">
+                            <ICONS.Image className="w-16 h-16 text-[#2E2E2F]/10" />
+                        </div>
+                    )}
                 </div>
 
-                {/* Profile Header section */}
-                <div className="px-6 lg:px-12">
-                    <div className="relative flex flex-col lg:flex-row gap-6 lg:gap-10 pb-10">
-                        {/* Profile Pic overlap - positioned relatively to clear cover */}
-                        <div className="relative -mt-16 lg:-mt-24 shrink-0 z-10">
-                            <div className="w-32 h-32 lg:w-56 lg:h-56 rounded-xl border-[10px] border-[#F2F2F2] overflow-hidden bg-gradient-to-br from-[#38BDF2] to-[#A5E1FF] shadow-[0_25px_60px_rgba(0,0,0,0.12)]">
+                {/* Profile Header Details - Controlled Overlap */}
+                <div className="px-5 sm:px-10 pb-8">
+                    <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 -mt-16 md:-mt-24 relative z-20 text-center md:text-left">
+                        {/* Circle Profile Pic - Floating effect */}
+                        <div className="shrink-0">
+                            <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border-[6px] border-[#F2F2F2] overflow-hidden bg-gradient-to-br from-[#38BDF2] to-[#A5E1FF] shadow-2xl transition-transform hover:scale-105 duration-300">
                                 {organizer.profileImageUrl ? (
                                     <img src={organizerImage} alt={organizer.organizerName} className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-7xl font-black text-white flex h-full w-full items-center justify-center drop-shadow-2xl">{organizerInitial}</span>
+                                    <span className="text-6xl font-black text-white flex h-full w-full items-center justify-center drop-shadow-2xl">{organizerInitial}</span>
                                 )}
                             </div>
-                            {liveEvent && (
-                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border-2 border-[#F2F2F2] shadow-xl animate-pulse">
-                                    Live Now
+                        </div>
+ 
+                        {/* Name and Stats - Pushed below the cover line visually */}
+                        <div className="flex-1 pb-2 md:pt-24">
+                            <h1 className="text-3xl md:text-5xl font-black text-[#2E2E2F] tracking-tighter leading-[1.1] mb-4 drop-shadow-sm">
+                                {organizer.organizerName}
+                            </h1>
+                            <div className="flex flex-wrap items-center gap-4 text-[#65676B] font-bold text-sm">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[#050505] font-black">{formatCompactCount(organizer.followersCount)}</span>
+                                    <span>Active Followers</span>
                                 </div>
-                            )}
+                                <div className="w-1 h-1 bg-[#65676B]/40 rounded-full hidden sm:block" />
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[#050505] font-black">{organizer.eventsHostedCount || 0}</span>
+                                    <span>Events Hosted</span>
+                                </div>
+                                {organizer.isVerified && (
+                                    <div className="flex items-center gap-1.5 text-[#38BDF2] bg-[#38BDF2]/10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                        <ICONS.CheckCircle className="w-3.5 h-3.5" />
+                                        Verified Community
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        {/* Name, Stats and Actions - Aligned better */}
-                        <div className="flex-1 flex flex-col lg:flex-row lg:items-end justify-between pt-4 lg:pt-6 gap-6">
-                            <div className="space-y-3">
-                                <h1 className="text-3xl sm:text-4xl lg:text-[3.5rem] font-black text-[#2E2E2F] tracking-tight leading-[1.1]">
-                                    {organizer.organizerName}
-                                </h1>
-                                <div className="flex flex-wrap items-center gap-4 text-[#2E2E2F]/50 font-black text-[10px] uppercase tracking-[0.2em]">
-                                    <div className="flex items-center gap-2 bg-[#2E2E2F]/5 px-3 py-1.5 rounded-xl">
-                                        <ICONS.Users className="w-3.5 h-3.5" />
-                                        <span>{formatCompactCount(organizer.followersCount)} followers</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 bg-[#2E2E2F]/5 px-3 py-1.5 rounded-xl">
-                                        <ICONS.Calendar className="w-3.5 h-3.5" />
-                                        <span>{organizer.eventsHostedCount || 0} events hosted</span>
-                                    </div>
-                                    {organizer.websiteUrl && (
-                                        <div className="flex items-center gap-2 bg-[#2E2E2F]/5 px-3 py-1.5 rounded-xl">
-                                            <ICONS.Globe className="w-3.5 h-3.5" />
-                                            <a href={organizer.websiteUrl} target="_blank" rel="noopener noreferrer" className="hover:text-[#38BDF2] transition-colors">Website</a>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Social Connectivity */}
-                                <div className="flex items-center gap-3 pt-4">
-                                    {organizer.facebookId && (
-                                        <a href={`https://facebook.com/${organizer.facebookId}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all hover:opacity-80 shadow-sm" style={{ backgroundColor: brandColor }}>
-                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
-                                        </a>
-                                    )}
-                                    {organizer.twitterHandle && (
-                                        <a href={`https://twitter.com/${organizer.twitterHandle}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all hover:opacity-80 shadow-sm" style={{ backgroundColor: brandColor }}>
-                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                                        </a>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* CTAs */}
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-3 pb-2">
+                            <button
+                                onClick={handleFollow}
+                                className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all shadow-md ${following
+                                    ? 'bg-[#E4E6EB] text-[#050505]'
+                                    : 'bg-[#38BDF2] text-white hover:brightness-110 active:scale-95'
+                                    }`}
+                            >
+                                {following ? <ICONS.CheckCircle className="w-4 h-4" /> : <ICONS.Plus className="w-4 h-4 stroke-[3px]" />}
+                                {following ? 'Following' : 'Follow'}
+                            </button>
+                            {organizer.websiteUrl && (
                                 <button
-                                    onClick={handleFollow}
-                                    className={`w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 shadow-md ${following
-                                        ? 'bg-[#2E2E2F] !text-white opacity-40 cursor-default border-none shadow-none'
-                                        : '!text-white hover:opacity-90 border-none hover:shadow-lg'
-                                        }`}
-                                    style={!following ? { backgroundColor: brandColor } : {}}
+                                    onClick={() => window.open(organizer.websiteUrl, '_blank')}
+                                    className="p-3 bg-[#E4E6EB] text-[#050505] rounded-xl hover:bg-[#D8DADF] transition-all shadow-sm active:scale-95"
                                 >
-                                    {following ? <ICONS.CheckCircle className="w-4 h-4" /> : <ICONS.Users className="w-4 h-4" />}
-                                    {following ? 'Following' : 'Follow Organizer'}
+                                    <ICONS.Globe className="w-5 h-5" />
                                 </button>
-                                <button
-                                    onClick={() => {
-                                        if (organizer.websiteUrl) window.open(organizer.websiteUrl, '_blank');
-                                        else setInteractionNotice('No contact method specified.');
-                                    }}
-                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-md active:scale-95 text-white hover:opacity-90"
-                                    style={{ backgroundColor: brandColor }}
-                                >
-                                    <ICONS.Mail className="w-4 h-4" />
-                                    Contact
-                                </button>
-                            </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Navigation Bar */}
-                    <div className="flex items-center gap-8 border-t border-[#2E2E2F]/5">
-                        <button
-                            onClick={() => setActiveTab('upcoming')}
-                            className="relative pt-6 pb-4 px-2 group"
-                        >
-                            <span className={`font-black text-[10px] uppercase tracking-[0.3em] transition-colors ${activeTab === 'upcoming' ? 'text-[#38BDF2]' : 'text-[#2E2E2F]/40'}`}>Upcoming Events</span>
-                            {activeTab === 'upcoming' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#38BDF2] rounded-full" />}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('past')}
-                            className="relative pt-6 pb-4 px-2 group"
-                        >
-                            <span className={`font-black text-[10px] uppercase tracking-[0.3em] transition-colors ${activeTab === 'past' ? 'text-[#38BDF2]' : 'text-[#2E2E2F]/40'}`}>Past Events</span>
-                            {activeTab === 'past' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#38BDF2] rounded-full" />}
-                        </button>
+                    {/* Bio Section - Directly under name/profile */}
+                    <div className="mt-8 mb-6 max-w-[800px]">
+                        <p className="text-[15px] text-[#050505] leading-relaxed whitespace-pre-wrap font-medium">
+                            {organizer.bio || 'Welcome to our official community page. Stay tuned for upcoming premium event sessions and updates.'}
+                        </p>
+                    </div>
+
+                    {/* Tabs / Navigation */}
+                    <div className="flex items-center gap-2 border-t border-[#CED0D4] mt-8">
+                        {[
+                            { id: 'upcoming', label: 'Upcoming Events', count: upcomingEvents.length },
+                            { id: 'past', label: 'Past Events', count: pastEvents.length },
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`px-5 py-4 text-sm font-black transition-all relative group flex items-center gap-2 ${activeTab === tab.id ? 'text-[#38BDF2]' : 'text-[#65676B] hover:bg-[#E4E6EB]'}`}
+                            >
+                                {tab.label}
+                                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md ${activeTab === tab.id ? 'bg-[#38BDF2]/10' : 'bg-[#65676B]/10'}`}>{tab.count}</span>
+                                {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 rounded-full bg-[#38BDF2]" />}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-[1250px] mx-auto mt-8 px-4 pb-24 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4 lg:gap-8">
-                {/* Main Content Area - Left */}
-                <div className="space-y-8">
-                    {interactionNotice && (
-                        <Card className="bg-[#38BDF2]/10 border border-[#38BDF2]/30 rounded-xl p-5 text-xs font-black uppercase tracking-widest text-[#38BDF2] animate-in fade-in slide-in-from-top-2">
-                            {interactionNotice}
-                        </Card>
-                    )}
-
-                    <div className="bg-[#F2F2F2] p-8 rounded-xl shadow-sm border border-[#2E2E2F]/10 overflow-hidden">
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-2xl font-black text-[#2E2E2F] tracking-tight uppercase tracking-wider">
-                                {activeTab === 'upcoming' ? 'Upcoming & Live Events' : 'Past Events Archive'}
-                            </h2>
-                            <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${activeTab === 'upcoming' ? 'bg-[#38BDF2] animate-pulse' : 'bg-[#2E2E2F]/30'}`} />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2E2E2F]/40">{displayEvents.length} Results</span>
-                            </div>
-                        </div>
-
-                        {displayEvents.length > 0 ? (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {displayEvents.map(event => (
-                                    <EventMiniCard key={event.eventId} event={event} brandColor={brandColor} isPast={activeTab === 'past'} />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="py-20 text-center bg-[#F2F2F2]/50 rounded-xl border-2 border-dashed border-[#2E2E2F]/10">
-                                <ICONS.Calendar className="w-12 h-12 text-[#2E2E2F]/10 mx-auto mb-4" />
-                                <p className="text-[#2E2E2F]/40 font-black uppercase tracking-widest text-sm">
-                                    {activeTab === 'upcoming' ? 'No upcoming events scheduled yet.' : 'No past events found.'}
-                                </p>
-                            </div>
-                        )}
+            {/* Content Area */}
+            <div className="max-w-[1200px] mx-auto px-5 sm:px-10 py-10">
+                {interactionNotice && (
+                    <div className="mb-8 p-4 rounded-xl bg-[#38BDF2]/10 border border-[#38BDF2]/30 text-[#38BDF2] text-xs font-black uppercase tracking-widest shadow-sm animate-in fade-in slide-in-from-top-2 flex items-center gap-3">
+                        <ICONS.Info className="w-5 h-5 shrink-0" />
+                        <span>{interactionNotice}</span>
                     </div>
-                </div>
+                )}
 
-                {/* Sidebar - Right */}
-                <div className="space-y-8">
-                    <Card className="p-8 rounded-xl bg-[#F2F2F2] border border-[#2E2E2F]/10 shadow-sm">
-                        <h2 className="text-xl font-black text-[#2E2E2F] mb-6 tracking-tight uppercase tracking-widest text-xs opacity-50">About Organizer</h2>
-                        {organizer.bio ? (
-                            <div className="space-y-8">
-                                <p className="text-[#2E2E2F]/80 text-sm leading-relaxed whitespace-pre-wrap font-medium">
-                                    {organizer.bio}
-                                </p>
-                                <div className="space-y-5 pt-6 border-t border-[#2E2E2F]/5">
-                                    {organizer.websiteUrl && (
-                                        <div className="flex items-center gap-4 text-[#2E2E2F]">
-                                            <div className="w-10 h-10 rounded-xl bg-[#F2F2F2] flex items-center justify-center text-[#2E2E2F]/60">
-                                                <ICONS.Globe className="w-5 h-5" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[9px] font-black text-[#2E2E2F]/40 uppercase tracking-widest">Official Website</span>
-                                                <a href={organizer.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold hover:text-[#38BDF2] transition-colors">
-                                                    {new URL(organizer.websiteUrl).hostname}
-                                                </a>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <div className="flex items-center gap-4 text-[#2E2E2F]">
-                                        <div className="w-10 h-10 rounded-xl bg-[#F2F2F2] flex items-center justify-center text-[#2E2E2F]/60">
-                                            <ICONS.Users className="w-5 h-5" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-[#2E2E2F]/40 uppercase tracking-widest">Community</span>
-                                            <p className="text-sm font-bold">{formatCompactCount(organizer.followersCount)} Active Followers</p>
-                                        </div>
-                                    </div>
-                                    {organizer.brandColor && (
-                                        <div className="flex items-center gap-4 text-[#2E2E2F]">
-                                            <div className="w-10 h-10 rounded-xl bg-[#F2F2F2] flex items-center justify-center text-[#2E2E2F]/60">
-                                                <div className="w-5 h-5 rounded-full border border-[#2E2E2F]/10 shadow-sm" style={{ backgroundColor: organizer.brandColor }} />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[9px] font-black text-[#2E2E2F]/40 uppercase tracking-widest">Brand System</span>
-                                                <p className="text-sm font-bold">Verified Identity Active</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                <div className="space-y-10">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-black text-[#050505] tracking-tight uppercase tracking-wider">
+                            {activeTab === 'upcoming' ? 'Event Marketplace' : 'Activity Archive'}
+                        </h2>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#65676B]">{displayEvents.length} Items Found</span>
+                    </div>
+
+                    {displayEvents.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {displayEvents.map(event => (
+                                <EventMiniCard key={event.eventId} event={event} brandColor={brandColor} isPast={activeTab === 'past'} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="py-24 text-center rounded-3xl border-4 border-dashed border-[#CED0D4] bg-[#F2F2F2]/50">
+                            <div className="w-20 h-20 bg-[#E4E6EB] rounded-full flex items-center justify-center mx-auto mb-6">
+                                <ICONS.Calendar className="w-10 h-10 text-[#65676B]/20" />
                             </div>
-                        ) : (
-                            <div className="py-10 text-center rounded-xl bg-[#F2F2F2]/30 border border-dashed border-[#2E2E2F]/10">
-                                <p className="text-[#2E2E2F]/30 text-[10px] font-black uppercase tracking-widest">No detailed bio provided</p>
-                            </div>
-                        )}
-                    </Card>
+                            <h3 className="text-xl font-black text-[#050505] tracking-tighter uppercase mb-2">No results yet</h3>
+                            <p className="text-[#65676B] font-bold text-sm max-w-[300px] mx-auto leading-relaxed">
+                                {activeTab === 'upcoming' ? "This community hasn't scheduled any upcoming events for the near future." : "No past sessions found in the archive for this organization."}
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -442,71 +361,46 @@ const EventMiniCard: React.FC<{ event: Event; brandColor: string; isPast?: boole
 
     return (
         <Card
-            className="group overflow-hidden border border-[#2E2E2F]/10 rounded-xl bg-[#F2F2F2] transition-all cursor-pointer shadow-sm hover:shadow-xl hover:scale-[1.01]"
-            style={{ borderColor: brandColor ? `${brandColor}40` : '#2E2E2F1A' }}
+            className="group overflow-hidden border border-[#CED0D4] rounded-2xl bg-[#F2F2F2] transition-all cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1"
             onClick={() => navigate(`/events/${event.slug}`)}
         >
-            <div className="relative h-48">
+            <div className="relative h-52">
                 <img
                     src={getImageUrl(event.imageUrl)}
                     alt={event.eventName}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
 
-                {/* Status Badge */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
-                    {isPast ? (
-                        <div className="rounded-full px-2.5 py-1 bg-[#2E2E2F]/60 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-[0.15em] shadow-lg">
-                            PAST EVENT
-                        </div>
-                    ) : (
-                        <div className="rounded-full px-2.5 py-1 bg-[#38BDF2] text-white text-[9px] font-black uppercase tracking-[0.15em] shadow-lg">
-                            UPCOMING
-                        </div>
-                    )}
+                <div className="absolute top-4 left-4 z-10">
+                    <div className={`rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md ${isPast ? 'bg-black/40 text-white' : 'bg-[#38BDF2] text-white'}`}>
+                        {isPast ? 'Past Event' : 'Upcoming'}
+                    </div>
                 </div>
 
-                {/* Promoted Badge - Upper Left (Offset if status badge exists) */}
-                {(event.is_promoted || (event as any).isPromoted) && (
-                    <div className="absolute top-12 left-4 z-10 group/promoted">
-                        <div
-                            className="flex items-center gap-1.5 px-3 py-1 rounded-full shadow-lg border border-white/20 animate-in fade-in zoom-in duration-500 cursor-help"
-                            style={{
-                                background: brandColor
-                                    ? `linear-gradient(135deg, ${brandColor}, ${brandColor}DD)`
-                                    : 'linear-gradient(135deg, #38BDF2, #00AEEF)',
-                                boxShadow: `0 0 15px ${brandColor ? brandColor + '66' : 'rgba(56,189,242,0.4)'}`
-                            }}
-                        >
-                            <ICONS.Info className="w-3.5 h-3.5 text-white" strokeWidth={3} />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-white drop-shadow-sm">Promoted</span>
-                        </div>
-                        <div className="absolute left-0 top-full mt-2 w-48 p-3 bg-[#2E2E2F] text-white text-[9px] font-bold rounded-xl shadow-2xl opacity-0 translate-y-1 pointer-events-none group-hover/promoted:opacity-100 group-hover/promoted:translate-y-0 transition-all z-50 leading-relaxed">
-                            The organizer has highlighted this event as part of their elite plan features.
-                            <div className="absolute bottom-full left-4 border-8 border-transparent border-b-[#2E2E2F]"></div>
-                        </div>
-                    </div>
-                )}
                 <button
                     onClick={handleLike}
-                    className={`absolute top-4 right-4 w-11 h-11 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all ${liked ? 'text-white' : 'bg-white/90 text-[#2E2E2F] border border-[#2E2E2F]/10'}`}
-                    style={liked ? { backgroundColor: brandColor } : {}}
-                    aria-label={liked ? 'Unlike event' : 'Like event'}
+                    className={`absolute top-4 right-4 w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-md active:scale-90 ${liked ? 'bg-[#38BDF2] text-white' : 'bg-white/90 text-[#050505] border border-black/5'}`}
                 >
-                    <ICONS.Heart className="w-4 h-4" />
+                    <ICONS.Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
                 </button>
             </div>
-            <div className="p-6">
-                <h3 className="text-lg font-bold text-[#2E2E2F] mb-1 line-clamp-1">{event.eventName}</h3>
-                <p className="text-[10px] text-[#2E2E2F]/60 font-semibold mb-4">
-                    {formatDate(event.startAt, event.timezone, { day: 'numeric', month: 'short', year: 'numeric' })} · {formatTime(event.startAt, event.timezone)}
-                </p>
-                <div className="flex items-center justify-between mt-auto">
-                    <span className="text-[9px] font-black text-[#2E2E2F]/40 uppercase tracking-widest truncate max-w-[150px]">{event.locationText}</span>
-                    <span className="font-black text-[10px] uppercase tracking-widest group-hover:underline" style={{ color: brandColor }}>View Details</span>
+            
+            <div className="p-6 space-y-4">
+                <div>
+                    <h3 className="text-xl font-bold text-[#050505] line-clamp-1 group-hover:text-[#38BDF2] transition-colors">{event.eventName}</h3>
+                    <p className="text-[11px] font-black text-[#65676B] uppercase tracking-wider mt-1">
+                        {formatDate(event.startAt, event.timezone, { day: 'numeric', month: 'short', year: 'numeric' })} · {formatTime(event.startAt, event.timezone)}
+                    </p>
+                </div>
+                
+                <div className="flex items-center justify-between pt-2 border-t border-[#CED0D4]/50">
+                    <div className="flex items-center gap-1.5 text-[#65676B]">
+                        <ICONS.MapPin className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-black uppercase tracking-widest truncate max-w-[120px]">{event.locationText}</span>
+                    </div>
+                    <span className="text-[11px] font-black uppercase text-[#38BDF2] tracking-widest group-hover:mr-2 transition-all">View Detail</span>
                 </div>
             </div>
         </Card>
     );
 };
-

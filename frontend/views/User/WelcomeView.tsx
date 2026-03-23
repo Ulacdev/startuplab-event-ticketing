@@ -1,7 +1,8 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Button, Card, PageLoader } from '../../components/Shared';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { PageLoader } from '../../components/Shared';
 import { useUser } from '../../context/UserContext';
+import { useEngagement } from '../../context/EngagementContext';
 import { OrganizerProfile, UserRole } from '../../types';
 
 const LazyOrganizerSettings = React.lazy(async () => {
@@ -30,12 +31,8 @@ const WelcomeView: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { role, email, name, imageUrl, isAuthenticated, isOnboarded, setUser } = useUser();
+  const { setPublicMode } = useEngagement();
   const [isProfileStep, setIsProfileStep] = React.useState(false);
-
-  const isGuestFromSignup = React.useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    return params.get('newAccount') === '1';
-  }, [location.search]);
 
   React.useEffect(() => {
     if (!isAuthenticated || !role) return;
@@ -62,7 +59,7 @@ const WelcomeView: React.FC = () => {
 
   if (isAuthenticated && role === UserRole.ORGANIZER && isProfileStep) {
     return (
-      <div className="min-h-screen bg-[#F2F2F2] px-4 py-6 sm:px-6 sm:py-8">
+      <div className="h-screen bg-[#F2F2F2] px-4 py-6 sm:px-6 sm:py-8 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
           <div className="mb-4">
             <button
@@ -84,64 +81,65 @@ const WelcomeView: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F2F2F2] px-4 py-8 lg:px-6 lg:py-12">
-      <div className="max-w-3xl mx-auto">
-        <Card className="border border-[#2E2E2F]/10 rounded-xl p-6 lg:p-10">
-          <img
-            src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
-            alt="StartupLab"
-            className="h-10 lg:h-12 w-auto mb-8"
-          />
-          <p className="text-[10px] lg:text-[11px] font-black uppercase tracking-[0.2em] text-[#38BDF2] mb-4">
-            Welcome
-          </p>
-          <h1 className="text-3xl lg:text-4xl font-black tracking-tight text-[#2E2E2F] leading-tight mb-4">
-            Fast setup for your organizer workspace
+    <div className="fixed inset-0 bg-[#F2F2F2] flex flex-col font-sans selection:bg-[#38BDF2]/20 overflow-hidden">
+      {/* Top Left Logo */}
+      <div className="absolute top-0 left-8 z-20">
+        <img
+          src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
+          alt="StartupLab"
+          className="h-16 lg:h-20 w-auto"
+        />
+      </div>
+
+      {/* Main Content Split - Centered horizontally and vertically */}
+      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 px-10 lg:px-24">
+        {/* Left Side: Content */}
+        <div className="w-full lg:w-[480px] flex flex-col text-left mb-8 lg:mb-0">
+          <h1 className="text-[42px] lg:text-[50px] font-black tracking-tight text-[#2E2E2F] leading-[1.05] mb-4">
+            Welcome to <span className="text-[#38BDF2]">Startup</span>Lab!
           </h1>
-          <p className="text-sm lg:text-base font-medium leading-relaxed text-[#2E2E2F]/70 mb-8">
-            {isGuestFromSignup
-              ? 'Your account was created. Check your email for verification, then sign in to continue your organizer setup.'
-              : 'Complete your organizer profile to publish events, manage attendees, and unlock your event dashboard.'}
+          
+          <p className="text-[20px] lg:text-[24px] font-bold text-[#2E2E2F] leading-tight mb-10 max-w-[400px]">
+            Thanks for being here. What can we help you with first?
           </p>
 
-          {isAuthenticated && role === UserRole.ORGANIZER ? (
-            <div className="flex flex-col lg:flex-row gap-3">
-              <Button
-                onClick={() => setIsProfileStep(true)}
-                className="w-full lg:w-auto px-7 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest"
-              >
-                Open Organizer Profile Setup
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/user-home')}
-                className="w-full lg:w-auto px-7 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest border-[#2E2E2F]/15"
-              >
-                Continue to Dashboard
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col lg:flex-row gap-3">
-              <Link to="/login" className="w-full lg:w-auto">
-                <Button className="w-full lg:w-auto px-7 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest">
-                  Sign In to Continue
-                </Button>
-              </Link>
-              <Link to="/" className="w-full lg:w-auto">
-                <Button
-                  variant="outline"
-                  className="w-full lg:w-auto px-7 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest border-[#2E2E2F]/15"
-                >
-                  Back to Events
-                </Button>
-              </Link>
-            </div>
-          )}
-        </Card>
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Primary Action (matching Get Started style) */}
+            <button 
+              onClick={() => setIsProfileStep(true)}
+              className="px-6 h-[52px] rounded-[12px] bg-[#38BDF2] border-2 border-[#38BDF2] hover:bg-[#2E2E2F] hover:border-[#2E2E2F] text-white text-[14px] font-bold tracking-wide transition-all shadow-[0_4px_20px_rgba(56,189,242,0.2)] active:scale-95 flex items-center justify-center whitespace-nowrap"
+            >
+              Complete Organization Profile
+            </button>
+            
+            {/* Secondary Action (Pricing style) */}
+            <button 
+              onClick={() => {
+                setPublicMode('attending');
+                navigate('/browse-events');
+              }}
+              className="px-6 h-[52px] !bg-transparent !border-2 !border-solid !border-[#38BDF2] !text-[#38BDF2] hover:!bg-[#38BDF2] hover:!text-white rounded-[12px] text-[14px] font-bold tracking-wide transition-all active:scale-95 flex items-center justify-center whitespace-nowrap"
+            >
+              Browse Events
+            </button>
+          </div>
+        </div>
+
+        {/* Right Side: Hero Image - Respecting max height to prevent scroll */}
+        <div className="w-full max-w-[400px] lg:max-w-none lg:w-[480px] xl:w-[540px] aspect-square relative group">
+          <div className="absolute -inset-4 bg-[#38BDF2]/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+          <div className="relative w-full h-full rounded-[12px] overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] bg-white/40 border border-[#2E2E2F]/5">
+            <div className="absolute inset-0 bg-black/5"></div>
+            <img
+              src="/welcome-hero.png"
+              alt="Welcome Hero"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-in-out"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
 export default WelcomeView;
-

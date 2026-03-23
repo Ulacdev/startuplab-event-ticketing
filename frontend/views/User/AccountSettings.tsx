@@ -28,7 +28,7 @@ const XCircleIcon = (props: any) => (
 );
 
 export const AccountSettings: React.FC = () => {
-    const { name, email, imageUrl, setUser, role } = useUser();
+    const { userId, name, email, imageUrl, setUser, role } = useUser();
     const [formName, setFormName] = useState(name || '');
     const [previewUrl, setPreviewUrl] = useState<string | null>(imageUrl || null);
     const [saving, setSaving] = useState(false);
@@ -42,6 +42,19 @@ export const AccountSettings: React.FC = () => {
             return () => clearTimeout(t);
         }
     }, [notification]);
+
+    // 🔥 Auto-sync form state when context updates (e.g. after backend JIT sync)
+    useEffect(() => {
+        if (name && (!formName || formName === '')) {
+            setFormName(name);
+        }
+    }, [name]);
+
+    useEffect(() => {
+        if (imageUrl && !previewUrl) {
+            setPreviewUrl(imageUrl);
+        }
+    }, [imageUrl]);
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -61,7 +74,7 @@ export const AccountSettings: React.FC = () => {
             const data = await res.json();
             const newUrl = data.imageUrl || localUrl;
             setPreviewUrl(newUrl);
-            setUser({ role: role!, email: email!, name: formName || name, imageUrl: newUrl });
+            setUser({ userId: userId!, role: role!, email: email!, name: formName || name, imageUrl: newUrl });
             setNotification({ message: 'Profile photo updated!', type: 'success' });
         } catch {
             setNotification({ message: 'Failed to upload photo.', type: 'error' });
@@ -82,7 +95,7 @@ export const AccountSettings: React.FC = () => {
                 body: JSON.stringify({ name: trimmed }),
             });
             if (!res.ok) throw new Error('Save failed');
-            setUser({ role: role!, email: email!, name: trimmed, imageUrl: previewUrl });
+            setUser({ userId: userId!, role: role!, email: email!, name: trimmed, imageUrl: previewUrl });
             setNotification({ message: 'Name updated successfully!', type: 'success' });
         } catch {
             setNotification({ message: 'Failed to save name.', type: 'error' });

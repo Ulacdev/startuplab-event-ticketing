@@ -1,0 +1,14 @@
+--- Database Data Integrity Check ---
+Timestamp: 2026-03-23T04:10:41.755Z
+
+✅ [events] Verified. Records: 9
+✅ [ticketTypes] Verified. Records: 9
+✅ [promoted_events] Verified. Records: 1
+✅ [attendees] Verified. Records: 46
+✅ [users] Verified. Records: 8
+✅ [organizers] Verified. Records: 6
+✅ [planFeatures] Verified. Records: 30
+✅ [event_likes] Verified. Records: 0
+✅ [reviews] Verified. Records: 0
+✅ [event_analytics] Verified. Records: 0
+✅ [orders] Verified. Records: 53

@@ -66,9 +66,18 @@ export const apiService = {
     capacityPerTicket: t.capacity_per_ticket || t.capacityPerTicket || 1
   }),
   
-  // Wrapper for fetch with better error logging
+  // Wrapper for fetch with better error logging and automatic session injection
   _fetch: async (url: string, options: RequestInit = {}) => {
     try {
+      // 🔥 Automatically inject Supabase Session Token as Bearer header
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        options.headers = {
+          ...options.headers,
+          'Authorization': `Bearer ${session.access_token}`
+        };
+      }
+
       const res = await fetch(url, options);
       return res;
     } catch (err) {

@@ -50,6 +50,7 @@ export interface OrganizerProfile {
   brandColor?: string | null;
   isOnboarded: boolean;
   isVerified?: boolean;
+  recentFollowers?: { userId: string; name: string | null; imageUrl: string | null }[];
   created_at?: string;
   updated_at?: string;
 }

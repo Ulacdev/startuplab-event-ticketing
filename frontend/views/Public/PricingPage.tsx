@@ -54,7 +54,7 @@ export const PricingPage: React.FC = () => {
                 <div className="relative z-10 mx-auto flex h-full w-full max-w-6xl items-center px-5 sm:px-8">
                     <div className="max-w-[740px]">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90 mb-4">Pricing Plans</p>
-                        <h1 className="text-[2.1rem] font-black leading-none tracking-tight text-white sm:text-5xl">
+                        <h1 className="text-[1.8rem] font-black leading-none tracking-tight text-white sm:text-4xl">
                             Simple & Transparent Pricing
                         </h1>
                         <p className="mt-4 max-w-[700px] text-base leading-relaxed text-white/95 sm:text-[1.1rem]">
@@ -87,26 +87,6 @@ export const PricingPage: React.FC = () => {
                     />
                 )}
 
-                <section className="mt-24 text-center">
-                    <div className="max-w-3xl mx-auto">
-                        <h2 className="text-2xl font-black text-[#2E2E2F] tracking-tight mb-4">
-                            Need a tailored solution?
-                        </h2>
-                        <p className="text-[#2E2E2F]/60 mb-8 font-medium">
-                            We offer customized volume pricing for organizations processing more than 500 tickets per month.
-                            Our team is ready to help you optimize your event operations.
-                        </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Button variant="outline" className="w-full sm:w-auto px-8 border-[#2E2E2F] text-[#2E2E2F] hover:bg-[#2E2E2F] hover:text-[#F2F2F2]">
-                                Schedule a Demo
-                            </Button>
-                            <Button variant="ghost" className="w-full sm:w-auto flex items-center gap-2 group text-[#2E2E2F] hover:text-[#38BDF2] font-black uppercase tracking-widest text-[10px]">
-                                View detailed fee breakdown
-                                <ICONS.ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                            </Button>
-                        </div>
-                    </div>
-                </section>
             </div>
         </div>
     );

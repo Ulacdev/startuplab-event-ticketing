@@ -437,9 +437,9 @@ export const SettingsView: React.FC = () => {
               </div>
             </Card>
 
-            <Card className="p-10 border-[#2E2E2F]/10 rounded-xl bg-[#F2F2F2]">
+            <Card className="p-10 border-[#D1D5DB] rounded-xl bg-[#F2F2F2]">
               <div className="flex items-center gap-3 mb-10">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#38BDF2]/10 text-[#38BDF2] flex items-center justify-center">
                   <ICONS.Shield className="w-5 h-5" strokeWidth={2.5} />
                 </div>
                 <div>
@@ -449,23 +449,23 @@ export const SettingsView: React.FC = () => {
               </div>
 
               <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 rounded-xl bg-[#F2F2F2] border border-[#2E2E2F]/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 rounded-xl bg-[#F2F2F2] border border-[#D1D5DB]">
                   <div className="space-y-1">
                     <h4 className="text-xs font-bold text-[#2E2E2F]">Password Protection</h4>
                     <p className="text-[11px] text-[#2E2E2F]/50 font-medium tracking-tight">Generate a secure reset link</p>
                   </div>
                   <Button
                     variant="outline"
-                    className="rounded-xl px-5 py-2 text-[10px] font-black uppercase tracking-widest border-[#2E2E2F]/10"
+                    className="rounded-xl px-5 py-2 text-[10px] font-black uppercase tracking-widest border-[#D1D5DB]"
                     onClick={handleResetPassword}
                     disabled={passwordLoading}
                   >
                     {passwordLoading ? 'Sending link...' : 'Change Password'}
                   </Button>
                 </div>
-                <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl flex gap-3">
-                  <ICONS.Layout className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-orange-800 font-medium leading-relaxed">
+                <div className="p-4 bg-[#38BDF2]/5 border border-[#38BDF2]/20 rounded-xl flex gap-3">
+                  <ICONS.Bell className="w-4 h-4 text-[#38BDF2] shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-[#2E2E2F] font-medium leading-relaxed">
                     By clicking "Change Password", you will receive a reset link at <strong>{adminEmail}</strong>. This email is sent using your configured Admin SMTP settings.
                   </p>
                 </div>

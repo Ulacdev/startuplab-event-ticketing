@@ -34,7 +34,7 @@ export function isOrganizerTableMissingError(error) {
   return isMissingRelationError(error, 'organizers');
 }
 
-export function serializeOrganizerRecord(record, eventsHostedCount = 0) {
+export function serializeOrganizerRecord(record, eventsHostedCount = 0, recentFollowers = []) {
   if (!record) return null;
   return {
     ...record,
@@ -44,6 +44,7 @@ export function serializeOrganizerRecord(record, eventsHostedCount = 0) {
     eventsHostedCount: Number.isFinite(Number(eventsHostedCount))
       ? Number(eventsHostedCount)
       : 0,
+    recentFollowers: Array.isArray(recentFollowers) ? recentFollowers : [],
   };
 }
 

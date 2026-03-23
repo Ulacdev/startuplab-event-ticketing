@@ -262,8 +262,8 @@ export const getPromotedEvents = async (req, res) => {
 
     // Get organizer data for each event
     const eventsWithOrganizers = await Promise.all((events || []).map(async (event) => {
-      const eventWithData = { 
-        ...event, 
+      const eventWithData = {
+        ...event,
         ticketTypes: ttMap.get(event.eventId) || [],
         likesCount: likeCountsMap.get(event.eventId) || 0,
         registrationCount: regCountMap.get(event.eventId) || 0
@@ -274,7 +274,7 @@ export const getPromotedEvents = async (req, res) => {
           .select('organizerId, organizerName, profileImageUrl, bio, website, followersCount')
           .eq('organizerId', event.organizerId)
           .single();
-        
+
         if (!orgErr && organizer) {
           return { ...eventWithData, organizer };
         }

@@ -187,7 +187,57 @@ export const whoAmI = async (req, res) => {
     }
 
     if (error) return res.status(500).json({ error: error.message });
+    
+    // 🔥 Just-In-Time (JIT) User Creation for Social Logins
+    if (!data && req.user) {
+      console.log(`[whoAmI] JIT creation for user: ${req.user.email} (${req.user.id})`);
+      const authUser = req.user;
+      const metadata = authUser.user_metadata || {};
+      
+      const insertData = {
+        userId: authUser.id,
+        email: authUser.email.toLowerCase().trim(),
+        name: metadata.full_name || metadata.name || authUser.email.split('@')[0],
+        role: 'ORGANIZER', // DEFAULT role
+        imageUrl: metadata.avatar_url || metadata.picture || null,
+        canviewevents: false,
+        caneditevents: false,
+        canmanualcheckin: false,
+        canreceivenotifications: true
+      };
+
+      const { data: newData, error: insertError } = await db
+        .from('users')
+        .insert(insertData)
+        .select('*')
+        .maybeSingle();
+
+      if (insertError) {
+        console.error("[whoAmI] JIT creation failed:", insertError.message);
+        return res.status(500).json({ error: "Failed to initialize user profile" });
+      }
+      data = newData;
+      console.log(`[whoAmI] Successfully created JIT user record for ${data.email}`);
+    }
+
     if (!data) return res.status(404).json({ error: 'User not found' });
+
+    // Sync missing profile data for existing users (e.g. newly added SOCIAL LOGIN fields)
+    if (data && req.user) {
+      const metadata = req.user.user_metadata || {};
+      const updates = {};
+      const newName = metadata.full_name || metadata.name;
+      const newAvatar = metadata.avatar_url || metadata.picture;
+
+      if (!data.name && newName) updates.name = newName;
+      if (!data.imageUrl && newAvatar) updates.imageUrl = newAvatar;
+
+      if (Object.keys(updates).length > 0) {
+        console.log(`[whoAmI] Auto-syncing profile for ${data.email}: ${Object.keys(updates).join(', ')}`);
+        const { data: updated } = await db.from('users').update(updates).eq('userId', data.userId || data.id).select('*').maybeSingle();
+        if (updated) data = { ...data, ...updated };
+      }
+    }
 
     const role = normalizeRole(data.role || '');
     const defaultStaff = role === 'STAFF';
@@ -197,10 +247,17 @@ export const whoAmI = async (req, res) => {
     if (role === 'ORGANIZER') {
       const { data: orgData } = await db
         .from('organizers')
-        .select('isOnboarded')
+        .select('isOnboarded, organizerName')
         .eq('ownerUserId', data.userId || data.id)
         .maybeSingle();
       isOnboarded = !!orgData?.isOnboarded;
+      
+      // 🔥 Fallback: If user name is missing but organizer name exists, sync it
+      if (!data.name && orgData?.organizerName) {
+        console.log(`[whoAmI] Syncing blank user name from organizer name: ${orgData.organizerName}`);
+        data.name = orgData.organizerName;
+        await db.from('users').update({ name: data.name }).eq('userId', data.userId || data.id);
+      }
     }
 
     // Normalize response with permissive defaults for staff unless explicitly false
@@ -464,15 +521,29 @@ export const getRoleByEmail = async (req, res) => {
     if (!email) return res.status(400).json({ error: "Email is required" });
     const { data, error } = await db.from("users").select("role, userId").eq("email", email).maybeSingle();
     if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: "User not found" });
-    const role = normalizeRole(data.role);
+    let userRecord = data;
+
+    if (!userRecord && email) {
+      console.log(`[getRoleByEmail] Checking Supabase Auth for missing user: ${email}`);
+      const { data: { users }, error: authError } = await db.auth.admin.listUsers();
+      const authUser = users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+      
+      if (authUser) {
+        console.log(`[getRoleByEmail] Found user in Supabase Auth but not DB. returning default role.`);
+        return res.json({ role: 'ORGANIZER', isOnboarded: false });
+      }
+    }
+
+    if (!userRecord) return res.status(404).json({ error: "User not found" });
+
+    const role = normalizeRole(userRecord.role);
     let isOnboarded = false;
     
     if (role === 'ORGANIZER') {
       const { data: orgData } = await db
         .from('organizers')
         .select('isOnboarded')
-        .eq('ownerUserId', data.userId)
+        .eq('ownerUserId', userRecord.userId)
         .maybeSingle();
       isOnboarded = !!orgData?.isOnboarded;
     }

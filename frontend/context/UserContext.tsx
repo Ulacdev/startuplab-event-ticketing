@@ -2,6 +2,7 @@ import React from 'react';
 import { UserRole } from '../types';
 
 interface UserContextState {
+  userId: string | null;
   role: UserRole | null;
   email: string | null;
   name: string | null;
@@ -16,7 +17,7 @@ interface UserContextState {
 }
 
 interface UserContextValue extends UserContextState {
-  setUser: (payload: { role: UserRole; email: string; name?: string | null; imageUrl?: string | null; canViewEvents?: boolean; canEditEvents?: boolean; canManualCheckIn?: boolean; canReceiveNotifications?: boolean; isOnboarded?: boolean }) => void;
+  setUser: (payload: { userId: string; role: UserRole; email: string; name?: string | null; imageUrl?: string | null; canViewEvents?: boolean; canEditEvents?: boolean; canManualCheckIn?: boolean; canReceiveNotifications?: boolean; isOnboarded?: boolean }) => void;
   clearUser: () => void;
 }
 
@@ -24,6 +25,7 @@ const UserContext = React.createContext<UserContextValue | undefined>(undefined)
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = React.useState<UserContextState>({
+    userId: null,
     role: null,
     email: null,
     name: null,
@@ -37,39 +39,48 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isOnboarded: undefined,
   });
 
-  const setUser = React.useCallback((payload: { role: UserRole; email: string; name?: string | null; imageUrl?: string | null; canViewEvents?: boolean; canEditEvents?: boolean; canManualCheckIn?: boolean; canReceiveNotifications?: boolean; isOnboarded?: boolean }) => {
+  const setUser = React.useCallback((payload: { userId: string; role: UserRole; email: string; name?: string | null; imageUrl?: string | null; canViewEvents?: boolean; canEditEvents?: boolean; canManualCheckIn?: boolean; canReceiveNotifications?: boolean; isOnboarded?: boolean }) => {
     setState((prev) => {
-      const nextName = payload.name !== undefined ? payload.name : prev.name;
-      const nextImageUrl = payload.imageUrl !== undefined ? payload.imageUrl : prev.imageUrl;
-      const sameIdentity = prev.isAuthenticated && prev.role === payload.role && prev.email === payload.email;
-      const sameProfile = prev.name === nextName && prev.imageUrl === nextImageUrl;
-      const samePermissions =
-        prev.canViewEvents === payload.canViewEvents &&
-        prev.canEditEvents === payload.canEditEvents &&
-        prev.canManualCheckIn === payload.canManualCheckIn &&
-        prev.canReceiveNotifications === payload.canReceiveNotifications &&
-        prev.isOnboarded === payload.isOnboarded;
-      if (sameIdentity && samePermissions && sameProfile && prev.hasResolvedSession) return prev;
-      return {
+      const next: UserContextState = {
+        userId: payload.userId,
         role: payload.role,
         email: payload.email,
-        name: nextName ?? null,
-        imageUrl: nextImageUrl ?? null,
+        name: payload.name !== undefined ? payload.name : prev.name,
+        imageUrl: payload.imageUrl !== undefined ? payload.imageUrl : prev.imageUrl,
         isAuthenticated: true,
         hasResolvedSession: true,
-        canViewEvents: payload.canViewEvents,
-        canEditEvents: payload.canEditEvents,
-        canManualCheckIn: payload.canManualCheckIn,
-        canReceiveNotifications: payload.canReceiveNotifications,
-        isOnboarded: payload.isOnboarded,
+        canViewEvents: payload.canViewEvents !== undefined ? payload.canViewEvents : prev.canViewEvents,
+        canEditEvents: payload.canEditEvents !== undefined ? payload.canEditEvents : prev.canEditEvents,
+        canManualCheckIn: payload.canManualCheckIn !== undefined ? payload.canManualCheckIn : prev.canManualCheckIn,
+        canReceiveNotifications: payload.canReceiveNotifications !== undefined ? payload.canReceiveNotifications : prev.canReceiveNotifications,
+        isOnboarded: payload.isOnboarded !== undefined ? payload.isOnboarded : prev.isOnboarded,
       };
+
+      if (
+        prev.userId === next.userId &&
+        prev.role === next.role &&
+        prev.email === next.email &&
+        prev.name === next.name &&
+        prev.imageUrl === next.imageUrl &&
+        prev.isOnboarded === next.isOnboarded &&
+        prev.isAuthenticated === next.isAuthenticated &&
+        prev.hasResolvedSession === next.hasResolvedSession &&
+        prev.canViewEvents === next.canViewEvents &&
+        prev.canEditEvents === next.canEditEvents &&
+        prev.canManualCheckIn === next.canManualCheckIn &&
+        prev.canReceiveNotifications === next.canReceiveNotifications
+      ) {
+        return prev;
+      }
+      return next;
     });
   }, []);
 
   const clearUser = React.useCallback(() => {
     setState((prev) => {
-      if (!prev.isAuthenticated && !prev.role && !prev.email && !prev.name && !prev.imageUrl && prev.hasResolvedSession) return prev;
+      if (!prev.isAuthenticated && !prev.role && !prev.email && !prev.name && !prev.imageUrl && !prev.userId && prev.hasResolvedSession) return prev;
       return {
+        userId: null,
         role: null,
         email: null,
         name: null,

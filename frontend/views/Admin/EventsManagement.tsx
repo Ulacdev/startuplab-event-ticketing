@@ -414,9 +414,9 @@ export const EventsManagement: React.FC = () => {
                     <div className="text-[14px] font-semibold text-[#2E2E2F] tracking-tight">
                       {new Date(event.startAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </div>
-                    <div className="text-[12px] text-[#2E2E2F]/60 font-medium mt-1.5 flex items-center gap-2">
-                      <ICONS.MapPin className="w-3 h-3 text-[#2E2E2F]/50" />
+                    <div className="text-[12px] text-[#2E2E2F]/60 font-medium mt-1.5 flex items-center justify-between gap-2">
                       <span className="truncate max-w-[200px]">{event.locationText}</span>
+                      <ICONS.MapPin className="w-3.5 h-3.5 text-[#2E2E2F]/30" strokeWidth={2.5} />
                     </div>
                   </td>
                   <td className="px-8 py-7">

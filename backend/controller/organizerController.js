@@ -213,9 +213,26 @@ export const upsertOrganizer = async (req, res) => {
         .select('*')
         .single();
 
-      if (error) return res.status(500).json({ error: error.message });
-
-      const counts = await getEventsHostedCounts([data.organizerId]);
+      if (data.organizerId) {
+        // Sync to users table if name/image is missing or we just onboarded
+        // Safe check for userId vs id column in users table
+        let userSelect = await supabase.from('users').select('name, imageUrl').eq('userId', ownerUserId).maybeSingle();
+        if (userSelect.error && userSelect.error.message?.includes('userId')) {
+          userSelect = await supabase.from('users').select('name, imageUrl').eq('id', ownerUserId).maybeSingle();
+        }
+        
+        const userData = userSelect.data;
+        const updates = {};
+        if (data.organizerName && (!userData?.name || payload.isOnboarded)) updates.name = data.organizerName;
+        if (data.profileImageUrl && (!userData?.imageUrl || payload.isOnboarded)) updates.imageUrl = data.profileImageUrl;
+        
+        if (Object.keys(updates).length > 0) {
+          let userUpdate = await supabase.from('users').update(updates).eq('userId', ownerUserId);
+          if (userUpdate.error && userUpdate.error.message?.includes('userId')) {
+            await supabase.from('users').update(updates).eq('id', ownerUserId);
+          }
+        }
+      }
 
       await logAudit({
         actionType: 'ORGANIZER_UPDATED',
@@ -237,6 +254,14 @@ export const upsertOrganizer = async (req, res) => {
       .single();
 
     if (error) return res.status(500).json({ error: error.message });
+
+    // Sync to users table for new organizers too
+    if (data.organizerName || data.profileImageUrl) {
+      const updates = {};
+      if (data.organizerName) updates.name = data.organizerName;
+      if (data.profileImageUrl) updates.imageUrl = data.profileImageUrl;
+      await supabase.from('users').update(updates).eq('userId', ownerUserId);
+    }
     const counts = await getEventsHostedCounts([data.organizerId]);
 
     await logAudit({
@@ -561,31 +586,28 @@ export const followOrganizer = async (req, res) => {
           const actorName = buildDisplayName(actor);
           const organizerLabel = organizer.organizerName || 'your organization';
 
-          // 1. Notify Organizer (If opted-in)
-          if (organizer?.emailOptIn) {
-            console.log(`📡 [Follow] Sending notification to Organizer: ${organizer.ownerUserId}`);
-            const message = `${actorName} followed your organization "${organizerLabel}".`;
-            await notifyTeamByPreference({
-              recipientUserId: organizer.ownerUserId,
-              actorUserId: followerUserId,
-              organizerId: organizer.organizerId,
-              type: 'ORGANIZER_FOLLOWED',
-              title: 'Your organization has a new follower',
-              message,
-              metadata: {
-                organizerName: organizerLabel,
-                actorName,
-                actorEmail: actor?.email || followerEmail || null,
-                actionLabel: 'VIEW ORGANIZATION',
-                actionUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL.replace(/\/$/, '')}/organizer/${organizer.organizerId}` : null,
-                eventName: organizerLabel,
-              },
-              emailSubject: 'Your organization has a new follower',
-              emailText: message,
-            });
-          } else {
-            console.log(`👤 [Follow] Organizer ${organizer.organizerId} has emailOptIn DISABLED. Skipping organizer email.`);
-          }
+          // 1. Notify Organizer
+          console.log(`📡 [Follow] Sending notification to Organizer: ${organizer.ownerUserId}`);
+          const message = `${actorName} followed your organization "${organizerLabel}".`;
+          await notifyTeamByPreference({
+            recipientUserId: organizer.ownerUserId,
+            actorUserId: followerUserId,
+            organizerId: organizer.organizerId,
+            type: 'ORGANIZER_FOLLOWED',
+            title: 'Your organization has a new follower',
+            message,
+            metadata: {
+              organizerName: organizerLabel,
+              actorName,
+              actorEmail: actor?.email || followerEmail || null,
+              actionLabel: 'VIEW ORGANIZATION',
+              actionUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL.replace(/\/$/, '')}/organizer/${organizer.organizerId}` : null,
+              eventName: organizerLabel,
+            },
+            emailSubject: 'Your organization has a new follower',
+            emailText: message,
+            emailEnabledOverride: !!organizer?.emailOptIn,
+          });
 
           // 2. Notify Follower (Attendee - Confirmation Email)
           const welcomeMessage = `Thanks for following ${organizerLabel}! You'll stay updated on their latest events.`;
@@ -634,31 +656,28 @@ export const followOrganizer = async (req, res) => {
         const actorName = buildDisplayName(actor);
         const organizerLabel = organizer.organizerName || 'your organization';
 
-        // 1. Notify Organizer (If opted-in)
-        if (organizer?.emailOptIn) {
-          console.log(`📡 [Follow] Sending notification to Organizer: ${organizer.ownerUserId}`);
-          const message = `${actorName} followed your organization "${organizerLabel}".`;
-          await notifyTeamByPreference({
-            recipientUserId: organizer.ownerUserId,
-            actorUserId: followerUserId,
-            organizerId: organizer.organizerId,
-            type: 'ORGANIZER_FOLLOWED',
-            title: 'Your organization has a new follower',
-            message,
-            metadata: {
-              organizerName: organizerLabel,
-              actorName,
-              actorEmail: actor?.email || followerEmail || null,
-              actionLabel: 'VIEW ORGANIZATION',
-              actionUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL.replace(/\/$/, '')}/organizer/${organizer.organizerId}` : null,
-              eventName: organizerLabel,
-            },
-            emailSubject: 'Your organization has a new follower',
-            emailText: message,
-          });
-        } else {
-          console.log(`👤 [Follow] Organizer ${organizer.organizerId} has emailOptIn DISABLED. Skipping organizer email.`);
-        }
+        // 1. Notify Organizer
+        console.log(`📡 [Follow] Sending notification to Organizer: ${organizer.ownerUserId}`);
+        const message = `${actorName} followed your organization "${organizerLabel}".`;
+        await notifyTeamByPreference({
+          recipientUserId: organizer.ownerUserId,
+          actorUserId: followerUserId,
+          organizerId: organizer.organizerId,
+          type: 'ORGANIZER_FOLLOWED',
+          title: 'Your organization has a new follower',
+          message,
+          metadata: {
+            organizerName: organizerLabel,
+            actorName,
+            actorEmail: actor?.email || followerEmail || null,
+            actionLabel: 'VIEW ORGANIZATION',
+            actionUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL.replace(/\/$/, '')}/organizer/${organizer.organizerId}` : null,
+            eventName: organizerLabel,
+          },
+          emailSubject: 'Your organization has a new follower',
+          emailText: message,
+          emailEnabledOverride: !!organizer?.emailOptIn,
+        });
 
         // 2. Notify Follower (Attendee - Confirmation Email)
         const welcomeMessage = `Thanks for following ${organizerLabel}! You'll stay updated on their latest events.`;
@@ -760,7 +779,10 @@ export const getAllOrganizers = async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     const organizerIds = (organizers || []).map(o => o.organizerId);
-    const counts = await getEventsHostedCounts(organizerIds);
+    const [counts, followerProfilesMap] = await Promise.all([
+      getEventsHostedCounts(organizerIds),
+      getFollowerProfiles(organizerIds)
+    ]);
 
     // If joins were missing or failed, fetch plans separately for all
     const planIds = [...new Set((organizers || []).map(o => o.currentPlanId).filter(Boolean))];
@@ -778,13 +800,79 @@ export const getAllOrganizers = async (req, res) => {
       });
     }
 
-    const serialized = (organizers || []).map(o => serializeOrganizerRecord(o, counts.get(o.organizerId) || 0));
+    const serialized = (organizers || []).map(o => {
+      const recent = followerProfilesMap.get(o.organizerId) || [];
+      return serializeOrganizerRecord(o, counts.get(o.organizerId) || 0, recent);
+    });
 
     return res.json(serialized);
   } catch (err) {
     return res.status(500).json({ error: err?.message || 'Unexpected error' });
   }
 };
+
+async function getFollowerProfiles(organizerIds) {
+  const profileMap = new Map();
+  if (!organizerIds || organizerIds.length === 0) return profileMap;
+
+  // 1. Fetch recent follower records
+  const { data, error, variant } = await withFollowersStore(async (candidate) => {
+    return supabase
+      .from(candidate.tableName)
+      .select(`${candidate.organizerIdCol}, ${candidate.followerUserIdCol}`)
+      .in(candidate.organizerIdCol, organizerIds)
+      .order('created_at', { ascending: false });
+  });
+
+  if (error || !data) return profileMap;
+
+  const orgIdKey = variant?.organizerIdCol || 'organizerId';
+  const userIdKey = variant?.followerUserIdCol || 'followerUserId';
+
+  // 2. Identify up to 3 unique user IDs per organizer
+  const allUserIds = new Set();
+  const orgToUserIds = new Map();
+  
+  for (const row of data) {
+    const orgId = row[orgIdKey];
+    const userId = row[userIdKey];
+    if (!orgId || !userId) continue;
+
+    if (!orgToUserIds.has(orgId)) orgToUserIds.set(orgId, []);
+    const list = orgToUserIds.get(orgId);
+    if (list.length < 3) {
+      list.push(userId);
+      allUserIds.add(userId);
+    }
+  }
+
+  if (allUserIds.size === 0) return profileMap;
+
+  // 3. Fetch user profile info (name, imageUrl) for all identified users
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('userId, name, imageUrl')
+    .in('userId', Array.from(allUserIds));
+
+  if (userError || !userData) return profileMap;
+
+  const userProfileMap = new Map(userData.map(u => [u.userId, u]));
+
+  // 4. Map profiles back to organizers
+  for (const [orgId, userIds] of orgToUserIds.entries()) {
+    const profiles = userIds
+      .map(id => userProfileMap.get(id))
+      .filter(Boolean)
+      .map(u => ({
+        userId: u.userId,
+        name: u.name,
+        imageUrl: u.imageUrl
+      }));
+    profileMap.set(orgId, profiles);
+  }
+
+  return profileMap;
+}
 
 export const getEmailQuotaStatus = async (req, res) => {
   try {

@@ -22,6 +22,7 @@ import {
   RefundPolicyPage
 } from './views/Public/InfoPages';
 import { LivePage } from './views/Public/LivePage';
+import { OrganizerDiscoveryPage } from './views/Public/OrganizerDiscoveryPage';
 import { AdminDashboard } from './views/Admin/Dashboard';
 import { EventsManagement } from './views/Admin/EventsManagement';
 import { RegistrationsList } from './views/Admin/RegistrationsList';
@@ -124,7 +125,7 @@ const CrownBadge = () => (
 const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, email, name, imageUrl, isAuthenticated, clearUser, setUser, canViewEvents, canEditEvents, canManualCheckIn, canReceiveNotifications, hasResolvedSession } = useUser();
+  const { userId, role, email, name, imageUrl, isAuthenticated, clearUser, setUser, canViewEvents, canEditEvents, canManualCheckIn, canReceiveNotifications, hasResolvedSession } = useUser();
   const isStaff = role === UserRole.STAFF;
   const [organizerSidebarLogoUrl, setOrganizerSidebarLogoUrl] = React.useState('');
   const [organizerSidebarName, setOrganizerSidebarName] = React.useState('');
@@ -226,7 +227,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     try {
       setProfileError('');
       setProfileSuccess('');
-      const res = await fetch(`${API}/api/whoAmI`, { credentials: 'include', cache: 'no-store' });
+      const res = await apiService._fetch(`${API}/api/whoAmI`, { credentials: 'include', cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setNameInput(data.name || '');
@@ -235,6 +236,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         const normalizedRole = normalizeUserRole(data?.role);
         if (normalizedRole && data?.email) {
           setUser({
+            userId: data.userId || data.id,
             role: normalizedRole,
             email: data.email,
             name: data.name ?? null,
@@ -337,6 +339,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
       if (role && email) {
         setUser({
+          userId: userId!,
           role,
           email,
           name: nextName,
@@ -358,24 +361,26 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     const syncSession = async () => {
-      const isPortalRoute = ['/dashboard', '/events', '/attendees', '/checkin', '/settings'].includes(location.pathname);
-      if (!isPortalRoute || hasResolvedSession) return;
+      if (hasResolvedSession) return;
+      const portalPaths = ['/dashboard', '/events', '/attendees', '/checkin', '/settings', '/user-home', '/my-events', '/user-settings', '/organizer-settings', '/account-settings', '/subscription'];
+      const isProtectedRoute = portalPaths.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));
 
       try {
-        const res = await fetch(`${API}/api/whoAmI`, { credentials: 'include', cache: 'no-store' });
+        const res = await apiService._fetch(`${API}/api/whoAmI`, { credentials: 'include', cache: 'no-store' });
         if (!res.ok) {
           clearUser();
-          navigate('/login', { replace: true });
+          if (isProtectedRoute) navigate('/login', { replace: true });
           return;
         }
         const me = await res.json().catch(() => null);
         const normalizedRole = normalizeUserRole(me?.role);
         if (!normalizedRole || !me?.email) {
           clearUser();
-          navigate('/login', { replace: true });
+          if (isProtectedRoute) navigate('/login', { replace: true });
           return;
         }
         setUser({
+          userId: me.userId || me.id,
           role: normalizedRole,
           email: me.email,
           name: me.name ?? null,
@@ -508,25 +513,25 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     <div className="min-h-screen flex flex-col md:flex-row bg-[#F2F2F2] font-sans selection:bg-[#38BDF2]/30">
       {/* Sidebar for desktop */}
       <aside
-        className={`bg-[#F2F2F2] border-r border-[#2E2E2F]/15 hidden md:flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'w-64' : 'w-20'}`}
+        className={`bg-[#F2F2F2] border-r border-[#D1D5DB] hidden md:flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'w-64' : 'w-20'}`}
         style={{ overflow: desktopSidebarOpen ? 'hidden' : 'visible' }}
       >
-        <div className={`flex items-center justify-center border-b border-[#2E2E2F]/10 shrink-0 h-20`}>
-          <Link to="/dashboard" className="flex items-center justify-center group transition-all duration-500 transform hover:scale-[1.05] active:scale-[0.95]">
+        <div className={`flex items-center justify-center border-b border-[#D1D5DB] shrink-0 h-24`}>
+          <Link to="/dashboard" className="flex items-center justify-center group transition-all duration-500 transform hover:scale-[1.02] active:scale-[0.98]">
             {organizerSidebarLogoUrl ? (
               <img
                 src={organizerSidebarLogoUrl}
                 alt={organizerSidebarName || 'Logo'}
-                className={desktopSidebarOpen ? "h-14 w-auto max-w-full object-contain" : "h-10 w-10 object-contain rounded-xl border border-[#2E2E2F]/10"}
+                className={desktopSidebarOpen ? "h-20 w-auto max-w-full object-contain px-4" : "h-12 w-12 object-contain rounded-lg border border-[#E5E7EB]"}
               />
             ) : desktopSidebarOpen ? (
-              <Branding className="h-14 w-auto" />
+              <Branding className="h-20 w-auto" />
             ) : (
               <img src="/lgo.webp" alt="Logo" className="h-10 w-10 object-contain" />
             )}
           </Link>
         </div>
-        <nav className={`flex-1 pt-10 pb-6 ${desktopSidebarOpen ? 'px-4' : 'px-2'} flex flex-col gap-1 overflow-y-auto overflow-x-visible scrollbar-none scroll-smooth`}
+        <nav className={`flex-1 pt-6 pb-6 ${desktopSidebarOpen ? 'px-0' : 'px-2'} flex flex-col gap-0.5 overflow-y-auto overflow-x-visible scrollbar-none scroll-smooth`}
           style={{ width: desktopSidebarOpen ? '100%' : '260px', paddingRight: desktopSidebarOpen ? '0' : '180px' }}>
           {menuItems.map((item: any, idx) => {
             const isActive = checkIsActiveAdmin(item.path);
@@ -534,33 +539,33 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             return (
               <React.Fragment key={item.path || idx}>
                 {item.separator && (
-                  <div className={`mx-4 my-3 h-[2px] bg-[#2E2E2F]/20 shrink-0 ${!desktopSidebarOpen ? 'mx-2' : ''}`} />
+                  <div className={`mx-5 my-3 h-[1px] bg-[#D1D5DB] shrink-0 ${!desktopSidebarOpen ? 'mx-2' : ''}`} />
                 )}
                 <Link
                   to={item.path}
-                  className={`flex transition-all duration-300 group relative shrink-0 ${desktopSidebarOpen
-                    ? 'flex-row items-center gap-3 px-4 py-3 rounded-xl'
-                    : 'flex-col items-center justify-center gap-1 py-4 px-1 rounded-xl'
+                  className={`flex transition-all duration-200 group relative shrink-0 ${desktopSidebarOpen
+                    ? 'flex-row items-center gap-3 px-3 py-2.5 mx-2 rounded-lg'
+                    : 'flex-col items-center justify-center gap-1 py-4 px-1 rounded-lg'
                     } ${isActive
-                      ? 'bg-[#38BDF2] text-white shadow-lg shadow-[#38BDF2]/20'
-                      : 'text-[#111111] hover:bg-[#38BDF2] hover:text-white hover:shadow-lg hover:shadow-[#38BDF2]/20'
+                      ? 'bg-[#38BDF2] text-white shadow-md shadow-[#38BDF2]/20'
+                      : 'text-[#000000]/90 hover:bg-[#D1D5DB]/50 hover:text-[#000000]'
                     }`}
                   title={!desktopSidebarOpen ? item.label : undefined}
                 >
                   <div className="relative shrink-0">
                     {React.cloneElement(item.icon as React.ReactElement<any>, {
-                      className: `transition-transform duration-300 ${desktopSidebarOpen ? 'w-5 h-5' : 'w-6 h-6 group-hover:scale-110'} ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`
+                      className: `transition-colors duration-200 ${desktopSidebarOpen ? 'w-[18px] h-[18px]' : 'w-6 h-6 group-hover:scale-105'} ${isActive ? 'stroke-[2px] text-white' : 'stroke-[1.5px] text-[#000000]/90 group-hover:text-[#000000]'}`
                     })}
                     {item.premium && <CrownBadge />}
                   </div>
 
                   {desktopSidebarOpen ? (
-                    <span className="text-sm font-medium tracking-tight truncate">
+                    <span className={`text-[14px] tracking-tight truncate ${isActive ? 'font-semibold text-white' : 'font-medium text-[#000000]/90'}`}>
                       {item.label}
                     </span>
                   ) : (
-                    <div className="absolute left-full ml-5 px-3.5 py-2.5 bg-[#38BDF2] text-white text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-[999] whitespace-nowrap shadow-[10px_0_30px_-10px_rgba(56,189,242,0.5)] flex items-center">
-                      <div className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 border-[6px] border-transparent border-r-[#38BDF2]" />
+                    <div className="absolute left-full ml-5 px-3 py-1.5 bg-[#111827] text-white text-[11px] font-medium rounded-md opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 z-[999] whitespace-nowrap shadow-xl flex items-center">
+                      <div className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 border-[4px] border-transparent border-r-[#111827]" />
                       {item.label}
                     </div>
                   )}
@@ -574,7 +579,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       <main
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'md:pl-64' : 'md:pl-20'}`}
       >
-        <header className="h-20 bg-[#F2F2F2] border-b border-[#2E2E2F]/15 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 w-full">
+        <header className="h-24 !bg-[#F2F2F2] border-b border-[#D1D5DB] px-4 sm:px-8 flex items-center justify-between sticky top-0 z-[300] w-full">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -584,7 +589,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                   setDesktopSidebarOpen(!desktopSidebarOpen);
                 }
               }}
-              className="p-2.5 rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-all group active:scale-95"
+              className="p-2.5 rounded-lg border border-[#D1D5DB] bg-[#F2F2F2] hover:bg-gray-100 transition-all group active:scale-95"
               aria-label="Toggle Sidebar"
             >
               <svg className={`w-5 h-5 transition-transform duration-500 ${!desktopSidebarOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -808,8 +813,8 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         {sidebarOpen && (
           <div className="fixed inset-0 z-[100] flex md:hidden">
             <div className="fixed inset-0 bg-[#2E2E2F]/70 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-            <aside className="relative w-[min(18.5rem,calc(100vw-1rem))] bg-[#F2F2F2] border-r-[1px] border-[#2E2E2F]/35 flex flex-col h-full z-[110] animate-in slide-in-from-left duration-300 shadow-[12px_0_36px_-24px_rgba(46,46,47,0.3)]">
-              <div className="p-8 pb-4 flex items-center justify-between border-b-[1px] border-[#2E2E2F]/30">
+            <aside className="relative w-[min(18.5rem,calc(100vw-1rem))] bg-[#F2F2F2] border-r border-[#E5E7EB] flex flex-col h-full z-[110] animate-in slide-in-from-left duration-300 shadow-2xl">
+              <div className="p-8 pb-4 flex items-center justify-between border-b border-[#E5E7EB]">
                 <Link to="/dashboard" onClick={() => setSidebarOpen(false)} className="flex flex-col items-start gap-2 group transition-all duration-500">
                   {organizerSidebarLogoUrl ? (
                     <img
@@ -827,7 +832,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                   )}
                 </Link>
                 <button
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#2E2E2F]/5 text-[#2E2E2F] hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-colors"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#2E2E2F]/5 text-[#111827] hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-colors"
                   onClick={() => setSidebarOpen(false)}
                   aria-label="Close navigation"
                 >
@@ -843,24 +848,24 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-all duration-300 group ${isActive
-                        ? 'bg-[#38BDF2] text-white shadow-lg shadow-[#38BDF2]/20'
-                        : 'text-[#111111] hover:bg-[#38BDF2] hover:text-white hover:shadow-lg hover:shadow-[#38BDF2]/20'
+                      className={`flex items-center gap-4 px-5 py-3.5 mx-2 rounded-lg transition-all duration-200 group ${isActive
+                        ? 'bg-[#38BDF2] text-white shadow-md shadow-[#38BDF2]/20'
+                        : 'text-[#000000]/90 hover:bg-[#E5E7EB]/50 hover:text-[#000000]'
                         }`}
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <div className={isActive ? 'text-white' : 'text-[#111111]/75 group-hover:text-white'}>
-                        {item.icon}
+                      <div className={isActive ? 'text-white' : 'text-[#000000]/90 group-hover:text-[#000000]'}>
+                        {React.cloneElement(item.icon as React.ReactElement<any>, { className: 'w-5 h-5 ' + (isActive ? 'stroke-[2px]' : 'stroke-[1.5px]') })}
                       </div>
-                      <span className="text-sm font-medium tracking-tight">{item.label}</span>
+                      <span className={`text-sm tracking-tight ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
                     </Link>
                   );
                 })}
 
-                <div className="mt-8 pt-8 border-t border-[#2E2E2F]/10">
+                <div className="mt-auto pt-8 border-t border-[#E5E7EB]">
                   <button
                     onClick={() => { handleLogout(); setSidebarOpen(false); }}
-                    className="w-full flex items-center gap-4 px-5 py-4 rounded-xl text-[#111111]/80 hover:bg-red-50 hover:text-red-500 transition-all duration-300 group"
+                    className="w-full flex items-center gap-4 px-5 py-4 rounded-xl text-[#111827]/80 hover:bg-red-50 hover:text-red-500 transition-all duration-300 group"
                   >
                     <svg className="w-5 h-5 opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -940,7 +945,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
-  const { role, email, name, imageUrl, isAuthenticated, clearUser, setUser, canReceiveNotifications, hasResolvedSession } = useUser();
+  const { userId, role, email, name, imageUrl, isAuthenticated, clearUser, setUser, canReceiveNotifications, hasResolvedSession } = useUser();
   const {
     publicMode,
     isAttendingView,
@@ -1055,6 +1060,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           const normalizedRole = normalizeUserRole(me?.role);
           if (normalizedRole && me?.email) {
             setUser({
+              userId: me.userId || me.id,
               role: normalizedRole,
               email: me.email,
               name: me.name ?? null,
@@ -1207,13 +1213,9 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   const navLinks: any[] = [];
   const guestMobileLinks = [
-    { label: 'Home', path: '/', icon: <ICONS.Home className="w-4 h-4" /> },
-    { label: 'Browse Events', path: '/browse-events', icon: <ICONS.Calendar className="w-4 h-4" /> },
-    { label: 'About Us', path: '/about-us', icon: <ICONS.Users className="w-4 h-4" /> },
-    { label: 'Pricing', path: '/pricing', icon: <ICONS.CreditCard className="w-4 h-4" /> },
-    { label: 'Contact Us', path: '/contact-us', icon: <ICONS.Mail className="w-4 h-4" /> },
-    { label: 'FAQ', path: '/faq', icon: <ICONS.MessageSquare className="w-4 h-4" /> },
-    { label: 'Watch Live', path: '/live', icon: <ICONS.Monitor className="w-4 h-4" />, isLive: true },
+    { label: 'Home', path: '/', icon: <ICONS.Home className="w-4 h-4" />, isLive: false },
+    { label: 'Contact Us', path: '/contact-us', icon: <ICONS.Mail className="w-4 h-4" />, isLive: false },
+    { label: 'FAQ', path: '/faq', icon: <ICONS.MessageSquare className="w-4 h-4" />, isLive: false },
   ];
   const trimmedHeaderSearch = headerSearchTerm.trim();
   const trimmedHeaderLocation = headerLocationTerm.trim();
@@ -1956,6 +1958,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
               <div className="space-y-4">
                 <p className="text-[#2E2E2F]/50 mb-4">Platform</p>
                 <Link to="/" className="block text-[#2E2E2F]/70 hover:text-[#38BDF2]">Events List</Link>
+                <Link to="/organizers/discover" className="block text-[#2E2E2F]/70 hover:text-[#38BDF2]">Organizers</Link>
                 <Link to="/live" className="block text-[#2E2E2F]/70 hover:text-[#38BDF2]">Live Broadcasts</Link>
               </div>
               <div className="space-y-4">
@@ -1994,7 +1997,7 @@ const DashboardWrapper: React.FC = () => {
 const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { role, email, name, imageUrl, isAuthenticated, clearUser, setUser, canViewEvents, canEditEvents, canManualCheckIn, canReceiveNotifications, hasResolvedSession } = useUser();
+  const { userId, role, email, name, imageUrl, isAuthenticated, clearUser, setUser, canViewEvents, canEditEvents, canManualCheckIn, canReceiveNotifications, hasResolvedSession } = useUser();
   const { isAttendingView, setPublicMode } = useEngagement();
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -2111,6 +2114,7 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           return;
         }
         setUser({
+          userId: me.userId || me.id,
           role: normalizedRole,
           email: me.email,
           name: me.name ?? null,
@@ -2242,30 +2246,30 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   };
 
   return (
-    <div className="min-h-screen flex bg-[#F2F2F2]">
+    <div className="min-h-screen flex bg-[#F2F2F2] selection:bg-[#38BDF2]/30">
       {/* Sidebar for desktop */}
       <aside
-        className={`bg-[#F2F2F2] border-r-[1px] border-[#111111]/35 hidden md:flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'w-64' : 'w-20'}`}
+        className={`bg-[#F2F2F2] border-r border-[#D1D5DB] hidden md:flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'w-64' : 'w-20'}`}
         style={{ overflow: desktopSidebarOpen ? 'hidden' : 'visible' }}
       >
-        <div className={`flex items-center justify-center border-b-[1px] border-[#111111]/35 shrink-0 h-20`}>
-          <Link to="/user-home" className="flex items-center justify-center group transition-all duration-500 transform hover:scale-[1.05] active:scale-[0.95]">
+        <div className={`flex items-center justify-center border-b border-[#D1D5DB] shrink-0 h-24`}>
+          <Link to="/user-home" className="flex items-center justify-center group transition-all duration-500 transform hover:scale-[1.02] active:scale-[0.98]">
             {organizerSidebarLogoUrl ? (
               <img
                 src={organizerSidebarLogoUrl}
                 alt={organizerSidebarLogoAlt}
-                className={desktopSidebarOpen ? "h-20 w-auto max-w-full object-contain group-hover:rotate-1 transition-transform" : "h-12 w-12 object-contain group-hover:rotate-6 transition-transform rounded-xl border-2 border-[#38BDF2]/20"}
+                className={desktopSidebarOpen ? "h-20 w-auto max-w-full object-contain px-4" : "h-12 w-12 object-contain rounded-lg border border-[#E5E7EB]"}
               />
             ) : (
               desktopSidebarOpen ? (
                 <Branding className="h-20 w-auto" />
               ) : (
-                <img src="/lgo.webp" alt="Logo" className="h-11 w-11 object-contain group-hover:rotate-6 transition-transform" />
+                <img src="/lgo.webp" alt="Logo" className="h-10 w-10 object-contain" />
               )
             )}
           </Link>
         </div>
-        <nav className={`flex-1 pt-10 pb-6 ${desktopSidebarOpen ? 'px-4' : 'px-2'} flex flex-col gap-0 overflow-y-auto overflow-x-visible scrollbar-none scroll-smooth`}
+        <nav className={`flex-1 pt-6 pb-6 ${desktopSidebarOpen ? 'px-0' : 'px-2'} flex flex-col gap-0.5 overflow-y-auto overflow-x-visible scrollbar-none scroll-smooth`}
           style={{ width: desktopSidebarOpen ? '100%' : '260px', paddingRight: desktopSidebarOpen ? '0' : '180px' }}>
           {menuItems.map((item: any, idx) => {
             const isActive = checkIsActive(item.path);
@@ -2273,34 +2277,33 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             return (
               <React.Fragment key={item.path || idx}>
                 {item.separator && (
-                  <div className={`mx-4 my-3 h-[2px] bg-[#2E2E2F]/20 shrink-0 ${!desktopSidebarOpen ? 'mx-2' : ''}`} />
+                  <div className={`mx-5 my-3 h-[1px] bg-[#D1D5DB] shrink-0 ${!desktopSidebarOpen ? 'mx-2' : ''}`} />
                 )}
                 <Link
                   to={item.path}
-                  className={`flex items-center transition-all duration-300 group relative shrink-0 ${desktopSidebarOpen
-                    ? 'flex-row gap-3 px-4 py-3 rounded-xl mx-0'
-                    : 'flex-row justify-center p-3 rounded-xl mx-1'
+                  className={`flex transition-all duration-200 group relative shrink-0 ${desktopSidebarOpen
+                    ? 'flex-row items-center gap-3 px-3 py-2.5 mx-2 rounded-lg'
+                    : 'flex-col items-center justify-center gap-1 py-4 px-1 rounded-lg'
                     } ${isActive
-                      ? 'bg-[#38BDF2] text-[#F2F2F2] shadow-lg shadow-[#38BDF2]/20'
-                      : 'text-[#111111] hover:bg-[#38BDF2] hover:text-white hover:shadow-lg hover:shadow-[#38BDF2]/20'
+                      ? 'bg-[#38BDF2] text-white shadow-md shadow-[#38BDF2]/20'
+                      : 'text-[#000000]/90 hover:bg-[#D1D5DB]/50 hover:text-[#000000]'
                     }`}
                   title={!desktopSidebarOpen ? item.label : undefined}
                 >
                   <div className="relative shrink-0">
                     {React.cloneElement(item.icon as React.ReactElement<any>, {
-                      className: `transition-transform duration-300 ${desktopSidebarOpen ? 'w-5 h-5' : 'w-6 h-6 group-hover:scale-110'} ${isActive ? 'stroke-[2.5px]' : 'stroke-2 group-hover:text-white'}`
+                      className: `transition-colors duration-200 ${desktopSidebarOpen ? 'w-[18px] h-[18px]' : 'w-6 h-6 group-hover:scale-105'} ${isActive ? 'stroke-[2px] text-white' : 'stroke-[1.5px] text-[#000000]/90 group-hover:text-[#000000]'}`
                     })}
                     {item.premium && <CrownBadge />}
                   </div>
 
-                  {desktopSidebarOpen && (
-                    <span className="text-sm font-medium tracking-tight truncate">
+                  {desktopSidebarOpen ? (
+                    <span className={`text-[14px] tracking-tight truncate ${isActive ? 'font-semibold text-white' : 'font-medium text-[#000000]/90'}`}>
                       {item.label}
                     </span>
-                  )}
-                  {!desktopSidebarOpen && (
-                    <div className="absolute left-full ml-5 px-3.5 py-2.5 bg-[#38BDF2] text-white text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-[999] whitespace-nowrap shadow-[10px_0_30px_-10px_rgba(56,189,242,0.5)] flex items-center">
-                      <div className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 border-[6px] border-transparent border-r-[#38BDF2]" />
+                  ) : (
+                    <div className="absolute left-full ml-5 px-3 py-2.5 bg-[#111827] text-white text-[11px] font-medium rounded-md opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 z-[999] whitespace-nowrap shadow-xl flex items-center">
+                      <div className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 border-[4px] border-transparent border-r-[#111827]" />
                       {item.label}
                     </div>
                   )}
@@ -2314,7 +2317,7 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       <main
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${desktopSidebarOpen ? 'md:pl-64' : 'md:pl-20'}`}
       >
-        <header className="h-20 bg-[#F2F2F2] border-b-[1px] border-[#2E2E2F]/30 px-4 sm:px-8 flex items-center justify-between gap-4 sm:gap-6 sticky top-0 z-40 w-full">
+        <header className="h-24 bg-[#F2F2F2] border-b border-[#D1D5DB] px-4 sm:px-8 flex items-center justify-between gap-4 sm:gap-6 sticky top-0 z-[300] w-full">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -2324,7 +2327,7 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                   setDesktopSidebarOpen(!desktopSidebarOpen);
                 }
               }}
-              className="p-2.5 rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-all group active:scale-95"
+              className="p-2.5 rounded-lg border border-[#D1D5DB] bg-[#F2F2F2] hover:bg-gray-100 transition-all group active:scale-95"
               aria-label="Toggle Sidebar"
             >
               <svg className={`w-5 h-5 transition-transform duration-500 ${!desktopSidebarOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2338,16 +2341,16 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-6">
+          <div className="ml-auto flex items-center gap-4">
             {(!(role === UserRole.STAFF && canReceiveNotifications === false)) && (
               <div className="relative group">
                 <button
-                  className="w-11 h-11 flex items-center justify-center rounded-xl border border-[#38BDF2]/20 bg-transparent hover:bg-[#38BDF2]/10 hover:border-[#38BDF2]/40 hover:scale-105 active:scale-95 transition-all shadow-sm relative"
+                  className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#D1D5DB] bg-[#F2F2F2] hover:bg-gray-100 transition-all active:scale-95 shadow-sm relative"
                   onClick={() => setNotificationOpen(!notificationOpen)}
                 >
-                  <ICONS.Bell className="w-5 h-5 text-[#2E2E2F] group-hover:text-[#38BDF2] transition-colors" />
+                  <ICONS.Bell className="w-5 h-5 text-[#4B5563]" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-[#F2F2F2] shadow-lg animate-in zoom-in duration-300">
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#EF4444] text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-[#F2F2F2] animate-in zoom-in duration-300">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
@@ -2447,21 +2450,21 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
           <div className="relative">
             <button
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#2E2E2F]/10 bg-[#F2F2F2] hover:bg-[#38BDF2]/10 transition-colors"
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-[#E5E7EB] bg-[#F2F2F2] hover:bg-gray-100 transition-all active:scale-95"
               onClick={() => setUserMenuOpen((v) => !v)}
             >
-              <div className="w-8 h-8 rounded-xl overflow-hidden bg-[#38BDF2]/20 text-[#2E2E2F] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-200 text-[#111827] flex items-center justify-center border border-[#E5E7EB]">
                 {imageUrl ? (
                   <img src={imageUrl} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="font-semibold text-xs text-[#2E2E2F]">{initials}</span>
+                  <span className="font-medium text-xs text-[#4B5563]">{initials}</span>
                 )}
               </div>
-              <div className="hidden sm:block text-left leading-tight">
-                <p className="text-xs font-semibold text-[#2E2E2F] truncate max-w-[120px]">{displayName}</p>
-                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#2E2E2F]/45 mt-0.5">{roleLabel}</p>
+              <div className="hidden sm:block text-left">
+                <p className="text-[13px] font-medium text-[#111827] truncate max-w-[100px] leading-none">{displayName}</p>
+                <p className="text-[10px] font-normal text-[#6B7280] uppercase tracking-wide mt-1">{roleLabel}</p>
               </div>
-              <svg className="w-4 h-4 text-[#2E2E2F]/50" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -2579,34 +2582,36 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         {sidebarOpen && (
           <div className="fixed inset-0 z-[100] flex lg:hidden">
             <div className="fixed inset-0 bg-[#2E2E2F]/70 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-            <aside className="relative w-[min(18.5rem,calc(100vw-1rem))] bg-[#F2F2F2] border-r-[1px] border-[#111111]/35 flex flex-col h-full z-50 animate-in slide-in-from-left duration-300 shadow-[12px_0_36px_-24px_rgba(46,46,47,0.3)]">
-              <div className="p-8 pb-3 flex items-center justify-between border-b-[1px] border-[#111111]/35">
+            <aside className="relative w-[min(18.5rem,calc(100vw-1rem))] bg-[#F2F2F2] border-r border-[#E5E7EB] flex flex-col h-full z-50 animate-in slide-in-from-left duration-300 shadow-2xl">
+              <div className="p-8 pb-3 flex items-center justify-between border-b border-[#E5E7EB]">
                 <Link to="/user-home" onClick={() => setSidebarOpen(false)} className="flex flex-col items-start gap-2 group transition-all duration-500">
                   {organizerSidebarLogoUrl ? (
                     <img
                       src={organizerSidebarLogoUrl}
                       alt={organizerSidebarLogoAlt}
-                      className="h-14 w-auto max-w-[168px] object-contain"
+                      className="h-12 w-auto max-w-[168px] object-contain"
                     />
                   ) : (
                     <img
                       src="/lgo.webp"
                       alt="Logo"
-                      className="h-12 w-12 object-contain"
+                      className="h-10 w-10 object-contain shadow-sm border border-[#E5E7EB] rounded-lg"
                     />
                   )}
                   {organizerSidebarName && (
-                    <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#2E2E2F]/60 ml-0.5">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2E2E2F]/40 ml-0.5">
                       {organizerSidebarName}
                     </span>
                   )}
                 </Link>
                 <button
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#2E2E2F]/5 text-[#2E2E2F] hover:bg-[#38BDF2]/10 hover:text-[#38BDF2] transition-colors"
+                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#2E2E2F]/5 text-[#2E2E2F] hover:bg-gray-100 transition-colors"
                   onClick={() => setSidebarOpen(false)}
                   aria-label="Close navigation"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
               <nav className="flex-1 px-4 pt-4 pb-24 space-y-1 overflow-y-auto scrollbar-none">
@@ -2616,16 +2621,16 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-all duration-300 group ${isActive
-                        ? 'bg-[#38BDF2] text-white shadow-lg shadow-[#38BDF2]/20'
-                        : 'text-[#111111]/90 hover:bg-[#38BDF2] hover:text-white hover:shadow-lg hover:shadow-[#38BDF2]/20'
+                      className={`flex items-center gap-4 px-5 py-3.5 mx-2 rounded-lg transition-all duration-200 group ${isActive
+                        ? 'bg-[#38BDF2] text-white shadow-md shadow-[#38BDF2]/20'
+                        : 'text-[#000000]/90 hover:bg-[#E5E7EB]/50 hover:text-[#000000]'
                         }`}
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <div className={isActive ? 'text-white' : 'text-[#111111]/75 group-hover:text-white'}>
-                        {item.icon}
+                      <div className={isActive ? 'text-white' : 'text-[#000000]/90 group-hover:text-[#000000]'}>
+                        {React.cloneElement(item.icon as React.ReactElement<any>, { className: 'w-5 h-5 ' + (isActive ? 'stroke-[2px]' : 'stroke-[1.5px]') })}
                       </div>
-                      <span className="text-sm font-medium tracking-tight">{item.label}</span>
+                      <span className={`text-sm tracking-tight ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
                     </Link>
                   );
                 })}
@@ -2700,6 +2705,7 @@ const HashBypassBridge: React.FC = () => {
 
 const GlobalOnboardingGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { role, isOnboarded, isAuthenticated, setUser, clearUser, hasResolvedSession } = useUser();
+  const { isAttendingView } = useEngagement();
   const location = useLocation();
 
   React.useEffect(() => {
@@ -2709,12 +2715,13 @@ const GlobalOnboardingGuard: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const sync = async () => {
       try {
-        const res = await fetch(`${API}/api/whoAmI`, { credentials: 'include', cache: 'no-store' });
+        const res = await apiService._fetch(`${API}/api/whoAmI`, { credentials: 'include', cache: 'no-store' });
         if (res.ok) {
           const me = await res.json();
           const normalizedRole = normalizeUserRole(me?.role);
           if (!cancelled && normalizedRole && me?.email) {
             setUser({
+              userId: me.userId || me.id,
               role: normalizedRole,
               email: me.email,
               name: me.name,
@@ -2747,8 +2754,25 @@ const GlobalOnboardingGuard: React.FC<{ children: React.ReactNode }> = ({ childr
   const isAuthPage = ['/login', '/signup', '/forgot-password', '/reset-password', '/accept-invite'].includes(location.pathname);
   const isOnboardingPage = location.pathname === '/onboarding';
 
-  // Force redirection if organizer is not onboarded and tries to access anything else
-  if (isAuthenticated && role === UserRole.ORGANIZER && isOnboarded === false && !isOnboardingPage && !isAuthPage) {
+  // Organizer-portal paths that require onboarding to be complete
+  const organizerPortalPaths = [
+    '/user-home', '/my-events', '/my-events/create', '/my-events/edit',
+    '/user-settings', '/organizer-settings', '/account-settings',
+    '/user/attendees', '/user/checkin', '/user/archive', '/user/reports',
+    '/dashboard', '/subscription', '/organizer-support', '/payment-settings',
+  ];
+  const isOrganizerPortalPage = organizerPortalPaths.some(
+    (p) => location.pathname === p || location.pathname.startsWith(p + '/')
+  );
+
+  // 1. Force redirection if trying to access portal routes (Setup required)
+  if (isAuthenticated && role === UserRole.ORGANIZER && isOnboarded === false && isOrganizerPortalPage && !isOnboardingPage && !isAuthPage) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // 2. Force redirection from ANY other page back to welcome view if not in attending mode
+  // (This ensures they stay on Onboarding/Welcome unless they explicitly choose "Browse Events")
+  if (isAuthenticated && role === UserRole.ORGANIZER && isOnboarded === false && !isAttendingView && !isOnboardingPage && !isAuthPage) {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -2756,69 +2780,67 @@ const GlobalOnboardingGuard: React.FC<{ children: React.ReactNode }> = ({ childr
 };
 
 const App: React.FC = () => (
-  <ToastProvider>
-    <ToastContainer />
-    <Router>
-      <ScrollToTop />
-      <HashBypassBridge />
-      <GlobalOnboardingGuard>
-        <Routes>
-          <Route path="/login" element={<LoginPerspective />} />
-          <Route path="/signup" element={<SignUpView />} />
-          <Route path="/welcome" element={<WelcomeView />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/accept-invite" element={<AcceptInvite />} />
-          <Route path="/" element={<PublicLayout><EventList /></PublicLayout>} />
-          <Route path="/live" element={<PublicLayout><LivePage /></PublicLayout>} />
-          <Route path="/categories/:categoryKey" element={<PublicLayout><CategoryEvents /></PublicLayout>} />
-          <Route path="/events/:slug" element={<PublicLayout><EventDetails /></PublicLayout>} />
-          <Route path="/organizer/:id" element={<PublicLayout><OrganizerProfilePage /></PublicLayout>} />
-          <Route path="/events/:slug/register" element={<PublicLayout><RegistrationForm /></PublicLayout>} />
-          <Route path="/payment/status" element={<PublicLayout><PaymentStatusView /></PublicLayout>} />
-          <Route path="/tickets/:ticketId" element={<PublicLayout><TicketView /></PublicLayout>} />
-          <Route path="/about-us" element={<PublicLayout><AboutUsPage /></PublicLayout>} />
-          <Route path="/browse-events" element={<PublicLayout><PublicEventsPage /></PublicLayout>} />
-          <Route path="/liked" element={<PublicLayout><LikedEventsPage /></PublicLayout>} />
-          <Route path="/followings" element={<PublicLayout><FollowingsEventsPage /></PublicLayout>} />
-          <Route path="/my-tickets" element={<PublicLayout><MyTicketsPage /></PublicLayout>} />
-          <Route path="/privacy-policy" element={<PublicLayout><PrivacyPolicyPage /></PublicLayout>} />
-          <Route path="/terms-of-service" element={<PublicLayout><TermsOfServicePage /></PublicLayout>} />
-          <Route path="/contact-us" element={<PublicLayout><ContactUsPage /></PublicLayout>} />
-          <Route path="/pricing" element={<PublicLayout><PricingPage /></PublicLayout>} />
-          <Route path="/faq" element={<PublicLayout><FaqPage /></PublicLayout>} />
-          <Route path="/refund-policy" element={<PublicLayout><RefundPolicyPage /></PublicLayout>} />
-          <Route path="/onboarding" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><WelcomeView /></RequireRoleRoute>} />
+  <Router>
+    <ScrollToTop />
+    <HashBypassBridge />
+    <GlobalOnboardingGuard>
+      <Routes>
+        <Route path="/login" element={<LoginPerspective />} />
+        <Route path="/signup" element={<SignUpView />} />
+        <Route path="/welcome" element={<WelcomeView />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/accept-invite" element={<AcceptInvite />} />
+        <Route path="/" element={<PublicLayout><EventList /></PublicLayout>} />
+        <Route path="/live" element={<PublicLayout><LivePage /></PublicLayout>} />
+        <Route path="/categories/:categoryKey" element={<PublicLayout><CategoryEvents /></PublicLayout>} />
+        <Route path="/events/:slug" element={<PublicLayout><EventDetails /></PublicLayout>} />
+        <Route path="/organizer/:id" element={<PublicLayout><OrganizerProfilePage /></PublicLayout>} />
+        <Route path="/events/:slug/register" element={<PublicLayout><RegistrationForm /></PublicLayout>} />
+        <Route path="/payment/status" element={<PublicLayout><PaymentStatusView /></PublicLayout>} />
+        <Route path="/tickets/:ticketId" element={<PublicLayout><TicketView /></PublicLayout>} />
+        <Route path="/about-us" element={<PublicLayout><AboutUsPage /></PublicLayout>} />
+        <Route path="/browse-events" element={<PublicLayout><PublicEventsPage /></PublicLayout>} />
+        <Route path="/liked" element={<PublicLayout><LikedEventsPage /></PublicLayout>} />
+        <Route path="/followings" element={<PublicLayout><FollowingsEventsPage /></PublicLayout>} />
+        <Route path="/my-tickets" element={<PublicLayout><MyTicketsPage /></PublicLayout>} />
+        <Route path="/privacy-policy" element={<PublicLayout><PrivacyPolicyPage /></PublicLayout>} />
+        <Route path="/terms-of-service" element={<PublicLayout><TermsOfServicePage /></PublicLayout>} />
+        <Route path="/contact-us" element={<PublicLayout><ContactUsPage /></PublicLayout>} />
+        <Route path="/pricing" element={<PublicLayout><PricingPage /></PublicLayout>} />
+        <Route path="/organizers/discover" element={<PublicLayout><OrganizerDiscoveryPage /></PublicLayout>} />
+        <Route path="/faq" element={<PublicLayout><FaqPage /></PublicLayout>} />
+        <Route path="/refund-policy" element={<PublicLayout><RefundPolicyPage /></PublicLayout>} />
+        <Route path="/onboarding" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><WelcomeView /></RequireRoleRoute>} />
 
-          {/* User Portal Routes */}
-          <Route path="/user-home" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserHome /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/my-events" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserEvents /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/my-events/create" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserEvents /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/my-events/edit/:eventId" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserEvents /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/user-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserSettings /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/organizer-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><Navigate to="/user-settings?tab=organizer" replace /></RequireRoleRoute>} />
-          <Route path="/payment-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><Navigate to="/user-settings?tab=payments" replace /></RequireRoleRoute>} />
-          <Route path="/account-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><Navigate to="/user-settings?tab=account" replace /></RequireRoleRoute>} />
-          <Route path="/user/attendees" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><RegistrationsList /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/user/checkin" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><CheckIn /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/user/archive" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><ArchiveEvents /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/user/reports" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerReports /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/subscription" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerSubscription /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/organizer-support" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerSupport /></UserPortalLayout></RequireRoleRoute>} />
-          <Route path="/subscription/success" element={<PublicLayout><SubscriptionSuccess /></PublicLayout>} />
+        {/* User Portal Routes */}
+        <Route path="/user-home" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserHome /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/my-events" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserEvents /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/my-events/create" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserEvents /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/my-events/edit/:eventId" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserEvents /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/user-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><UserSettings /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/organizer-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><Navigate to="/user-settings?tab=organizer" replace /></RequireRoleRoute>} />
+        <Route path="/payment-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><Navigate to="/user-settings?tab=payments" replace /></RequireRoleRoute>} />
+        <Route path="/account-settings" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><Navigate to="/user-settings?tab=account" replace /></RequireRoleRoute>} />
+        <Route path="/user/attendees" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><RegistrationsList /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/user/checkin" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><CheckIn /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/user/archive" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><ArchiveEvents /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/user/reports" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerReports /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/subscription" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerSubscription /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/organizer-support" element={<RequireRoleRoute allow={[UserRole.ORGANIZER]}><UserPortalLayout><OrganizerSupport /></UserPortalLayout></RequireRoleRoute>} />
+        <Route path="/subscription/success" element={<PublicLayout><SubscriptionSuccess /></PublicLayout>} />
 
-          {/* Admin Portal Routes */}
-          <Route path="/dashboard" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.ORGANIZER]}><DashboardWrapper /></RequireRoleRoute>} />
-          <Route path="/events" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><EventsManagement /></PortalLayout></RequireRoleRoute>} />
-          <Route path="/attendees" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><RegistrationsList /></PortalLayout></RequireRoleRoute>} />
-          <Route path="/checkin" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><CheckIn /></PortalLayout></RequireRoleRoute>} />
-          <Route path="/settings" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><SettingsView /></PortalLayout></RequireRoleRoute>} />
+        {/* Admin Portal Routes */}
+        <Route path="/dashboard" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.ORGANIZER]}><DashboardWrapper /></RequireRoleRoute>} />
+        <Route path="/events" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><EventsManagement /></PortalLayout></RequireRoleRoute>} />
+        <Route path="/attendees" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><RegistrationsList /></PortalLayout></RequireRoleRoute>} />
+        <Route path="/checkin" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><CheckIn /></PortalLayout></RequireRoleRoute>} />
+        <Route path="/settings" element={<RequireRoleRoute allow={[UserRole.ADMIN, UserRole.STAFF]}><PortalLayout><SettingsView /></PortalLayout></RequireRoleRoute>} />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </GlobalOnboardingGuard>
-    </Router>
-  </ToastProvider>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </GlobalOnboardingGuard>
+  </Router>
 );
 export default App;
 

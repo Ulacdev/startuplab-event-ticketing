@@ -3,11 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Input } from '../../components/Shared';
 import { apiService } from '../../services/apiService';
 import { ICONS } from '../../constants';
+import { OrganizerProfile } from '../../types';
+import { useNavigate } from 'react-router-dom';
 
 export const EmailSettings: React.FC = () => {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
+    const [profile, setProfile] = useState<OrganizerProfile | null>(null);
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     const [formData, setFormData] = useState({
@@ -24,21 +28,29 @@ export const EmailSettings: React.FC = () => {
 
     const [testRecipient, setTestRecipient] = useState('');
 
+    const canCustomSmtp = !!(profile?.plan?.features?.enable_custom_branding || profile?.plan?.features?.custom_branding);
+
     useEffect(() => {
-        const loadSettings = async () => {
+        const loadInitialData = async () => {
             try {
                 setLoading(true);
-                const data = await apiService.getSmtpSettings();
-                if (data && Object.keys(data).length > 0) {
-                    setFormData(prev => ({ ...prev, ...data }));
+                const [profileData, smtpData] = await Promise.all([
+                    apiService.getMyOrganizer(),
+                    apiService.getSmtpSettings()
+                ]);
+                
+                setProfile(profileData);
+                
+                if (smtpData && Object.keys(smtpData).length > 0) {
+                    setFormData(prev => ({ ...prev, ...smtpData }));
                 }
             } catch (err) {
-                console.error('Failed to load SMTP settings:', err);
+                console.error('Failed to load email settings:', err);
             } finally {
                 setLoading(false);
             }
         };
-        loadSettings();
+        loadInitialData();
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -83,23 +95,81 @@ export const EmailSettings: React.FC = () => {
 
     if (loading) return <div className="p-8 text-[#2E2E2F]/60">Loading email settings...</div>;
 
-    return (
-        <div className="max-w-6xl mx-auto p-6 space-y-8">
-            <div className="flex justify-end">
-                <Button
-                    onClick={handleSave}
-                    className="bg-[#38BDF2] hover:bg-[#2E2E2F] text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-colors"
-                    disabled={saving}
-                >
-                    <ICONS.CheckCircle className="w-4 h-4" />
-                    {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
-            </div>
+    if (!canCustomSmtp) {
+        return (
+            <div className="max-w-4xl mx-auto p-12">
+                <Card className="relative overflow-hidden border-2 border-[#2E2E2F]/15 bg-[#F2F2F2] rounded-[2.5rem] p-12 text-center shadow-sm">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                        <ICONS.Mail className="w-64 h-64 -mr-20 -mt-20" />
+                    </div>
+                    
+                    <div className="relative z-10 space-y-8">
+                        <div className="w-24 h-24 bg-[#2E2E2F]/5 rounded-3xl flex items-center justify-center mx-auto mb-8 ring-8 ring-[#2E2E2F]/5">
+                            <ICONS.Mail className="w-12 h-12 text-[#2E2E2F]" />
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <h2 className="text-4xl font-black text-[#2E2E2F] tracking-tight leading-tight">
+                                Professional <br/>
+                                <span className="opacity-40 uppercase tracking-widest text-[0.4em] block mt-2 font-bold italic">Email Support</span>
+                            </h2>
+                            <p className="text-lg text-[#2E2E2F]/60 font-medium max-w-lg mx-auto leading-relaxed">
+                                Deliver event communications from your <span className="text-[#2E2E2F] font-bold underline decoration-[#2E2E2F]/20 underline-offset-4">official domain</span> and unlock high-volume sending quotas.
+                            </p>
+                        </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto pt-4">
+                            <div className="flex items-center gap-4 bg-[#2E2E2F]/5 p-5 rounded-2xl border border-[#2E2E2F]/10">
+                                <div className="bg-[#E8E8E8] p-2 rounded-xl shadow-sm text-[#2E2E2F]"><ICONS.CheckCircle className="w-5 h-5" /></div>
+                                <div className="text-left">
+                                    <p className="text-[13px] font-black text-[#2E2E2F]">White-Label Presence</p>
+                                    <p className="text-[11px] text-[#2E2E2F]/50 font-bold uppercase tracking-wide">Brand Your Outbound Emails</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4 bg-[#2E2E2F]/5 p-5 rounded-2xl border border-[#2E2E2F]/10">
+                                <div className="bg-[#E8E8E8] p-2 rounded-xl shadow-sm text-[#2E2E2F]"><ICONS.Send className="w-5 h-5" /></div>
+                                <div className="text-left">
+                                    <p className="text-[13px] font-black text-[#2E2E2F]">Unrestricted Quota</p>
+                                    <p className="text-[11px] text-[#2E2E2F]/50 font-bold uppercase tracking-wide">Bypass Daily Platform Limits</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-8">
+                            <Button
+                                onClick={() => navigate('/user-settings?tab=subscription')}
+                                className="bg-[#2E2E2F] hover:bg-[#38BDF2] text-white px-12 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl transition-all"
+                            >
+                                Upgrade Plan
+                            </Button>
+                            <p className="mt-6 text-[11px] font-bold text-[#2E2E2F]/40 uppercase tracking-widest">
+                                Enforced for <span className="text-[#2E2E2F]">Custom Branding</span> Compliance
+                            </p>
+                        </div>
+                    </div>
+                </Card>
+
+                <div className="mt-12 p-8 bg-[#2E2E2F]/5 rounded-3xl border border-[#2E2E2F]/10 flex items-start gap-6">
+                    <div className="w-12 h-12 bg-[#E8E8E8] rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-[#2E2E2F]/5">
+                        <ICONS.Info className="w-6 h-6 text-[#2E2E2F]/40" />
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="text-sm font-black text-[#2E2E2F] uppercase tracking-wide">Infrastructure Notice</h4>
+                        <p className="text-sm text-[#2E2E2F]/60 leading-relaxed font-medium">
+                            Your account is using the <span className="font-bold underline decoration-[#2E2E2F]/10">StartupLab Shared SMTP</span>. Activity is monitored and subject to daily volume restrictions to ensure platform performance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             {notification && (
                 <div className="fixed top-24 right-8 z-[120] animate-in slide-in-from-right-10 duration-500">
-                    <Card className={`flex items-center gap-4 px-6 py-4 rounded-xl shadow-2xl border ${notification.type === 'success' ? 'bg-[#F2F2F2] border-green-200 text-[#2E2E2F]' : 'bg-[#F2F2F2] border-red-200 text-[#2E2E2F]'}`}>
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${notification.type === 'success' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' : 'bg-red-500 text-white shadow-lg shadow-red-500/30'}`}>
+                    <Card className={`flex items-center gap-4 px-6 py-4 rounded-xl shadow-xl border ${notification.type === 'success' ? 'bg-[#F2F2F2] border-[#38BDF2]/20 text-[#2E2E2F]' : 'bg-[#F2F2F2] border-red-200 text-[#2E2E2F]'}`}>
+                        <div className={`p-2 rounded-xl ${notification.type === 'success' ? 'bg-[#38BDF2] text-[#F2F2F2] shadow-lg shadow-[#38BDF2]/30' : 'bg-red-500 text-white shadow-lg shadow-red-500/30'}`}>
                             {notification.type === 'success' ? <ICONS.CheckCircle className="w-5 h-5" /> : <ICONS.Layout className="w-5 h-5" />}
                         </div>
                         <p className="font-black text-sm tracking-tight">{notification.message}</p>
@@ -107,6 +177,26 @@ export const EmailSettings: React.FC = () => {
                     </Card>
                 </div>
             )}
+
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6">
+                <div>
+                    <h1 className="text-xl font-bold text-[#2E2E2F] tracking-tight">
+                        Email Settings
+                    </h1>
+                    <p className="text-[#2E2E2F]/40 text-[11px] mt-1.5 font-bold uppercase tracking-wider">
+                        Configure server parameters for system-wide mail transmission and verification
+                    </p>
+                </div>
+                <Button
+                    onClick={handleSave}
+                    className="bg-[#38BDF2] hover:bg-[#2E2E2F] text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-colors shadow-sm active:scale-95"
+                    disabled={saving}
+                >
+                    <ICONS.CheckCircle className="w-4 h-4" />
+                    {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Form */}
@@ -118,9 +208,9 @@ export const EmailSettings: React.FC = () => {
                                 name="emailProvider"
                                 value={formData.emailProvider}
                                 onChange={handleChange}
-                                className="w-full px-6 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-full outline-none focus:ring-2 focus:ring-[#38BDF2] focus:border-[#38BDF2] font-medium text-[#2E2E2F] transition-all hover:bg-[#F2F2F2]/80 px-6 py-3"
+                                className="w-full px-6 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-full outline-none focus:ring-2 focus:ring-[#38BDF2] focus:border-[#38BDF2] font-medium text-[#2E2E2F] transition-all hover:bg-[#F2F2F2]/80"
                             >
-                                <option value="SMTP">SMTP</option>
+                                <option value="SMTP">SMTP Server</option>
                                 <option value="SES">Amazon SES</option>
                                 <option value="Mailgun">Mailgun</option>
                                 <option value="SendGrid">SendGrid</option>
@@ -189,7 +279,7 @@ export const EmailSettings: React.FC = () => {
                                 name="mailEncryption"
                                 value={formData.mailEncryption}
                                 onChange={handleChange}
-                                className="w-full px-6 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-full outline-none focus:ring-2 focus:ring-[#38BDF2] focus:border-[#38BDF2] font-medium text-[#2E2E2F] transition-all hover:bg-[#F2F2F2]/80 px-6 py-3"
+                                className="w-full px-6 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-full outline-none focus:ring-2 focus:ring-[#38BDF2] focus:border-[#38BDF2] font-medium text-[#2E2E2F] transition-all hover:bg-[#F2F2F2]/80"
                             >
                                 <option value="TLS">TLS</option>
                                 <option value="SSL">SSL</option>
@@ -213,7 +303,7 @@ export const EmailSettings: React.FC = () => {
                             <Input
                                 name="fromName"
                                 value={formData.fromName}
-                                onChange={(e: any) => setFormData(prev => ({ ...prev, fromName: e.target.value }))}
+                                onChange={handleChange}
                                 placeholder="Your Organization Name"
                                 className="bg-[#F2F2F2] border border-[#2E2E2F]/10 focus:ring-2 focus:ring-[#38BDF2] focus:border-[#38BDF2] transition-all rounded-full px-6"
                             />
@@ -246,7 +336,7 @@ export const EmailSettings: React.FC = () => {
                             </p>
                             <Button
                                 onClick={handleTest}
-                                className="w-full bg-[#38BDF2] hover:bg-[#2E2E2F] text-white py-3 rounded-xl font-black text-xs tracking-widest flex items-center justify-center gap-2 transition-all uppercase shadow-md"
+                                className="w-full bg-[#38BDF2] hover:bg-[#2E2E2F] text-white py-3 rounded-xl font-black text-xs tracking-widest flex items-center justify-center gap-2 transition-all uppercase shadow-md active:scale-95"
                                 disabled={testing}
                             >
                                 <ICONS.Send className="w-3.5 h-3.5" />

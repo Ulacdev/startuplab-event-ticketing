@@ -86,7 +86,7 @@ export const Button: React.FC<{
   };
 
 export const Input: React.FC<{
-  label?: string;
+  label?: React.ReactNode;
   error?: string;
   [key: string]: any;
 }> = ({ label, error, className = '', ...props }) => {

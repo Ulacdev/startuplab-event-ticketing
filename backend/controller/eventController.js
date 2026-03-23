@@ -1,6 +1,33 @@
 import supabase from '../database/db.js';
 import { enrichEventsWithOrganizer } from '../utils/organizerData.js';
 import { getEventLikeCountsMap } from './eventLikeController.js';
+import crypto from 'crypto';
+
+// Helper to get real profile picture from email using unavatar
+const getEmailProfileUrl = (email, name = '') => {
+  const cleanEmail = email.trim().toLowerCase();
+  
+  // Gmail-like palette for fallback
+  const colors = [
+    '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', 
+    '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', 
+    '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', 
+    '#ff5722', '#795548', '#9e9e9e', '#607d8b'
+  ];
+  
+  // Deterministic color based on email string
+  let hash = 0;
+  for (let i = 0; i < cleanEmail.length; i++) {
+    hash = cleanEmail.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const color = colors[Math.abs(hash) % colors.length];
+  
+  const seed = (name || cleanEmail).split(' ')[0] || 'Attendee';
+  const fallback = encodeURIComponent(`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed)}&backgroundColor=${color.replace('#', '')}&textColor=ffffff&fontWeight=900`);
+  
+  // Unavatar will return a real profile pic from Google, Gravatar, Twitter, or GitHub for that email.
+  return `https://unavatar.io/${cleanEmail}?fallback=${fallback}`;
+};
 
 // Utility: filter events by registration window if provided
 function withinRegistrationWindow(event) {
@@ -224,41 +251,74 @@ export const listEvents = async (req, res) => {
       regCountMap.set(att.eventId, (regCountMap.get(att.eventId) || 0) + 1);
     });
 
-    // Fetch promotion status for these events
-    let pagePromotedMap = new Map();
+    // Fetch promotion status for events on this page
     const { data: pagePromotedData } = await supabase
       .from('promoted_events')
-      .select('eventId, expires_at')
+      .select('*')
       .in('eventId', eventIdsForPage)
       .gte('expires_at', new Date().toISOString());
+
+    const pagePromotedMap = new Map();
     (pagePromotedData || []).forEach(p => pagePromotedMap.set(p.eventId, p));
 
-    const withTicketTypes = pagedEvents.map(e => {
-      const usableTTs = ttMap.get(e.eventId) || [];
-      return {
-        ...e,
-        is_promoted: !!pagePromotedMap.has(e.eventId),
-        promotionEndDate: pagePromotedMap.get(e.eventId)?.expires_at || null,
-        ticketTypes: usableTTs,
-        registrationCount: regCountMap.get(e.eventId) || 0,
-        likesCount: allLikeCountMap.get(e.eventId) || 0,
-      };
-    });
+    // Fetch attendee avatars for the page (Real-time integration)
+    // We fetch attendees and their associated user images if available
+    let attendeeAvatarsMap = new Map();
+    const { data: pageAttendees } = await supabase
+      .from('attendees')
+      .select('eventId, email, name')
+      .in('eventId', eventIdsForPage)
+      .order('createdAt', { ascending: false });
 
-    const enrichedEvents = await enrichEventsWithOrganizer(withTicketTypes);
+    if (pageAttendees && pageAttendees.length > 0) {
+      const allAttendeeEmails = [...new Set(pageAttendees.map(a => a.email))];
+      const { data: usersWithImages } = await supabase
+        .from('users')
+        .select('email, imageUrl')
+        .in('email', allAttendeeEmails);
 
-    return res.json({
-      events: enrichedEvents,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    });
+      const userImageMap = new Map();
+      (usersWithImages || []).forEach(u => {
+        if (u.imageUrl) userImageMap.set(u.email, u.imageUrl);
+      });
+
+      pageAttendees.forEach(att => {
+        const avatars = attendeeAvatarsMap.get(att.eventId) || [];
+        if (avatars.length < 4) {
+          const avatarUrl = userImageMap.get(att.email) || getEmailProfileUrl(att.email, att.name);
+          avatars.push(avatarUrl);
+          attendeeAvatarsMap.set(att.eventId, avatars);
+        }
+      });
+    }
+
+const withTicketTypes = pagedEvents.map(e => {
+  const usableTTs = ttMap.get(e.eventId) || [];
+  return {
+    ...e,
+    is_promoted: !!pagePromotedMap.has(e.eventId),
+    promotionEndDate: pagePromotedMap.get(e.eventId)?.expires_at || null,
+    ticketTypes: usableTTs,
+    registrationCount: regCountMap.get(e.eventId) || 0,
+    likesCount: allLikeCountMap.get(e.eventId) || 0,
+    attendeeAvatars: attendeeAvatarsMap.get(e.eventId) || [],
+  };
+});
+
+const enrichedEvents = await enrichEventsWithOrganizer(withTicketTypes);
+
+return res.json({
+  events: enrichedEvents,
+  pagination: {
+    page,
+    limit,
+    total,
+    totalPages,
+  },
+});
   } catch (err) {
-    return res.status(500).json({ error: err?.message || 'Unexpected error' });
-  }
+  return res.status(500).json({ error: err?.message || 'Unexpected error' });
+}
 };
 
 export const getEventBySlug = async (req, res) => {
@@ -302,10 +362,10 @@ export const getEventBySlug = async (req, res) => {
     // Note: we no longer strictly filter by sales window here so they show up in UI
     // The frontend or registration logic handles the actual validity of the sale.
     const usableTicketTypes = ticketTypes || [];
-    
+
     console.log(`🔍 [Event Slug] Fetching like counts...`);
     const likeCounts = await getEventLikeCountsMap([event.eventId]);
-    
+
     console.log(`🔍 [Event Slug] Enriching with organizer...`);
     const [enrichedEvent] = await enrichEventsWithOrganizer([{
       ...event,
@@ -314,7 +374,7 @@ export const getEventBySlug = async (req, res) => {
       ticketTypes: usableTicketTypes,
       likesCount: likeCounts.get(event.eventId) || 0,
     }]);
-    
+
     console.log(`✅ [Event Slug] Success: ${identifier}`);
     return res.json(enrichedEvent || {
       ...event,
@@ -423,25 +483,56 @@ export const getEventsFeed = async (req, res) => {
       regCountMap.set(att.eventId, (regCountMap.get(att.eventId) || 0) + 1);
     });
 
+    // Fetch attendee avatars for feed
+    let attendeeAvatarsMapFeed = new Map();
+    const { data: feedAttendees } = await supabase
+      .from('attendees')
+      .select('eventId, email, name')
+      .in('eventId', paginatedEventIds)
+      .order('createdAt', { ascending: false });
+
+    if (feedAttendees && feedAttendees.length > 0) {
+      const allEmails = [...new Set(feedAttendees.map(a => a.email))];
+      const { data: usersImages } = await supabase
+        .from('users')
+        .select('email, imageUrl')
+        .in('email', allEmails);
+
+      const imgMap = new Map();
+      (usersImages || []).forEach(u => {
+        if (u.imageUrl) imgMap.set(u.email, u.imageUrl);
+      });
+
+      feedAttendees.forEach(att => {
+        const avatars = attendeeAvatarsMapFeed.get(att.eventId) || [];
+        if (avatars.length < 4) {
+          const avatarUrl = imgMap.get(att.email) || getEmailProfileUrl(att.email, att.name);
+          avatars.push(avatarUrl);
+          attendeeAvatarsMapFeed.set(att.eventId, avatars);
+        }
+      });
+    }
+
     const finalEvents = enrichedWithOrganizer.map(e => ({
       ...e,
       ticketTypes: ttMapForFeed.get(e.eventId) || [],
       likesCount: likeCountsMap.get(e.eventId) || 0,
       registrationCount: regCountMap.get(e.eventId) || 0,
+      attendeeAvatars: attendeeAvatarsMapFeed.get(e.eventId) || [],
     }));
 
-    return res.json({
-      events: finalEvents,
-      pagination: {
-        page,
-        limit,
-        total: enrichedEvents.length,
-        totalPages: Math.ceil(enrichedEvents.length / limit),
-      },
-    });
+return res.json({
+  events: finalEvents,
+  pagination: {
+    page,
+    limit,
+    total: enrichedEvents.length,
+    totalPages: Math.ceil(enrichedEvents.length / limit),
+  },
+});
   } catch (err) {
-    return res.status(500).json({ error: err?.message || 'Failed to fetch events feed' });
-  }
+  return res.status(500).json({ error: err?.message || 'Failed to fetch events feed' });
+}
 };
 
 /**

@@ -64,7 +64,7 @@ export const SignUpView: React.FC = () => {
 
       const msg = data.message || 'Account created. Verify your email, then continue setup.';
       showToast('success', msg);
-      navigate('/welcome?newAccount=1', { replace: true });
+      navigate('/login', { replace: true });
     } catch (err: any) {
       const msg = err?.message || 'Failed to create account.';
       setError(msg);
@@ -75,43 +75,51 @@ export const SignUpView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F2F2F2] flex items-center justify-center px-4">
-      <div className="max-w-md w-full py-12">
-        <Card className="p-10 border-[#2E2E2F]/20 flex flex-col h-full">
-          <div className="text-center flex flex-col items-center mb-8">
+    <div className="fixed inset-0 flex flex-col items-center justify-center px-4 overflow-hidden bg-[#F2F2F2]">
+      <button
+        onClick={() => navigate('/')}
+        className="absolute top-6 left-6 p-2 rounded-full text-[#2E2E2F]/40 hover:text-[#38BDF2] hover:bg-white shadow-sm transition-all group"
+        title="Go to Home"
+      >
+        <ICONS.Home className="w-6 h-6" />
+      </button>
+
+      <div className="max-w-md w-full relative z-10 scale-[0.75] sm:scale-90 md:scale-100 origin-center flex flex-col items-center">
+        <Card className="p-6 sm:p-10 border-[#2E2E2F]/10 border-[5px] flex flex-col w-full bg-[#F2F2F2] shadow-2xl rounded-3xl overflow-hidden">
+          <div className="text-center flex flex-col items-center mb-5">
             <img
               src="https://xmjdcbzgdfylbqkjoyyb.supabase.co/storage/v1/object/public/startuplab-business-ticketing/assets/assets/image%20(1).svg"
               alt="StartupLab Business Center Logo"
-              className="mx-auto mb-6 w-[180px] lg:w-[240px] max-w-full h-auto"
+              className="mx-auto mb-3 w-[150px] lg:w-[180px] max-w-full h-auto"
               style={{ objectFit: 'contain' }}
             />
-            <p className="text-[#2E2E2F]/70 text-lg font-medium">Create your account</p>
-            <div className="w-20 h-1 bg-[#38BDF2] mx-auto mt-4 rounded-full"></div>
+            <p className="text-[#2E2E2F]/70 text-[14px] font-medium">Create your account</p>
+            <div className="w-16 h-1 bg-[#38BDF2] mx-auto mt-2 rounded-full"></div>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="space-y-4">
-              <div className="space-y-1.5 w-full">
-                <label className="block text-sm font-medium text-[#2E2E2F]/70">Full Name</label>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="space-y-3">
+              <div className="space-y-1 w-full">
+                <label className="block text-[11px] font-bold text-[#2E2E2F]/70 uppercase tracking-wider ml-1">Full Name</label>
                 <div className="relative group/input">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2E2E2F]/40 group-focus-within/input:text-[#38BDF2] transition-colors z-10">
-                    <ICONS.Users className="w-5 h-5" />
+                    <ICONS.Users className="w-4 h-4" />
                   </div>
                   <input
                     placeholder="e.g. John Doe"
                     required
                     value={formData.name}
                     onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-[#2E2E2F] placeholder-[#2E2E2F]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/40 focus:border-[#38BDF2] transition-colors font-normal text-[14px]"
+                    className="w-full pl-11 pr-4 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-2xl text-[#2E2E2F] placeholder-[#2E2E2F]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/40 focus:border-[#38BDF2] transition-colors font-semibold text-[13px]"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5 w-full">
-                <label className="block text-sm font-medium text-[#2E2E2F]/70">Email</label>
+              <div className="space-y-1 w-full">
+                <label className="block text-[11px] font-bold text-[#2E2E2F]/70 uppercase tracking-wider ml-1">Email</label>
                 <div className="relative group/input">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2E2E2F]/40 group-focus-within/input:text-[#38BDF2] transition-colors z-10">
-                    <ICONS.Mail className="w-5 h-5" />
+                    <ICONS.Mail className="w-4 h-4" />
                   </div>
                   <input
                     type="email"
@@ -119,51 +127,57 @@ export const SignUpView: React.FC = () => {
                     required
                     value={formData.email}
                     onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3 bg-[#F2F2F2] border border-[#2E2E2F]/20 rounded-xl text-[#2E2E2F] placeholder-[#2E2E2F]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/40 focus:border-[#38BDF2] transition-colors font-normal text-[14px]"
+                    className="w-full pl-11 pr-4 py-2 bg-[#F2F2F2] border border-[#2E2E2F]/10 rounded-2xl text-[#2E2E2F] placeholder-[#2E2E2F]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF2]/40 focus:border-[#38BDF2] transition-colors font-semibold text-[13px]"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5 w-full">
-                <label className="block text-sm font-medium text-[#2E2E2F]/70">Password</label>
-                <PasswordInput
-                  placeholder="••••••••"
-                  required
-                  value={formData.password}
-                  onChange={(e: any) => setFormData({ ...formData, password: e.target.value })}
-                  icon={<ICONS.Lock className="w-5 h-5" />}
-                />
-              </div>
-
-              <div className="space-y-1.5 w-full">
-                <label className="block text-sm font-medium text-[#2E2E2F]/70">Confirm Password</label>
-                <PasswordInput
-                  placeholder="••••••••"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={(e: any) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  icon={<ICONS.Lock className="w-5 h-5" />}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-bold text-[#2E2E2F]/70 uppercase tracking-wider ml-1">Password</label>
+                  <PasswordInput
+                    placeholder="••••••••"
+                    required
+                    value={formData.password}
+                    onChange={(e: any) => setFormData({ ...formData, password: e.target.value })}
+                    icon={<ICONS.Lock className="w-4 h-4" />}
+                    className="!rounded-2xl"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-bold text-[#2E2E2F]/70 uppercase tracking-wider ml-1">Confirm</label>
+                  <PasswordInput
+                    placeholder="••••••••"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={(e: any) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    icon={<ICONS.Lock className="w-4 h-4" />}
+                    className="!rounded-2xl"
+                  />
+                </div>
               </div>
             </div>
 
             <Button
               type="submit"
-              className="w-full mt-2"
+              className="w-full py-4 text-[13px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#38BDF2]/20 rounded-2xl mt-1"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Creating Account...' : 'Create Account'}
             </Button>
 
             {error && (
-              <div className="mt-2 text-[#2E2E2F] text-sm font-bold text-center">{error}</div>
+              <div className="mt-1 p-3 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-[11px] font-bold text-center">
+                {error}
+              </div>
             )}
           </form>
-          <div className="mt-8 pt-6 border-t border-[#2E2E2F]/10 text-center">
-            <p className="text-[#2E2E2F]/60 text-sm font-medium">
+
+          <div className="mt-5 pt-5 border-t border-[#2E2E2F]/10 text-center">
+            <p className="text-[#2E2E2F]/60 text-[12px] font-medium">
               Already have an account?{' '}
               <button
-                className="text-[#38BDF2] font-bold hover:text-[#2E2E2F] transition-colors"
+                className="text-[#38BDF2] font-black hover:text-[#2E2E2F] transition-colors ml-1"
                 onClick={() => navigate('/login')}
               >
                 Sign In
@@ -171,16 +185,12 @@ export const SignUpView: React.FC = () => {
             </p>
           </div>
         </Card>
-        <div className="mt-16 flex flex-col items-center gap-6">
-          <button
-            className="text-[#2E2E2F]/60 hover:text-[#38BDF2] transition-colors text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2"
-            onClick={() => navigate('/')}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-            Back to Event Home
-          </button>
-        </div>
+
       </div>
     </div>
   );
 };
+
+
+
+

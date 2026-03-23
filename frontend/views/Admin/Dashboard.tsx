@@ -783,7 +783,7 @@ export const AdminDashboard: React.FC = () => {
           ) : transactions.length === 0 ? (
             <div className="text-[#2E2E2F] text-sm">No transactions yet.</div>
           ) : (
-            <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1" onScroll={handleTxScroll}>
+            <div className="space-y-4 max-h-[420px] overflow-y-auto overflow-x-hidden pr-2" onScroll={handleTxScroll}>
               {transactions.map((tx) => {
                 const isSubscription = tx.kind === 'subscription';
                 const createdLabel = (tx.createdAt || tx.created_at) ? new Date(tx.createdAt || tx.created_at).toLocaleString() : '';
@@ -833,7 +833,7 @@ export const AdminDashboard: React.FC = () => {
           ) : orders.length === 0 ? (
             <div className="text-[#2E2E2F] text-sm">No orders yet.</div>
           ) : (
-            <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1" onScroll={handleOrdersScroll}>
+            <div className="space-y-4 max-h-[420px] overflow-y-auto overflow-x-hidden pr-2" onScroll={handleOrdersScroll}>
               {orders.map((order) => (
                 <div
                   key={order.orderId}
@@ -878,7 +878,7 @@ export const AdminDashboard: React.FC = () => {
             ) : auditLogs.length === 0 ? (
               <div className="text-[#2E2E2F] text-sm">No audit logs yet.</div>
             ) : (
-              <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1" onScroll={handleAuditScroll}>
+              <div className="space-y-4 max-h-[420px] overflow-y-auto overflow-x-hidden pr-2" onScroll={handleAuditScroll}>
                 {auditLogs.map((log) => {
                   const targetLabel = log.orderId
                     ? `Order #${log.orderId.slice(0, 8)}`
