@@ -451,12 +451,12 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       ? []
       : role === UserRole.STAFF && canViewEvents === false && canManualCheckIn === false
         ? [
-          { label: 'Users', path: '/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
+          { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
         ]
         : role === UserRole.STAFF
           ? [
             ...(canViewEvents !== false ? [{ label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-6 h-6" /> }] : []),
-            { label: 'Users', path: '/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
+            { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
             ...(canManualCheckIn !== false ? [{ label: 'Scan', path: '/checkin', icon: <ICONS.CheckCircle className="w-6 h-6" /> }] : []),
           ]
           : role === UserRole.ADMIN
@@ -472,7 +472,7 @@ const PortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             : [
               { label: 'Dashboard', path: '/dashboard', icon: <ICONS.Layout className="w-6 h-6" /> },
               { label: 'Events', path: '/events', icon: <ICONS.Calendar className="w-6 h-6" /> },
-              { label: 'Users', path: '/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
+              { label: 'Attendees', path: '/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
               { label: 'Scan', path: '/checkin', icon: <ICONS.CheckCircle className="w-6 h-6" /> },
               { label: 'Charts', path: '/user/reports', icon: <ICONS.BarChart className="w-6 h-6" /> },
               { label: 'Archive', path: '/user/archive', icon: <ICONS.Archive className="w-6 h-6" />, separator: true },
@@ -2235,12 +2235,12 @@ const UserPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       ? []
       : role === UserRole.STAFF && canViewEvents === false && canManualCheckIn === false
         ? [
-          { label: 'Users', path: '/user/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
+          { label: 'Attendees', path: '/user/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
         ]
         : role === UserRole.STAFF
           ? [
             ...(canViewEvents !== false ? [{ label: 'Events', path: '/my-events', icon: <ICONS.Calendar className="w-6 h-6" /> }] : []),
-            { label: 'Users', path: '/user/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
+            { label: 'Attendees', path: '/user/attendees', icon: <ICONS.Users className="w-6 h-6" /> },
             ...(canManualCheckIn !== false ? [{ label: 'Scan', path: '/user/checkin', icon: <ICONS.CheckCircle className="w-6 h-6" /> }] : []),
           ]
           : [
